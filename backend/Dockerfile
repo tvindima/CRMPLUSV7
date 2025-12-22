@@ -12,6 +12,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY init_db.py ./
+COPY create_admin.py ./
 COPY start.sh ./
 
 # Set execute permissions on startup script
