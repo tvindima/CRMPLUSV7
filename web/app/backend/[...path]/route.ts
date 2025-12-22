@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = (process.env.BACKEND_URL || 'https://crm-plus-production.up.railway.app').replace(/\/+$/, '');
+const BACKEND_URL = (process.env.BACKEND_URL || 'https://crmplusv7-production.up.railway.app').replace(/\/+$/, '');
 const HOP_BY_HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'content-length', 'host']);
 
 type Params = { params: { path?: string[] } };

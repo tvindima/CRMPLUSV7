@@ -38,7 +38,7 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
     setErrorMessage("");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crm-plus-production.up.railway.app";
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
       
       const response = await fetch(`${API_URL}/leads/from-website`, {
         method: "POST",

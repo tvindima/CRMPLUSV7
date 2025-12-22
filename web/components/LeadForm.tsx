@@ -14,7 +14,7 @@ export function LeadForm({ source, title = "Fala connosco", cta = "Enviar" }: Pr
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error" | "loading">("idle");
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
