@@ -306,25 +306,26 @@ def debug_db():
     except Exception as e:
         return {"database": "error", "error": str(e), "type": type(e).__name__}
 
+
 # Temporary endpoint to create admin user (remove after first use)
 @app.post("/_internal/create-admin", include_in_schema=False)
 def create_admin_user(db: Session = Depends(get_db)):
     """Internal endpoint to create admin user. Remove after first use."""
     try:
         from app.users.models import User, UserRole
-        from app.security import get_password_hash
+        from app.users.services import hash_password
         
         # Check if user exists
         existing = db.query(User).filter(User.email == "tvindima@imoveismais.pt").first()
         if existing:
-            existing.hashed_password = get_password_hash("kkkkkkkk")
+            existing.hashed_password = hash_password("kkkkkkkk")
             db.commit()
             return {"message": "Password updated", "user_id": existing.id}
         
         # Create new user
         admin = User(
             email="tvindima@imoveismais.pt",
-            hashed_password=get_password_hash("kkkkkkkk"),
+            hashed_password=hash_password("kkkkkkkk"),
             full_name="Tiago Vindima",
             role=UserRole.ADMIN.value,
             is_active=True,
