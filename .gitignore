@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 
+# Credentials (NEVER COMMIT!)
+CREDENTIALS.md
+credentials.md
+*credentials*
+!.env.example
+
 # Python
 __pycache__/
 *.pyc
