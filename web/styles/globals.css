@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bg-grid {
+  background-color: #0b0b0d;
+  background-image: linear-gradient(90deg, rgba(42, 42, 46, 0.2) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(42, 42, 46, 0.2) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ✅ Scrollbar customization para carrosséis */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ✅ Touch scroll suave em mobile */
+@media (max-width: 768px) {
+  .snap-x {
+    scroll-snap-type: x proximity;
+  }
+  
+  .snap-center {
+    scroll-snap-align: center;
+  }
+}
