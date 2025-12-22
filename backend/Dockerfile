@@ -9,10 +9,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy application code
 COPY app ./app
-COPY scripts ./scripts
 COPY alembic ./alembic
 COPY alembic.ini ./
-COPY fix_property_status.py ./
 COPY start.sh ./
 
 # Set execute permissions on startup script
@@ -21,5 +19,5 @@ RUN chmod +x start.sh
 # Expose port
 EXPOSE 8000
 
-# Startup command (executes migrations then starts server)
+# Startup command
 CMD ["./start.sh"]
