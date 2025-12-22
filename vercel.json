@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd mobile/app && npm install && npm run build:web",
+  "buildCommand": "cd mobile/app && npm run build:web",
   "outputDirectory": "mobile/app/web-build",
   "framework": null,
-  "installCommand": "cd mobile/app && npm install"
+  "installCommand": "cd mobile/app && npm install --legacy-peer-deps"
 }
