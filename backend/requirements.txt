@@ -1,0 +1,20 @@
+fastapi
+sqlalchemy
+uvicorn[standard]
+pytest
+pydantic[email]
+python-multipart
+PyJWT
+httpx
+aiosqlite
+pymongo
+python-dotenv
+pandas
+psycopg2-binary
+alembic>=1.13.0  # Database migrations
+bcrypt>=4.0.1
+Pillow>=10.0.0  # Para redimensionamento e otimização de imagens
+cloudinary>=1.36.0  # Storage persistente de imagens
+websockets>=12.0  # FASE 2: WebSocket real-time notifications
+python-json-logger>=2.0.7  # FASE 2: Structured JSON logging
+
