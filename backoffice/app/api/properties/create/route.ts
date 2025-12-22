@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
 const COOKIE_NAME = "crmplus_staff_session";
 
 export async function POST(request: NextRequest) {

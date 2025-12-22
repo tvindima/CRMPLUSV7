@@ -87,7 +87,7 @@ function NewAgentInner() {
     async function loadAgents() {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crm-plus-production.up.railway.app'}/agents/?limit=100`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`
         );
         if (!response.ok) return;
         const data = await response.json();
@@ -110,7 +110,7 @@ function NewAgentInner() {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crm-plus-production.up.railway.app'}/agents/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

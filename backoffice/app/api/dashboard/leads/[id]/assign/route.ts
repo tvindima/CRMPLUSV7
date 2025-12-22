@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 export const dynamic = 'force-dynamic';
 
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crm-plus-production.up.railway.app";
+const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 const COOKIE_NAME = "crmplus_staff_session";
 
 export async function POST(
