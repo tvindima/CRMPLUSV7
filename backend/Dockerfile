@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
+COPY init_db.py ./
 COPY start.sh ./
 
 # Set execute permissions on startup script
