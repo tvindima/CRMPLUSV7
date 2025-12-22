@@ -1,0 +1,64 @@
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
+
+const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crm-plus-production.up.railway.app'
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('crmplus_staff_session')
+
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const res = await fetch(`${RAILWAY_API}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token.value}`,
+      },
+    })
+
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Failed to fetch profile' }, { status: res.status })
+    }
+
+    const data = await res.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('crmplus_staff_session')
+
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const body = await request.json()
+
+    const res = await fetch(`${RAILWAY_API}/users/me/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      return NextResponse.json(error, { status: res.status })
+    }
+
+    const data = await res.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
