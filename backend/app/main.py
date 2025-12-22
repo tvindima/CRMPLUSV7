@@ -310,26 +310,30 @@ def debug_db():
 @app.post("/_internal/create-admin", include_in_schema=False)
 def create_admin_user(db: Session = Depends(get_db)):
     """Internal endpoint to create admin user. Remove after first use."""
-    from app.users.models import User, UserRole
-    from app.security import get_password_hash
-    
-    # Check if user exists
-    existing = db.query(User).filter(User.email == "tvindima@imoveismais.pt").first()
-    if existing:
-        existing.hashed_password = get_password_hash("kkkkkkkk")
+    try:
+        from app.users.models import User, UserRole
+        from app.security import get_password_hash
+        
+        # Check if user exists
+        existing = db.query(User).filter(User.email == "tvindima@imoveismais.pt").first()
+        if existing:
+            existing.hashed_password = get_password_hash("kkkkkkkk")
+            db.commit()
+            return {"message": "Password updated", "user_id": existing.id}
+        
+        # Create new user
+        admin = User(
+            email="tvindima@imoveismais.pt",
+            hashed_password=get_password_hash("kkkkkkkk"),
+            full_name="Tiago Vindima",
+            role=UserRole.ADMIN.value,
+            is_active=True,
+            agent_id=1
+        )
+        db.add(admin)
         db.commit()
-        return {"message": "Password updated", "user_id": existing.id}
-    
-    # Create new user
-    admin = User(
-        email="tvindima@imoveismais.pt",
-        hashed_password=get_password_hash("kkkkkkkk"),
-        full_name="Tiago Vindima",
-        role=UserRole.ADMIN.value,
-        is_active=True,
-        agent_id=1
-    )
-    db.add(admin)
-    db.commit()
-    db.refresh(admin)
-    return {"message": "Admin created", "user_id": admin.id, "email": admin.email}
+        db.refresh(admin)
+        return {"message": "Admin created", "user_id": admin.id, "email": admin.email}
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "type": type(e).__name__, "traceback": traceback.format_exc()}
