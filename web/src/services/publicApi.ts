@@ -1,5 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://fantastic-simplicity-production.up.railway.app";
-const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://fantastic-simplicity-production.up.railway.app";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
 // ✅ REMOVER MOCKS - usar apenas dados reais do backend
 // import { mockProperties } from "../mocks/properties";

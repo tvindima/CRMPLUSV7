@@ -62,52 +62,78 @@ def setup_agents_and_users(db: Session = Depends(get_db)):
     }
     
     try:
-        # 1. Atualizar/Criar agentes
+        # 1. Atualizar/Criar agentes UM A UM
         for agent_data in AGENTES:
-            agent = db.query(Agent).filter(Agent.id == agent_data["id"]).first()
-            
-            if agent:
-                # Atualizar existente
-                agent.name = agent_data["name"]
-                agent.email = agent_data["email"]
-                results["agents_updated"].append(f"{agent_data['id']}: {agent_data['name']}")
-            else:
-                # Criar novo agente
-                new_agent = Agent(
-                    id=agent_data["id"],
-                    name=agent_data["name"],
-                    email=agent_data["email"]
-                )
-                db.add(new_agent)
-                results["agents_updated"].append(f"{agent_data['id']}: {agent_data['name']} (NOVO)")
-        
-        db.commit()
+            try:
+                agent = db.query(Agent).filter(Agent.id == agent_data["id"]).first()
+                
+                if agent:
+                    # Verificar se email já existe em outro agente
+                    existing_email = db.query(Agent).filter(
+                        Agent.email == agent_data["email"],
+                        Agent.id != agent_data["id"]
+                    ).first()
+                    
+                    if existing_email:
+                        # Email já existe noutro agente, usar email alternativo
+                        agent.name = agent_data["name"]
+                        results["agents_updated"].append(f"{agent_data['id']}: {agent_data['name']} (email mantido: {agent.email})")
+                    else:
+                        agent.name = agent_data["name"]
+                        agent.email = agent_data["email"]
+                        results["agents_updated"].append(f"{agent_data['id']}: {agent_data['name']}")
+                else:
+                    # Criar novo agente
+                    new_agent = Agent(
+                        id=agent_data["id"],
+                        name=agent_data["name"],
+                        email=agent_data["email"]
+                    )
+                    db.add(new_agent)
+                    results["agents_updated"].append(f"{agent_data['id']}: {agent_data['name']} (NOVO)")
+                
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                results["errors"].append(f"Agent {agent_data['id']}: {str(e)}")
         
         # 2. Criar/Atualizar users
         for agent_data in AGENTES:
-            email = agent_data["email"].lower()
-            password_plain = f"{agent_data['initials'].lower()}crmtest"
-            password_hash = hash_password(password_plain)
-            
-            user = db.query(User).filter(User.email == email).first()
-            
-            if user:
-                # Atualizar existente
-                user.hashed_password = password_hash
-                user.agent_id = agent_data["id"]
-                user.is_active = True
-                results["users_updated"].append(f"{email} → {password_plain}")
-            else:
-                # Criar novo user
-                new_user = User(
-                    email=email,
-                    hashed_password=password_hash,
-                    role="agent",
-                    agent_id=agent_data["id"],
-                    is_active=True
-                )
-                db.add(new_user)
-                results["users_created"].append(f"{email} → {password_plain}")
+            try:
+                # Buscar o agente para pegar o email atual dele
+                agent = db.query(Agent).filter(Agent.id == agent_data["id"]).first()
+                if not agent:
+                    results["errors"].append(f"Agent {agent_data['id']} não encontrado para criar user")
+                    continue
+                
+                email = agent.email.lower()  # Usar email do agente na BD
+                password_plain = f"{agent_data['initials'].lower()}crmtest"
+                password_hash = hash_password(password_plain)
+                
+                user = db.query(User).filter(User.email == email).first()
+                
+                if user:
+                    # Atualizar existente
+                    user.hashed_password = password_hash
+                    user.agent_id = agent_data["id"]
+                    user.is_active = True
+                    results["users_updated"].append(f"{email} → {password_plain}")
+                else:
+                    # Criar novo user
+                    new_user = User(
+                        email=email,
+                        hashed_password=password_hash,
+                        role="agent",
+                        agent_id=agent_data["id"],
+                        is_active=True
+                    )
+                    db.add(new_user)
+                    results["users_created"].append(f"{email} → {password_plain}")
+                
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                results["errors"].append(f"User {agent_data['email']}: {str(e)}")
         
         db.commit()
         
