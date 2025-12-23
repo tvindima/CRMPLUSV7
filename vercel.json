@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd mobile/app && npm run build:web",
+  "buildCommand": "cd mobile/app && npm run build:web && cp web/favicon.png dist/favicon.png && cp web/apple-touch-icon.png dist/apple-touch-icon.png",
   "outputDirectory": "mobile/app/dist",
   "framework": null,
   "installCommand": "cd mobile/app && npm install --legacy-peer-deps"
