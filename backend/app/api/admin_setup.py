@@ -117,6 +117,7 @@ def setup_agents_and_users(db: Session = Depends(get_db)):
                     user.hashed_password = password_hash
                     user.agent_id = agent_data["id"]
                     user.is_active = True
+                    user.full_name = agent.name  # Adicionar full_name
                     results["users_updated"].append(f"{email} → {password_plain}")
                 else:
                     # Criar novo user
@@ -125,7 +126,8 @@ def setup_agents_and_users(db: Session = Depends(get_db)):
                         hashed_password=password_hash,
                         role="agent",
                         agent_id=agent_data["id"],
-                        is_active=True
+                        is_active=True,
+                        full_name=agent.name  # Adicionar full_name
                     )
                     db.add(new_user)
                     results["users_created"].append(f"{email} → {password_plain}")
