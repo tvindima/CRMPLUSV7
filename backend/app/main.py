@@ -74,6 +74,13 @@ app = FastAPI(
 
 # Ler de environment variable Railway (CORS_ORIGINS ou CRMPLUS_CORS_ORIGINS)
 CORS_ORIGINS_ENV = os.environ.get("CORS_ORIGINS", os.environ.get("CRMPLUS_CORS_ORIGINS", ""))
+# Fallback seguro para desenvolvimento e pré-visualizações Vercel
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:4173",
+    "http://localhost:5173",
+]
 
 if CORS_ORIGINS_ENV == "*":
     # Permitir todas origens (só usar em desenvolvimento)
@@ -315,36 +322,3 @@ def debug_db():
         return {"database": "connected", "properties_count": count}
     except Exception as e:
         return {"database": "error", "error": str(e), "type": type(e).__name__}
-
-
-# Temporary endpoint to create admin user (remove after first use)
-@app.post("/_internal/create-admin", include_in_schema=False)
-def create_admin_user(db: Session = Depends(get_db)):
-    """Internal endpoint to create admin user. Remove after first use."""
-    try:
-        from app.users.models import User, UserRole
-        from app.users.services import hash_password
-        
-        # Check if user exists
-        existing = db.query(User).filter(User.email == "tvindima@imoveismais.pt").first()
-        if existing:
-            existing.hashed_password = hash_password("kkkkkkkk")
-            db.commit()
-            return {"message": "Password updated", "user_id": existing.id}
-        
-        # Create new user
-        admin = User(
-            email="tvindima@imoveismais.pt",
-            hashed_password=hash_password("kkkkkkkk"),
-            full_name="Tiago Vindima",
-            role=UserRole.ADMIN.value,
-            is_active=True,
-            agent_id=1
-        )
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-        return {"message": "Admin created", "user_id": admin.id, "email": admin.email}
-    except Exception as e:
-        import traceback
-        return {"error": str(e), "type": type(e).__name__, "traceback": traceback.format_exc()}

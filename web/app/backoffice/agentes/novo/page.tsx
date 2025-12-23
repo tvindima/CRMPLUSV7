@@ -37,7 +37,7 @@ function NovoAgenteForm() {
     e.preventDefault();
     
     if (!form.name || !form.email) {
-      toast.show("Por favor preencha nome e email", "error");
+      toast.push("Por favor preencha nome e email", "error");
       return;
     }
 
@@ -62,7 +62,7 @@ function NovoAgenteForm() {
       }
 
       const data = await response.json();
-      toast.show(`✅ ${data.user.name} criado com sucesso!`, "success");
+      toast.push(`✅ ${data.user.name} criado com sucesso!`, "success");
       
       // Redirecionar para lista de agentes
       setTimeout(() => {
@@ -71,7 +71,7 @@ function NovoAgenteForm() {
 
     } catch (error: any) {
       console.error("Erro ao criar utilizador:", error);
-      toast.show(error.message || "Erro ao criar utilizador", "error");
+      toast.push(error.message || "Erro ao criar utilizador", "error");
     } finally {
       setLoading(false);
     }
