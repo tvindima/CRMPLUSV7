@@ -80,6 +80,9 @@ DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3001",
     "http://localhost:4173",
     "http://localhost:5173",
+    # Mobile web (Vercel)
+    "https://crmplusv7-mobile.vercel.app",
+    "https://crmplusv7-mobile-picdp19if-toinos-projects.vercel.app",
 ]
 
 if CORS_ORIGINS_ENV == "*":
