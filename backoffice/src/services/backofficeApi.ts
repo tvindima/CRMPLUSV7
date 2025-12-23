@@ -61,6 +61,37 @@ export async function getBackofficeProperties(params?: {
   return request(qs ? `/properties/?${qs}` : "/properties/", undefined, true);
 }
 
+// ==========================
+// Pré-Angariações (admin)
+// ==========================
+export type PreAngariacaoListItem = {
+  id: number;
+  referencia_interna?: string | null;
+  proprietario_nome: string;
+  morada?: string | null;
+  status: string;
+  progresso: number;
+  created_at: string;
+  agent_id?: number;
+};
+
+export async function getPreAngariacoes(params?: {
+  status?: string;
+  agent_id?: number;
+  limit?: number;
+  skip?: number;
+}): Promise<PreAngariacaoListItem[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set('status', params.status);
+  if (params?.agent_id) searchParams.set('agent_id', String(params.agent_id));
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.skip) searchParams.set('skip', String(params.skip));
+  const qs = searchParams.toString();
+  const url = qs ? `/pre-angariacoes/?${qs}` : '/pre-angariacoes/';
+  // Usar proxy para enviar cookies de sessão admin
+  return request(url, undefined, true);
+}
+
 export async function getBackofficeProperty(id: number): Promise<BackofficeProperty> {
   return request(`/properties/${id}`);
 }

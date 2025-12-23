@@ -13,6 +13,7 @@ const links = [
   { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"] },
   { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff"] },
+  { href: "/backoffice/pre-angariacoes", label: "Pré-Angariações", roles: ["admin"] },
   { href: "/backoffice/config", label: "Configurações", roles: ["admin", "staff"] },
 ];
 

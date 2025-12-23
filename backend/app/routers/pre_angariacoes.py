@@ -16,6 +16,7 @@ from app.models.pre_angariacao import PreAngariacao, PreAngariacaoStatus
 from app.models.first_impression import FirstImpression
 from app.properties.models import Property
 from app.schemas import pre_angariacao as schemas
+from app.users.models import UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ router = APIRouter(prefix="/pre-angariacoes", tags=["Pré-Angariações"])
 @router.get("/", response_model=List[schemas.PreAngariacaoListItem])
 def listar_pre_angariacoes(
     status: Optional[str] = Query(None, description="Filtrar por status"),
+    agent_id: Optional[int] = Query(None, description="Filtrar por agente (apenas admin)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=100),
     current_user: User = Depends(get_current_user),
@@ -37,12 +39,18 @@ def listar_pre_angariacoes(
     """
     Listar todas as pré-angariações do agente
     """
-    if not current_user.agent_id:
+    # Admin pode ver todas; agentes só as suas
+    is_admin = current_user.role == UserRole.ADMIN.value
+
+    if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    query = db.query(PreAngariacao).filter(
-        PreAngariacao.agent_id == current_user.agent_id
-    )
+    query = db.query(PreAngariacao)
+
+    if not is_admin:
+        query = query.filter(PreAngariacao.agent_id == current_user.agent_id)
+    elif agent_id:
+        query = query.filter(PreAngariacao.agent_id == agent_id)
     
     if status:
         query = query.filter(PreAngariacao.status == status)
@@ -94,13 +102,14 @@ def obter_pre_angariacao(
     """
     Obter detalhes de uma pré-angariação
     """
-    if not current_user.agent_id:
+    is_admin = current_user.role == UserRole.ADMIN.value
+    if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    item = db.query(PreAngariacao).filter(
-        PreAngariacao.id == pre_angariacao_id,
-        PreAngariacao.agent_id == current_user.agent_id
-    ).first()
+    item_query = db.query(PreAngariacao).filter(PreAngariacao.id == pre_angariacao_id)
+    if not is_admin:
+        item_query = item_query.filter(PreAngariacao.agent_id == current_user.agent_id)
+    item = item_query.first()
     
     if not item:
         raise HTTPException(status_code=404, detail="Pré-angariação não encontrada")

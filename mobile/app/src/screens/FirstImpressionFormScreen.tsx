@@ -15,6 +15,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { firstImpressionService } from '../services/firstImpressionService';
 import { PhotoPicker } from '../components/PhotoPicker';
+import { preAngariacaoService } from '../services/preAngariacaoService';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
   const impressionId = route.params?.impressionId;
@@ -152,8 +153,14 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         await firstImpressionService.update(impressionId, payload);
         Alert.alert('Sucesso', 'Documento atualizado com sucesso!');
       } else {
-        await firstImpressionService.create(payload);
-        Alert.alert('Sucesso', 'Documento criado com sucesso!');
+        const created = await firstImpressionService.create(payload);
+        // Criar pré-angariação ligada a esta 1ª impressão
+        try {
+          await preAngariacaoService.createFromFirstImpression(created.id);
+        } catch (e) {
+          console.warn('Pré-angariação não criada automaticamente:', e);
+        }
+        Alert.alert('Sucesso', 'Documento criado e pasta de pré-angariação aberta!');
       }
 
       navigation.goBack();
