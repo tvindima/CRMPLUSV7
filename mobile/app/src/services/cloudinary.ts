@@ -179,6 +179,40 @@ class CloudinaryService {
 
     return result.total_photos;
   }
+
+  /**
+   * Upload genérico (imagem/PDF/etc) para Cloudinary
+   */
+  async uploadFile(fileUri: string, fileName: string, mimeType: string): Promise<string> {
+    const config = await this.getConfig();
+
+    console.log('[Cloudinary] 📤 Uploading file:', fileName, mimeType);
+
+    const formData = new FormData();
+    formData.append('file', {
+      uri: fileUri,
+      type: mimeType || 'application/octet-stream',
+      name: fileName,
+    } as any);
+    formData.append('upload_preset', config.upload_preset);
+    formData.append('folder', config.folder);
+
+    const response = await fetch(config.api_base_url, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Cloudinary] ❌ Upload file failed:', errorText);
+      throw new Error('Falha no upload do ficheiro. Tente novamente.');
+    }
+
+    const result: CloudinaryUploadResult = await response.json();
+    console.log('[Cloudinary] ✅ File upload success:', result.secure_url);
+    return result.secure_url;
+  }
 }
 
 export const cloudinaryService = new CloudinaryService();

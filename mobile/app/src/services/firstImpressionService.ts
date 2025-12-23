@@ -37,6 +37,7 @@ export interface FirstImpressionData {
   
   // Fotos
   photos?: string[] | null;
+  attachments?: { name: string; url: string; type?: string }[] | null;
   
   // Observações
   observations?: string | null;

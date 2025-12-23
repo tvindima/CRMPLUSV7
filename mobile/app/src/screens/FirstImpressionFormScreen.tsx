@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { firstImpressionService } from '../services/firstImpressionService';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { preAngariacaoService } from '../services/preAngariacaoService';
+import * as DocumentPicker from 'expo-document-picker';
+import { cloudinaryService } from '../services/cloudinary';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
   const initialId = route.params?.impressionId ?? null;
@@ -43,8 +45,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
 
-  // Estados Fotos
+  // Estados Fotos/Documentos
   const [photos, setPhotos] = useState([]);
+  const [attachments, setAttachments] = useState<{ name: string; url: string; type?: string }[]>([]);
 
   // Estados Observações
   const [observations, setObservations] = useState('');
@@ -53,6 +56,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [status, setStatus] = useState<'draft' | 'signed' | 'completed' | 'cancelled'>('draft');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
@@ -85,6 +89,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setLongitude(data.longitude);
       
       setPhotos(data.photos || []);
+      setAttachments(data.attachments || []);
       
       setObservations(data.observations || '');
       setStatus((data.status as any) || 'draft');
@@ -140,6 +145,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     latitude: latitude,
     longitude: longitude,
     photos: photos.length > 0 ? photos : null,
+    attachments: attachments.length > 0 ? attachments : null,
     observations: observations || null,
   });
 
@@ -211,7 +217,43 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   } finally {
     setLoading(false);
   }
-};
+  };
+
+  const handleAddAttachment = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+        type: '*/*',
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const file = result.assets[0];
+      const mime = file.mimeType || 'application/octet-stream';
+      const name = file.name || `documento-${attachments.length + 1}`;
+
+      setUploadingDoc(true);
+      const url = await cloudinaryService.uploadFile(file.uri, name, mime);
+      setAttachments((prev) => [...prev, { name, url, type: mime }]);
+      Alert.alert('Sucesso', 'Documento anexado.');
+    } catch (error: any) {
+      console.error('[Attachments] ❌', error);
+      Alert.alert('Erro', error.message || 'Não foi possível anexar o documento');
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    Alert.alert('Remover', 'Deseja remover este documento?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => setAttachments((prev) => prev.filter((_, i) => i !== index)),
+      },
+    ]);
+  };
 
   const handleStatusChange = async (nextStatus: 'completed' | 'cancelled') => {
     if (!impressionId) return;
@@ -404,6 +446,46 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         {/* SEÇÃO FOTOS */}
         <View style={styles.section}>
           <PhotoPicker photos={photos} onPhotosChange={setPhotos} />
+        </View>
+
+        {/* SEÇÃO DOCUMENTOS */}
+        <View style={styles.section}>
+          <View style={styles.attachHeader}>
+            <Text style={styles.sectionTitle}>📄 Documentos anexados</Text>
+            <TouchableOpacity
+              style={[styles.attachButton, uploadingDoc && styles.attachButtonDisabled]}
+              onPress={handleAddAttachment}
+              disabled={uploadingDoc}
+            >
+              {uploadingDoc ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload" size={18} color="#fff" />
+                  <Text style={styles.attachButtonText}>Adicionar</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {attachments.length === 0 ? (
+            <Text style={styles.emptyAttachments}>Sem documentos. Pode anexar PDF ou fotos da galeria.</Text>
+          ) : (
+            attachments.map((att, idx) => (
+              <View key={`${att.url}-${idx}`} style={styles.attachmentItem}>
+                <View style={styles.attachmentInfo}>
+                  <Ionicons name="document-text-outline" size={18} color="#9ca3af" />
+                  <View>
+                    <Text style={styles.attachmentName}>{att.name}</Text>
+                    {att.type && <Text style={styles.attachmentMeta}>{att.type}</Text>}
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => handleRemoveAttachment(idx)}>
+                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
 
         {/* SEÇÃO CMI */}
@@ -724,6 +806,56 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 13,
     marginTop: 4,
+  },
+  attachHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  attachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#00d9ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  attachButtonDisabled: {
+    opacity: 0.6,
+  },
+  attachButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1a1f2e',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#2d3748',
+    marginTop: 8,
+  },
+  attachmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  attachmentName: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  attachmentMeta: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  emptyAttachments: {
+    color: '#9ca3af',
+    fontSize: 14,
   },
   cmiButton: {
     flexDirection: 'row',
