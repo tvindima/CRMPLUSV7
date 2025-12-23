@@ -9,6 +9,7 @@ class UserRole(str, PyEnum):
     ADMIN = "admin"
     COORDINATOR = "coordinator"
     AGENT = "agent"
+    ASSISTANT = "assistant"
 
 
 class User(Base):

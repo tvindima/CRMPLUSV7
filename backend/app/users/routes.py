@@ -4,7 +4,7 @@ from typing import Optional
 from . import services, schemas
 from app.database import get_db
 from app.security import require_staff, get_current_user
-from .models import User
+from .models import User, UserRole
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -47,12 +47,23 @@ def create_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff)
 ):
-    """Criar novo utilizador (requer staff)"""
-    # Verificar se email já existe
+    """Criar novo utilizador (requer staff)
+
+    - Admins podem criar qualquer role
+    - Agentes podem criar apenas assistentes associados ao seu agent_id
+    """
+    # Validar role se current_user não for admin
+    if current_user.role != UserRole.ADMIN.value:
+        if user.role != UserRole.ASSISTANT:
+            raise HTTPException(status_code=403, detail="Apenas admins podem criar este tipo de utilizador")
+        # Forçar association ao agent_id do criador
+        if not current_user.agent_id:
+            raise HTTPException(status_code=400, detail="Utilizador não tem agent_id para associar assistente")
+        user.agent_id = current_user.agent_id
+    # Verificar email existente
     existing = services.get_user_by_email(db, user.email)
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
     return services.create_user(db, user)
 
 
