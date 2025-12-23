@@ -317,7 +317,7 @@ export default async function AgentPage({ params }: Props) {
             Voltar à equipa
           </Link>
 
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="flex flex-row flex-wrap items-start gap-6">
             <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-[#E10600]/30">
               <Image
                 src={optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeSlug(agent.name)}.png`}
@@ -328,7 +328,7 @@ export default async function AgentPage({ params }: Props) {
                 priority
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-[220px]">
               <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">Microsite Pessoal</p>
               <h1 className="text-xl font-semibold md:text-3xl">{agent.name}</h1>
               {/* Botão Ver Perfil */}
