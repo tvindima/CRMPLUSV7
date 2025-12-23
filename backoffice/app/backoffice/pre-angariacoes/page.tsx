@@ -28,10 +28,12 @@ function PreAngariacoesInner() {
   }, [status, toast]);
 
   return (
-    <BackofficeLayout title="Pré-Angariações" subtitle="Todas as visitas e dossiês criados pelos agentes">
+    <BackofficeLayout title="Pré-Angariações">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm text-[#C5C5C5]">Visibilidade total (apenas administradores)</p>
+          <p className="text-sm text-[#C5C5C5]">
+            Visibilidade total (apenas administradores). Todas as visitas/pastas iniciadas pelos agentes.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs text-[#888]">Filtrar por status</label>
