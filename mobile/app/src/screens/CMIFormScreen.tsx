@@ -41,6 +41,8 @@ const DOCUMENT_TYPES = [
   { id: 'cc_verso', label: 'CC - Verso', icon: 'card-outline' },
   { id: 'caderneta_predial', label: 'Caderneta Predial', icon: 'document-text' },
   { id: 'certidao_permanente', label: 'Certidão Permanente', icon: 'document' },
+  { id: 'licenca_utilizacao', label: 'Licença de Utilização', icon: 'clipboard' },
+  { id: 'certificado_energetico', label: 'Certificado Energético', icon: 'flash' },
 ];
 
 // Estados civis
@@ -105,11 +107,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [currentDocType, setCurrentDocType] = useState('');
-  const [signatureType, setSignatureType] = useState<'cliente' | 'mediador'>('cliente');
 
   // === ASSINATURAS ===
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
-  const [assinaturaMediador, setAssinaturaMediador] = useState<string | null>(null);
 
   // Refs
   const signatureRef = useRef<any>(null);
@@ -349,8 +349,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   // === ASSINATURAS ===
-  const openSignatureModal = (type: 'cliente' | 'mediador') => {
-    setSignatureType(type);
+  const openSignatureModal = () => {
     setShowSignatureModal(true);
   };
 
@@ -360,15 +359,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setShowSignatureModal(false);
 
     try {
-      if (signatureType === 'cliente') {
-        await cmiService.addClientSignature(cmi.id, signature);
-        setAssinaturaCliente(signature);
-        Alert.alert('Sucesso', 'Assinatura do cliente registada!');
-      } else {
-        await cmiService.addAgentSignature(cmi.id, signature);
-        setAssinaturaMediador(signature);
-        Alert.alert('Sucesso', 'Assinatura do mediador registada!');
-      }
+      await cmiService.addClientSignature(cmi.id, signature);
+      setAssinaturaCliente(signature);
+      Alert.alert('Sucesso', 'Assinatura do cliente registada!');
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao guardar assinatura');
     }
@@ -753,7 +746,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         {/* SECÇÃO 5: ASSINATURAS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✍️ ASSINATURAS</Text>
-          <Text style={styles.hint}>Toque para assinar diretamente no ecrã</Text>
+          <Text style={styles.hint}>Assinatura apenas do(s) proprietário(s)</Text>
 
           <View style={styles.signatureRow}>
             <View style={styles.signatureBox}>
@@ -769,7 +762,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                     style={styles.resignButton}
                     onPress={() => {
                       setAssinaturaCliente(null);
-                      openSignatureModal('cliente');
+                      openSignatureModal();
                     }}
                   >
                     <Ionicons name="refresh" size={16} color="#fff" />
@@ -779,38 +772,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               ) : (
                 <TouchableOpacity
                   style={styles.signatureButton}
-                  onPress={() => openSignatureModal('cliente')}
-                >
-                  <Ionicons name="finger-print" size={48} color="#00d9ff" />
-                  <Text style={styles.signatureButtonText}>Toque para Assinar</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.signatureBox}>
-              <Text style={styles.signatureLabel}>Mediador / Agente</Text>
-              {assinaturaMediador ? (
-                <View style={styles.signatureWithImage}>
-                  <Image
-                    source={{ uri: assinaturaMediador }}
-                    style={styles.signatureImage}
-                    resizeMode="contain"
-                  />
-                  <TouchableOpacity
-                    style={styles.resignButton}
-                    onPress={() => {
-                      setAssinaturaMediador(null);
-                      openSignatureModal('mediador');
-                    }}
-                  >
-                    <Ionicons name="refresh" size={16} color="#fff" />
-                    <Text style={styles.resignText}>Reassinar</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.signatureButton}
-                  onPress={() => openSignatureModal('mediador')}
+                  onPress={() => openSignatureModal()}
                 >
                   <Ionicons name="finger-print" size={48} color="#00d9ff" />
                   <Text style={styles.signatureButtonText}>Toque para Assinar</Text>
@@ -858,14 +820,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               <Ionicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
             <View style={styles.signatureHeaderCenter}>
-              <Ionicons 
-                name={signatureType === 'cliente' ? 'person' : 'briefcase'} 
-                size={24} 
-                color="#00d9ff" 
-              />
-              <Text style={styles.signatureModalTitle}>
-                Assinatura do {signatureType === 'cliente' ? 'Proprietário' : 'Mediador'}
-              </Text>
+              <Ionicons name="person" size={24} color="#00d9ff" />
+              <Text style={styles.signatureModalTitle}>Assinatura do Proprietário</Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
