@@ -41,6 +41,30 @@ PREFIX_TO_AGENT = {
     "SM": 19,  # Ex-agente → Coordenador
 }
 
+# Mapeamento de agent_id para avatar_url
+# Avatares locais servidos pelo frontend Vercel
+AGENT_AVATARS = {
+    1: "/avatars/nuno-faria.png",
+    2: "/avatars/pedro-olaio.png",
+    3: "/avatars/joao-olaio.png",
+    4: "/avatars/fabio-passos.png",
+    5: "/avatars/antonio-silva.png",
+    6: "/avatars/hugo-belo.png",
+    7: "/avatars/bruno-libanio.png",
+    8: "/avatars/nelson-neto.png",
+    9: "/avatars/joao-paiva.png",
+    10: "/avatars/marisa-barosa.png",
+    11: "/avatars/eduardo-coelho.png",
+    12: "/avatars/joao-silva.png",
+    13: "/avatars/hugo-mota.png",
+    14: "/avatars/joao-pereira.png",
+    15: "/avatars/joao-carvalho.png",
+    16: "/avatars/tiago-vindima.png",
+    17: "/avatars/mickael-soares.png",
+    18: "/avatars/paulo-rodrigues.png",
+    19: "/avatars/foto.png",  # Logo da agência
+}
+
 
 @router.get("/preview")
 async def preview_changes(db: Session = Depends(get_db)):
@@ -221,4 +245,100 @@ async def verify_tiago(db: Session = Depends(get_db)):
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# ENDPOINTS PARA AVATARES
+# =====================================================
+
+@router.get("/avatars/status")
+async def avatars_status(db: Session = Depends(get_db)):
+    """
+    Ver estado atual dos avatares dos agentes
+    """
+    try:
+        result = db.execute(text("""
+            SELECT id, name, avatar_url
+            FROM agents
+            WHERE id <= 19
+            ORDER BY id
+        """))
+        
+        agents = []
+        missing_avatars = []
+        for r in result.fetchall():
+            agent_id, name, current_avatar = r
+            expected_avatar = AGENT_AVATARS.get(agent_id)
+            is_correct = current_avatar == expected_avatar
+            
+            agents.append({
+                "id": agent_id,
+                "name": name,
+                "current_avatar": current_avatar,
+                "expected_avatar": expected_avatar,
+                "is_correct": is_correct
+            })
+            
+            if not is_correct:
+                missing_avatars.append(agent_id)
+        
+        return {
+            "total_agents": len(agents),
+            "with_correct_avatar": len(agents) - len(missing_avatars),
+            "missing_or_wrong": len(missing_avatars),
+            "missing_ids": missing_avatars,
+            "agents": agents
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/avatars/fix")
+async def fix_avatars(db: Session = Depends(get_db)):
+    """
+    Atualiza os avatar_url de todos os agentes (IDs 1-19)
+    """
+    try:
+        updates = []
+        
+        for agent_id, avatar_url in AGENT_AVATARS.items():
+            result = db.execute(text("""
+                UPDATE agents 
+                SET avatar_url = :avatar_url
+                WHERE id = :agent_id
+                  AND (avatar_url != :avatar_url OR avatar_url IS NULL)
+                RETURNING id, name
+            """), {"agent_id": agent_id, "avatar_url": avatar_url})
+            
+            updated = result.fetchone()
+            if updated:
+                updates.append({
+                    "id": updated[0],
+                    "name": updated[1],
+                    "avatar_url": avatar_url
+                })
+        
+        db.commit()
+        
+        # Verificar resultado
+        result = db.execute(text("""
+            SELECT id, name, avatar_url
+            FROM agents
+            WHERE id <= 19
+            ORDER BY id
+        """))
+        
+        final_state = [{"id": r[0], "name": r[1], "avatar_url": r[2]} for r in result.fetchall()]
+        
+        return {
+            "success": True,
+            "updated_count": len(updates),
+            "updates": updates,
+            "final_state": final_state
+        }
+        
+    except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
