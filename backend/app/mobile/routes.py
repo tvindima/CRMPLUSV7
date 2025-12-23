@@ -27,6 +27,8 @@ from app.schemas import visit as visit_schemas
 from app.models.visit import Visit, VisitStatus, InterestLevel
 from app.models.event import Event
 from app.schemas import event as event_schemas
+from app.schemas import site_preferences as site_prefs_schemas
+from app.models.agent_site_preferences import AgentSitePreferences
 from app.core.storage import storage
 import calendar as cal_module
 import logging
@@ -36,7 +38,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/mobile", tags=["Mobile App"])
 
 # Version para debug de deploy
-MOBILE_API_VERSION = "2025-12-22-v17-fix-first-impressions"
+MOBILE_API_VERSION = "2025-01-01-v18-persist-site-preferences"
 
 @router.get("/version")
 def get_mobile_version():
@@ -1764,12 +1766,22 @@ class SitePreferencesUpdate(BaseModel):
     theme: Optional[str] = None
     language: Optional[str] = None
     notifications: Optional[dict] = None
+    bio: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    linkedin: Optional[str] = None
+    whatsapp: Optional[str] = None
 
 class SitePreferencesOut(BaseModel):
     """Schema de resposta de preferências"""
     theme: str
     language: str
     notifications: dict
+    bio: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    linkedin: Optional[str] = None
+    whatsapp: Optional[str] = None
 
 
 @router.get("/site-preferences", response_model=SitePreferencesOut)
@@ -1779,22 +1791,50 @@ def get_user_preferences(
 ):
     """
     Obter preferências do utilizador para mobile app
-    Retorna defaults (sem persistência em BD por enquanto)
-    
-    Quando precisar persistir:
-    1. Criar tabela user_preferences (migration)
-    2. Atualizar este endpoint para consultar BD
+    Carrega bio e redes sociais da tabela agent_site_preferences
     """
-    # Retornar defaults
+    # Verificar se utilizador tem agente associado
+    agent_id = current_user.agent_id
+    
+    # Carregar preferências da BD
+    prefs = None
+    if agent_id:
+        prefs = db.query(AgentSitePreferences).filter(
+            AgentSitePreferences.agent_id == agent_id
+        ).first()
+    
+    if prefs:
+        return SitePreferencesOut(
+            theme=prefs.theme or "dark",
+            language="pt",
+            notifications={
+                "new_leads": True,
+                "visits_reminder": True,
+                "property_updates": True,
+                "push_enabled": False
+            },
+            bio=prefs.bio,
+            instagram=prefs.instagram,
+            facebook=prefs.facebook,
+            linkedin=prefs.linkedin,
+            whatsapp=prefs.whatsapp
+        )
+    
+    # Retornar defaults se não existir
     return SitePreferencesOut(
-        theme="light",
+        theme="dark",
         language="pt",
         notifications={
             "new_leads": True,
             "visits_reminder": True,
             "property_updates": True,
             "push_enabled": False
-        }
+        },
+        bio=None,
+        instagram=None,
+        facebook=None,
+        linkedin=None,
+        whatsapp=None
     )
 
 
@@ -1806,25 +1846,58 @@ def update_user_preferences(
 ):
     """
     Atualizar preferências do utilizador
-    Aceita mas não persiste (retorna echo dos dados enviados)
-    
-    Quando precisar persistir:
-    1. Criar tabela user_preferences (migration)
-    2. Implementar upsert neste endpoint
+    PERSISTE bio, redes sociais e tema na tabela agent_site_preferences
     """
-    # Echo dos dados recebidos + defaults para campos não enviados
-    result = {
-        "theme": preferences.theme if preferences.theme else "light",
-        "language": preferences.language if preferences.language else "pt",
-        "notifications": preferences.notifications if preferences.notifications else {
+    # Verificar se utilizador tem agente associado
+    agent_id = current_user.agent_id
+    if not agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    # Buscar ou criar preferências
+    prefs = db.query(AgentSitePreferences).filter(
+        AgentSitePreferences.agent_id == agent_id
+    ).first()
+    
+    if not prefs:
+        # Criar novo registo
+        prefs = AgentSitePreferences(agent_id=agent_id)
+        db.add(prefs)
+    
+    # Atualizar campos se fornecidos
+    if preferences.theme is not None:
+        prefs.theme = preferences.theme
+    if preferences.bio is not None:
+        prefs.bio = preferences.bio
+    if preferences.instagram is not None:
+        prefs.instagram = preferences.instagram
+    if preferences.facebook is not None:
+        prefs.facebook = preferences.facebook
+    if preferences.linkedin is not None:
+        prefs.linkedin = preferences.linkedin
+    if preferences.whatsapp is not None:
+        prefs.whatsapp = preferences.whatsapp
+    
+    # Guardar na BD
+    db.commit()
+    db.refresh(prefs)
+    
+    logger.info(f"Site preferences updated for agent_id={agent_id}")
+    
+    return SitePreferencesOut(
+        theme=prefs.theme or "dark",
+        language="pt",
+        notifications={
             "new_leads": True,
             "visits_reminder": True,
             "property_updates": True,
             "push_enabled": False
-        }
-    }
-    
-    return SitePreferencesOut(**result)
+        },
+        bio=prefs.bio,
+        instagram=prefs.instagram,
+        facebook=prefs.facebook,
+        linkedin=prefs.linkedin,
+        whatsapp=prefs.whatsapp
+    )
 
 
 # =====================================================
