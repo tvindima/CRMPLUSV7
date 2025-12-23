@@ -283,17 +283,28 @@ export default async function Home() {
   const properties = await getProperties(500);
   console.log('Total properties loaded:', properties.length);
   
-  // ✅ HERO: Últimas 4 propriedades COM VÍDEO (ordenadas por created_at = data de criação)
+  // ✅ HERO: Preferir propriedades com vídeo; se não houver, usar destaques/novas
   const propertiesWithVideo = properties
     .filter(p => p.video_url && p.is_published)
     .sort((a, b) => {
-      // Ordenar por created_at descendente (mais recente primeiro)
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateB - dateA;
     });
   
-  const heroProperties = propertiesWithVideo.slice(0, 4); // Pegar as 4 mais recentes
+  let heroProperties = propertiesWithVideo.slice(0, 4);
+
+  // Fallback: se não houver vídeos, usar propriedades em destaque ou últimas publicadas
+  if (heroProperties.length === 0) {
+    heroProperties = properties
+      .filter(p => p.is_featured || p.is_published)
+      .sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 4);
+  }
   
   console.log(`Hero properties: ${heroProperties.length} propriedades com vídeo`);
   if (heroProperties.length > 0) {
