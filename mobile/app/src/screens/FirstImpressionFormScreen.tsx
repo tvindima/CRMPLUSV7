@@ -16,8 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { firstImpressionService } from '../services/firstImpressionService';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { preAngariacaoService } from '../services/preAngariacaoService';
-import * as DocumentPicker from 'expo-document-picker';
-import { cloudinaryService } from '../services/cloudinary';
+import { Linking } from 'react-native';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
   const initialId = route.params?.impressionId ?? null;
@@ -56,7 +55,6 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [status, setStatus] = useState<'draft' | 'signed' | 'completed' | 'cancelled'>('draft');
-  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
@@ -217,42 +215,6 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   } finally {
     setLoading(false);
   }
-  };
-
-  const handleAddAttachment = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        copyToCacheDirectory: true,
-        multiple: false,
-        type: '*/*',
-      });
-      if (result.canceled || !result.assets?.length) return;
-
-      const file = result.assets[0];
-      const mime = file.mimeType || 'application/octet-stream';
-      const name = file.name || `documento-${attachments.length + 1}`;
-
-      setUploadingDoc(true);
-      const url = await cloudinaryService.uploadFile(file.uri, name, mime);
-      setAttachments((prev) => [...prev, { name, url, type: mime }]);
-      Alert.alert('Sucesso', 'Documento anexado.');
-    } catch (error: any) {
-      console.error('[Attachments] ❌', error);
-      Alert.alert('Erro', error.message || 'Não foi possível anexar o documento');
-    } finally {
-      setUploadingDoc(false);
-    }
-  };
-
-  const handleRemoveAttachment = (index: number) => {
-    Alert.alert('Remover', 'Deseja remover este documento?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => setAttachments((prev) => prev.filter((_, i) => i !== index)),
-      },
-    ]);
   };
 
   const handleStatusChange = async (nextStatus: 'completed' | 'cancelled') => {
@@ -452,27 +414,17 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         <View style={styles.section}>
           <View style={styles.attachHeader}>
             <Text style={styles.sectionTitle}>📄 Documentos anexados</Text>
-            <TouchableOpacity
-              style={[styles.attachButton, uploadingDoc && styles.attachButtonDisabled]}
-              onPress={handleAddAttachment}
-              disabled={uploadingDoc}
-            >
-              {uploadingDoc ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="cloud-upload" size={18} color="#fff" />
-                  <Text style={styles.attachButtonText}>Adicionar</Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
 
           {attachments.length === 0 ? (
-            <Text style={styles.emptyAttachments}>Sem documentos. Pode anexar PDF ou fotos da galeria.</Text>
+            <Text style={styles.emptyAttachments}>Sem documentos anexados.</Text>
           ) : (
             attachments.map((att, idx) => (
-              <View key={`${att.url}-${idx}`} style={styles.attachmentItem}>
+              <TouchableOpacity
+                key={`${att.url}-${idx}`}
+                style={styles.attachmentItem}
+                onPress={() => Linking.openURL(att.url)}
+              >
                 <View style={styles.attachmentInfo}>
                   <Ionicons name="document-text-outline" size={18} color="#9ca3af" />
                   <View>
@@ -480,10 +432,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
                     {att.type && <Text style={styles.attachmentMeta}>{att.type}</Text>}
                   </View>
                 </View>
-                <TouchableOpacity onPress={() => handleRemoveAttachment(idx)}>
-                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
+                <Ionicons name="open-outline" size={18} color="#00d9ff" />
+              </TouchableOpacity>
             ))
           )}
         </View>

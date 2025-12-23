@@ -255,6 +255,48 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setShowCameraModal(true);
   };
 
+  const processOcrFromBase64 = async (base64: string) => {
+    if (!cmi) {
+      Alert.alert('Erro', 'CMI ainda não foi criado.');
+      return;
+    }
+    // Processar via OCR
+    Alert.alert('A Processar', 'A extrair dados do documento...');
+    
+    const ocrResult = await cmiService.processOCR(
+      cmi.id,
+      currentDocType,
+      base64
+    );
+
+    if (ocrResult.sucesso) {
+      // Preencher campos automaticamente
+      if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
+        if (ocrResult.dados_extraidos.nome) {
+          setClienteNome(ocrResult.dados_extraidos.nome);
+        }
+        if (ocrResult.dados_extraidos.nif) {
+          setClienteNif(ocrResult.dados_extraidos.nif);
+        }
+        if (ocrResult.dados_extraidos.numero_documento) {
+          setClienteCc(ocrResult.dados_extraidos.numero_documento);
+        }
+      } else if (currentDocType === 'caderneta_predial') {
+        if (ocrResult.dados_extraidos.artigo_matricial) {
+          setImovelArtigoMatricial(ocrResult.dados_extraidos.artigo_matricial);
+        }
+        if (ocrResult.dados_extraidos.area_bruta) {
+          setImovelAreaBruta(ocrResult.dados_extraidos.area_bruta);
+        }
+      }
+
+      Alert.alert(
+        'Documento Processado',
+        `${ocrResult.mensagem}\n\nConfiança: ${(ocrResult.confianca * 100).toFixed(0)}%\n\nVerifique os campos preenchidos.`
+      );
+    }
+  };
+
   const captureDocument = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -271,45 +313,38 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
       if (!result.canceled && result.assets[0].base64 && cmi) {
         setShowCameraModal(false);
-
-        // Processar via OCR
-        Alert.alert('A Processar', 'A extrair dados do documento...');
-        
-        const ocrResult = await cmiService.processOCR(
-          cmi.id,
-          currentDocType,
-          result.assets[0].base64
-        );
-
-        if (ocrResult.sucesso) {
-          // Preencher campos automaticamente
-          if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
-            if (ocrResult.dados_extraidos.nome) {
-              setClienteNome(ocrResult.dados_extraidos.nome);
-            }
-            if (ocrResult.dados_extraidos.nif) {
-              setClienteNif(ocrResult.dados_extraidos.nif);
-            }
-            if (ocrResult.dados_extraidos.numero_documento) {
-              setClienteCc(ocrResult.dados_extraidos.numero_documento);
-            }
-          } else if (currentDocType === 'caderneta_predial') {
-            if (ocrResult.dados_extraidos.artigo_matricial) {
-              setImovelArtigoMatricial(ocrResult.dados_extraidos.artigo_matricial);
-            }
-            if (ocrResult.dados_extraidos.area_bruta) {
-              setImovelAreaBruta(ocrResult.dados_extraidos.area_bruta);
-            }
-          }
-
-          Alert.alert(
-            'Documento Processado',
-            `${ocrResult.mensagem}\n\nConfiança: ${(ocrResult.confianca * 100).toFixed(0)}%\n\nVerifique os campos preenchidos.`
-          );
-        }
+        await processOcrFromBase64(result.assets[0].base64);
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao capturar documento');
+    }
+  };
+
+  const pickDocumentFromLibrary = async (docType: string) => {
+    if (!cmi) {
+      Alert.alert('Erro', 'CMI ainda não foi criado.');
+      return;
+    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão negada', 'Permita acesso à galeria para anexar o documento.');
+        return;
+      }
+
+      setCurrentDocType(docType);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        await processOcrFromBase64(result.assets[0].base64);
+      }
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Erro ao anexar documento da galeria');
     }
   };
 
@@ -366,18 +401,32 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         {/* SCAN DOCUMENTOS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📷 Digitalizar Documentos</Text>
-          <Text style={styles.hint}>Fotografe os documentos para preenchimento automático</Text>
+          <Text style={styles.hint}>Fotografe ou anexe da galeria/ficheiros para preencher automaticamente</Text>
           
-          <View style={styles.docButtonsRow}>
+          <View style={styles.docList}>
             {DOCUMENT_TYPES.map((doc) => (
-              <TouchableOpacity
-                key={doc.id}
-                style={styles.docButton}
-                onPress={() => openDocumentScanner(doc.id)}
-              >
-                <Ionicons name={doc.icon as any} size={24} color="#00d9ff" />
-                <Text style={styles.docButtonText}>{doc.label}</Text>
-              </TouchableOpacity>
+              <View key={doc.id} style={styles.docCard}>
+                <View style={styles.docInfo}>
+                  <Ionicons name={doc.icon as any} size={24} color="#00d9ff" />
+                  <Text style={styles.docLabel}>{doc.label}</Text>
+                </View>
+                <View style={styles.docActions}>
+                  <TouchableOpacity
+                    style={styles.docButton}
+                    onPress={() => openDocumentScanner(doc.id)}
+                  >
+                    <Ionicons name="camera" size={16} color="#fff" />
+                    <Text style={styles.docButtonText}>Fotografar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.docButton, styles.docButtonAlt]}
+                    onPress={() => pickDocumentFromLibrary(doc.id)}
+                  >
+                    <Ionicons name="images" size={16} color="#fff" />
+                    <Text style={styles.docButtonText}>Anexar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             ))}
           </View>
         </View>
@@ -1030,26 +1079,47 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
-  docButtonsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  docList: {
     gap: 10,
   },
-  docButton: {
-    flex: 1,
-    minWidth: 140,
+  docCard: {
     backgroundColor: '#0a0e1a',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#333',
   },
+  docInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  docLabel: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  docActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  docButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#00d9ff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  docButtonAlt: {
+    backgroundColor: '#8b5cf6',
+  },
   docButtonText: {
     color: '#fff',
-    fontSize: 11,
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '700',
+    fontSize: 12,
   },
   signatureRow: {
     flexDirection: 'row',
