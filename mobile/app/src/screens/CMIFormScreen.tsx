@@ -22,6 +22,8 @@ import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import SignatureScreen from 'react-native-signature-canvas';
 import { cmiService, CMI } from '../services/cmiService';
+import { useAuth } from '../contexts/AuthContext';
+import { apiService } from '../services/api';
 
 interface Props {
   navigation: any;
@@ -56,10 +58,17 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const firstImpressionId = route.params?.firstImpressionId;
   const isEditMode = !!cmiId;
 
+  // Auth context - para obter nome do agente
+  const { user } = useAuth();
+
   // Estados do CMI
   const [cmi, setCmi] = useState<CMI | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // === AGENTE RESPONSÁVEL ===
+  const [agenteNome, setAgenteNome] = useState('');
+  const [agenteNif, setAgenteNif] = useState('');
 
   // === SECÇÃO 1: CLIENTE ===
   const [clienteNome, setClienteNome] = useState('');
@@ -107,7 +116,22 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     loadData();
+    loadAgentData();
   }, []);
+
+  const loadAgentData = async () => {
+    try {
+      // Carregar dados do agente logado
+      const statsResponse: any = await apiService.get('/mobile/dashboard/stats');
+      if (statsResponse?.agent) {
+        const agent = statsResponse.agent;
+        setAgenteNome(agent.name || '');
+        setAgenteNif(agent.nif || '');
+      }
+    } catch (error) {
+      console.log('Não foi possível carregar dados do agente:', error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -202,6 +226,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         valor_minimo: valorMinimo ? parseFloat(valorMinimo) : undefined,
         comissao_percentagem: comissaoPercentagem ? parseFloat(comissaoPercentagem) : undefined,
         prazo_meses: prazoMeses ? parseInt(prazoMeses) : undefined,
+        agente_nome: agenteNome || undefined,
       });
 
       Alert.alert('Sucesso', 'Contrato guardado com sucesso!');
@@ -643,7 +668,28 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* SECÇÃO 4: ASSINATURAS */}
+        {/* SECÇÃO 4: ANGARIADOR RESPONSÁVEL */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>👤 ANGARIADOR RESPONSÁVEL</Text>
+          <Text style={styles.hint}>Dados preenchidos automaticamente com base no login</Text>
+
+          <View style={styles.agentInfoBox}>
+            <View style={styles.agentInfoRow}>
+              <Ionicons name="person" size={20} color="#00d9ff" />
+              <Text style={styles.agentInfoLabel}>Nome:</Text>
+              <Text style={styles.agentInfoValue}>{agenteNome || 'A carregar...'}</Text>
+            </View>
+            {agenteNif && (
+              <View style={styles.agentInfoRow}>
+                <Ionicons name="document-text" size={20} color="#00d9ff" />
+                <Text style={styles.agentInfoLabel}>NIF:</Text>
+                <Text style={styles.agentInfoValue}>{agenteNif}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* SECÇÃO 5: ASSINATURAS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✍️ ASSINATURAS</Text>
           <Text style={styles.hint}>Toque para assinar diretamente no ecrã</Text>
@@ -1188,5 +1234,31 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // === ESTILOS DO AGENTE ===
+  agentInfoBox: {
+    backgroundColor: '#0a0e1a',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#00d9ff30',
+  },
+  agentInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  agentInfoLabel: {
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '600',
+    width: 50,
+  },
+  agentInfoValue: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

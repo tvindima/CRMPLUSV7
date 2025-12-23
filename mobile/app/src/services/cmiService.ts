@@ -125,6 +125,9 @@ export interface UpdateCMI {
   valor_minimo?: number;
   comissao_percentagem?: number;
   prazo_meses?: number;
+  
+  // Agente responsável
+  agente_nome?: string;
 }
 
 export interface OCRResult {

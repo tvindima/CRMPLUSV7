@@ -181,6 +181,39 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     >
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         
+        {/* SEÇÃO CMI - PROEMINENTE NO TOPO */}
+        <View style={styles.cmiSection}>
+          <View style={styles.cmiSectionHeader}>
+            <Ionicons name="document-text" size={24} color="#8b5cf6" />
+            <Text style={styles.cmiSectionTitle}>📋 Contrato de Mediação (CMI)</Text>
+          </View>
+          <Text style={styles.cmiSectionHint}>
+            Fotografe os documentos do proprietário para preencher automaticamente o CMI
+          </Text>
+          
+          <TouchableOpacity
+            style={styles.cmiMainButton}
+            onPress={() => {
+              if (isEditMode) {
+                navigation.navigate('CMIForm', { firstImpressionId: impressionId });
+              } else {
+                Alert.alert(
+                  'Guardar Primeiro',
+                  'Guarde primeiro o documento de Primeira Impressão antes de criar o CMI.',
+                  [{ text: 'OK' }]
+                );
+              }
+            }}
+          >
+            <Ionicons name="camera" size={22} color="#fff" />
+            <View style={styles.cmiButtonContent}>
+              <Text style={styles.cmiMainButtonText}>Preencher CMI com Fotos</Text>
+              <Text style={styles.cmiMainButtonSubtext}>CC, Caderneta Predial, Certidão...</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
         {/* SEÇÃO CLIENTE */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>👤 Dados do Cliente</Text>
@@ -564,5 +597,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  // Estilos para secção CMI proeminente
+  cmiSection: {
+    backgroundColor: '#1a1025',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#8b5cf6',
+  },
+  cmiSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  cmiSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  cmiSectionHint: {
+    fontSize: 13,
+    color: '#a78bfa',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  cmiMainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#8b5cf6',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  cmiButtonContent: {
+    flex: 1,
+  },
+  cmiMainButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  cmiMainButtonSubtext: {
+    fontSize: 12,
+    color: '#ddd6fe',
+    marginTop: 2,
   },
 });
