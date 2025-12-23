@@ -10,5 +10,6 @@ from app.models.first_impression import FirstImpression  # FirstImpression preci
 from app.models.draft_ingestion import DraftProperty, IngestionFile  # Modelos de ingestion
 from app.models.agent_site_preferences import AgentSitePreferences  # Preferências site agente
 from app.models.pre_angariacao import PreAngariacao  # Pré-angariação / Dossier
+from app.models.contrato_mediacao import ContratoMediacaoImobiliaria  # CMI
 
-__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao"]
+__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao", "ContratoMediacaoImobiliaria"]

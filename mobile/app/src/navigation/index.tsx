@@ -29,6 +29,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import FirstImpressionListScreen from '../screens/FirstImpressionListScreen';
 import FirstImpressionFormScreen from '../screens/FirstImpressionFormScreen';
 import FirstImpressionSignatureScreen from '../screens/FirstImpressionSignatureScreen';
+import CMIFormScreen from '../screens/CMIFormScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   FirstImpressionList: undefined;
   FirstImpressionForm: { impressionId?: number };
   FirstImpressionSignature: { impressionId: number; clientName: string };
+  CMIForm: { cmiId?: number; firstImpressionId?: number };
 };
 
 export type TabParamList = {
@@ -345,6 +347,11 @@ function FirstImpressionStackNavigator() {
         name="FirstImpressionSignature"
         component={FirstImpressionSignatureScreen}
         options={{ title: 'Assinatura' }}
+      />
+      <Stack.Screen
+        name="CMIForm"
+        component={CMIFormScreen}
+        options={{ title: 'Contrato de Mediação (CMI)' }}
       />
     </Stack.Navigator>
   );

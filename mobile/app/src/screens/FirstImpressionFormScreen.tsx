@@ -398,6 +398,17 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           )}
         </TouchableOpacity>
 
+        {/* BOTÃO CMI - Só aparece em modo edição */}
+        {isEditMode && (
+          <TouchableOpacity
+            style={styles.cmiButton}
+            onPress={() => navigation.navigate('CMIForm', { firstImpressionId: impressionId })}
+          >
+            <Ionicons name="document-text" size={20} color="#fff" />
+            <Text style={styles.cmiButtonText}>Criar CMI (Contrato de Mediação)</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -535,6 +546,21 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  cmiButton: {
+    flexDirection: 'row',
+    backgroundColor: '#8b5cf6',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  cmiButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
