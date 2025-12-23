@@ -1,0 +1,3 @@
+# Nixpacks config to ensure ffmpeg is available for video compression
+[phases.setup]
+aptPkgs = ["ffmpeg"]
