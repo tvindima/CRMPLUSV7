@@ -13,6 +13,7 @@ import {
   Switch,
   Modal,
   Alert,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -362,15 +363,23 @@ export default function SettingsScreen() {
           
           <TouchableOpacity 
             style={styles.logoutButton}
-            onPress={() => {
-              Alert.alert(
-                'Terminar Sessão',
-                'Tem a certeza que deseja sair da aplicação?',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Sair', style: 'destructive', onPress: signOut },
-                ]
-              );
+            onPress={async () => {
+              // Na web, Alert.alert não funciona - usar window.confirm
+              if (Platform.OS === 'web') {
+                const confirmed = window.confirm('Tem a certeza que deseja sair da aplicação?');
+                if (confirmed) {
+                  await signOut();
+                }
+              } else {
+                Alert.alert(
+                  'Terminar Sessão',
+                  'Tem a certeza que deseja sair da aplicação?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Sair', style: 'destructive', onPress: signOut },
+                  ]
+                );
+              }
             }}
           >
             <Ionicons name="log-out-outline" size={24} color="#fff" />

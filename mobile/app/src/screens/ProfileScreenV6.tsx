@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -136,15 +137,23 @@ export default function ProfileScreenV6() {
     return null;
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Terminar Sessão',
-      'Tem a certeza que deseja sair?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: signOut },
-      ]
-    );
+  const handleLogout = async () => {
+    // Na web, Alert.alert não funciona - usar window.confirm
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Tem a certeza que deseja sair?');
+      if (confirmed) {
+        await signOut();
+      }
+    } else {
+      Alert.alert(
+        'Terminar Sessão',
+        'Tem a certeza que deseja sair?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Sair', style: 'destructive', onPress: signOut },
+        ]
+      );
+    }
   };
 
   const openEditModal = () => {
