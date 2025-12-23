@@ -279,7 +279,7 @@ app.include_router(health_router)
 app.include_router(heath_router)
 app.include_router(auth_router)
 app.include_router(auth_mobile_router)
-# app.include_router(admin_router)
+app.include_router(admin_router)  # Gestão de utilizadores
 app.include_router(avatars_router)
 app.include_router(dashboard_router)
 app.include_router(admin_migration_router)
