@@ -12,7 +12,7 @@ from app.properties.agent_assignment import (
     AGENT_PREFIX_MAP,
     ORPHAN_PREFIXES
 )
-from app.api.v1.auth import require_staff
+from app.security import require_staff
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
