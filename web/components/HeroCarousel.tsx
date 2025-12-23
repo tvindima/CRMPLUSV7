@@ -16,6 +16,7 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
 
   const currentProperty = properties[currentIndex] || properties[0];
   const heroImage = currentProperty ? getPropertyCover(currentProperty) : getPlaceholderImage("hero");
+  const hasAnyVideo = properties.some((p) => !!p.video_url);
   
   // ✅ Detectar tipo de vídeo (YouTube, Vimeo, ou MP4 direto)
   const getVideoType = (url?: string | null) => {
@@ -53,7 +54,7 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
     return null;
   };
   
-  const videoInfo = getVideoType(currentProperty?.video_url);
+  const videoInfo = hasAnyVideo ? getVideoType(currentProperty?.video_url) : null;
   const hasVideo = videoInfo && !videoError;
 
   // Reset video error when slide changes
