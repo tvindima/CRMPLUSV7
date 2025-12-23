@@ -52,6 +52,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   // Estados UI
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [status, setStatus] = useState<'draft' | 'signed' | 'completed' | 'cancelled'>('draft');
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setPhotos(data.photos || []);
       
       setObservations(data.observations || '');
+      setStatus((data.status as any) || 'draft');
     } catch (error) {
       console.error('Erro ao carregar:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados');
@@ -155,9 +157,11 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       if (isEditMode && impressionId) {
         await firstImpressionService.update(impressionId, payload);
         Alert.alert('Sucesso', 'Documento atualizado com sucesso!');
+        setStatus((prev) => prev); // status permanece
       } else {
         const created = await firstImpressionService.create(payload);
         setImpressionId(created.id);
+        if (created.status) setStatus(created.status as any);
         // Criar pré-angariação ligada a esta 1ª impressão
         try {
           await preAngariacaoService.createFromFirstImpression(created.id);
@@ -194,18 +198,50 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       const payload = buildPayload();
       const created = await firstImpressionService.create(payload);
       setImpressionId(created.id);
+      if (created.status) setStatus(created.status as any);
       try {
         await preAngariacaoService.createFromFirstImpression(created.id);
       } catch (e) {
-        console.warn('Pré-angariação não criada automaticamente:', e);
-      }
-      navigation.navigate('CMIForm', { firstImpressionId: created.id });
-    } catch (error) {
-      console.error('[CMI] ❌ Erro ao criar rascunho:', error);
-      Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
-    } finally {
-      setLoading(false);
+      console.warn('Pré-angariação não criada automaticamente:', e);
     }
+    navigation.navigate('CMIForm', { firstImpressionId: created.id });
+  } catch (error) {
+    console.error('[CMI] ❌ Erro ao criar rascunho:', error);
+    Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleStatusChange = async (nextStatus: 'completed' | 'cancelled') => {
+    if (!impressionId) return;
+    if (status === 'completed' || status === 'cancelled') return;
+
+    const label = nextStatus === 'completed' ? 'concluir' : 'cancelar';
+    Alert.alert(
+      `Confirmar ${label}`,
+      `Tem a certeza que deseja ${label} este documento?`,
+      [
+        { text: 'Não', style: 'cancel' },
+        {
+          text: 'Sim',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await firstImpressionService.update(impressionId, { status: nextStatus });
+              setStatus(nextStatus);
+              Alert.alert('Sucesso', `Documento ${label}do.`);
+            } catch (error: any) {
+              console.error('[Status] ❌ Erro:', error);
+              Alert.alert('Erro', error.message || 'Não foi possível atualizar o status');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loadingData) {
@@ -246,6 +282,21 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#fff" />
           </TouchableOpacity>
+
+          {/* Assinatura direta */}
+          {impressionId && (
+            <TouchableOpacity
+              style={[styles.cmiMainButton, { marginTop: 10, backgroundColor: '#111827', borderColor: '#00d9ff', borderWidth: 1 }]}
+              onPress={() => navigation.navigate('FirstImpressionSignature' as never, { impressionId, clientName } as never)}
+            >
+              <Ionicons name="create-outline" size={20} color="#00d9ff" />
+              <View style={styles.cmiButtonContent}>
+                <Text style={[styles.cmiMainButtonText, { color: '#00d9ff' }]}>Assinar documento</Text>
+                <Text style={[styles.cmiMainButtonSubtext, { color: '#9ca3af' }]}>Assinatura digital do cliente</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#00d9ff" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* SEÇÃO CLIENTE */}
@@ -476,6 +527,39 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
+        {/* AÇÕES DE STATUS */}
+        {impressionId && (
+          <View style={styles.statusActions}>
+            <TouchableOpacity
+              style={[
+                styles.statusButton,
+                { backgroundColor: '#10b981' },
+                (status === 'completed' || status === 'cancelled') && styles.statusButtonDisabled,
+              ]}
+              disabled={status === 'completed' || status === 'cancelled'}
+              onPress={() => handleStatusChange('completed')}
+            >
+              <Ionicons name="checkmark-circle" size={18} color="#fff" />
+              <Text style={styles.statusButtonText}>Marcar como Concluído</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.statusButton,
+                { backgroundColor: '#ef4444' },
+                (status === 'completed' || status === 'cancelled') && styles.statusButtonDisabled,
+              ]}
+              disabled={status === 'completed' || status === 'cancelled'}
+              onPress={() => handleStatusChange('cancelled')}
+            >
+              <Ionicons name="close-circle" size={18} color="#fff" />
+              <Text style={styles.statusButtonText}>Cancelar documento</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.statusLabel}>Status atual: {status}</Text>
+          </View>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -616,6 +700,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  statusActions: {
+    marginTop: 12,
+    gap: 8,
+  },
+  statusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+  },
+  statusButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  statusButtonDisabled: {
+    opacity: 0.5,
+  },
+  statusLabel: {
+    color: '#9ca3af',
+    fontSize: 13,
+    marginTop: 4,
   },
   cmiButton: {
     flexDirection: 'row',
