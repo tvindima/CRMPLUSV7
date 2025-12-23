@@ -99,8 +99,8 @@ else:
     ALLOWED_ORIGINS = DEFAULT_ALLOWED_ORIGINS
     ALLOW_CREDENTIALS = True
 
-# Regex para aceitar todos deployments Vercel (previews + produção)
-ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+# Regex para aceitar todos deployments Vercel (previews + produção) ou override via env
+ALLOW_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
 
 app.add_middleware(
     CORSMiddleware,
