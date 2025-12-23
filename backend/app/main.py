@@ -24,7 +24,7 @@ from app.api.health_db import router as health_db_router
 from app.api.v1.health import router as health_router, heath_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.auth_mobile import router as auth_mobile_router
-# from app.api.admin import router as admin_router
+from app.api.admin import router as admin_router
 from app.api.avatars import router as avatars_router
 from app.api.dashboard import router as dashboard_router
 from app.api.admin_migration import router as admin_migration_router
