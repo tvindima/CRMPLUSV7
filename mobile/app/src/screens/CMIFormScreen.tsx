@@ -143,11 +143,23 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         setCmi(data);
         populateFields(data);
       } else if (firstImpressionId) {
-        // Criar novo CMI a partir da 1ª Impressão
-        const data = await cmiService.createFromFirstImpression(firstImpressionId);
-        setCmi(data);
-        populateFields(data);
-        Alert.alert('CMI Criado', `Contrato ${data.numero_contrato} criado com sucesso!`);
+        try {
+          // Tentar criar novo CMI a partir da 1ª Impressão
+          const data = await cmiService.createFromFirstImpression(firstImpressionId);
+          setCmi(data);
+          populateFields(data);
+          Alert.alert('CMI Criado', `Contrato ${data.numero_contrato} criado com sucesso!`);
+        } catch (error: any) {
+          // Se já existir, buscar e abrir o existente
+          if (error?.detail && typeof error.detail === 'string' && error.detail.includes('Já existe CMI')) {
+            const existing = await cmiService.getByFirstImpression(firstImpressionId);
+            setCmi(existing);
+            populateFields(existing);
+            Alert.alert('CMI existente', `Abrindo ${existing.numero_contrato} já criado para esta 1ª impressão.`);
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error: any) {
       console.error('Erro ao carregar CMI:', error);

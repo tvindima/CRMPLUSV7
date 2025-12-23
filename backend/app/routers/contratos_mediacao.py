@@ -335,6 +335,27 @@ def cancelar_cmi(
     return {"message": "CMI cancelado", "numero": item.numero_contrato}
 
 
+@router.get("/by-first-impression/{first_impression_id}", response_model=schemas.CMIResponse)
+def obter_por_first_impression(
+    first_impression_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obter CMI associado a uma 1ª Impressão (se existir)"""
+    if not current_user.agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    item = db.query(ContratoMediacaoImobiliaria).filter(
+        ContratoMediacaoImobiliaria.first_impression_id == first_impression_id,
+        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+    ).first()
+    
+    if not item:
+        raise HTTPException(status_code=404, detail="CMI não encontrado para esta 1ª Impressão")
+    
+    return item
+
+
 # =====================================================
 # Assinaturas
 # =====================================================

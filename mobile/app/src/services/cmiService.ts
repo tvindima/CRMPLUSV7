@@ -162,6 +162,10 @@ class CMIService {
       first_impression_id: firstImpressionId
     });
   }
+
+  async getByFirstImpression(firstImpressionId: number): Promise<CMI> {
+    return apiService.get<CMI>(`/cmi/by-first-impression/${firstImpressionId}`);
+  }
   
   /**
    * Atualizar CMI
