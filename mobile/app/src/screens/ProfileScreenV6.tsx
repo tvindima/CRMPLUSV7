@@ -31,6 +31,7 @@ interface AgentProfile {
   email: string;
   phone?: string;
   photo?: string;
+  avatar_url?: string;
   bio?: string;
   instagram?: string;
   facebook?: string;
@@ -141,7 +142,7 @@ export default function ProfileScreenV6() {
   };
 
   const getAvatarUrl = () => {
-    const candidate = agentProfile?.photo || (user as any)?.avatar_url;
+    const candidate = agentProfile?.photo || agentProfile?.avatar_url || (user as any)?.avatar_url;
     if (!candidate) return null;
     
     // Se vier relativo (ex.: /media/avatars/...), servir pelo domínio público/web
