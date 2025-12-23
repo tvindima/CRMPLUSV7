@@ -13,6 +13,8 @@ class AgentBase(BaseModel):
     instagram: Optional[str] = None
     facebook: Optional[str] = None
     linkedin: Optional[str] = None
+    twitter: Optional[str] = None  # X.com
+    tiktok: Optional[str] = None
     whatsapp: Optional[str] = None
 
 
@@ -33,6 +35,8 @@ class AgentUpdate(BaseModel):
     instagram: Optional[str] = None
     facebook: Optional[str] = None
     linkedin: Optional[str] = None
+    twitter: Optional[str] = None
+    tiktok: Optional[str] = None
     whatsapp: Optional[str] = None
     team_id: Optional[int] = None
     agency_id: Optional[int] = None

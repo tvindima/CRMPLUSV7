@@ -64,6 +64,8 @@ export type Agent = {
   instagram?: string | null;
   facebook?: string | null;
   linkedin?: string | null;
+  twitter?: string | null;  // X.com
+  tiktok?: string | null;
   whatsapp?: string | null;
 };
 

@@ -26,6 +26,10 @@ def enrich_agent_with_preferences(db: Session, agent: Agent) -> Agent:
             agent.facebook = prefs.facebook
         if prefs.linkedin:
             agent.linkedin = prefs.linkedin
+        if prefs.twitter:
+            agent.twitter = prefs.twitter
+        if prefs.tiktok:
+            agent.tiktok = prefs.tiktok
         if prefs.whatsapp:
             agent.whatsapp = prefs.whatsapp
     
