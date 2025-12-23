@@ -182,6 +182,9 @@ export default async function AgentPage({ params }: Props) {
   // Build team members list: only staff directly supporting this agent (or generic staff if no specific support)
   const teamMembers = [
     // Staff members that support this specific agent or general staff
+  const supportAssistant = allStaffMembers.find((staff) => staff.supportFor === agent.name && staff.phone);
+  const phoneToCall = supportAssistant?.phone || agent.phone;
+
     ...allStaffMembers
       .filter(staff => {
         // Include if staff supports this specific agent
@@ -353,10 +356,10 @@ export default async function AgentPage({ params }: Props) {
               <div className="mt-2 flex flex-wrap gap-2 text-xs sm:text-sm">
                 {agent.phone && (
                   <a
-                    href={`tel:${agent.phone.replace(/\s/g, "")}`}
+                    href={`tel:${(phoneToCall || '').replace(/\s/g, '')}`}
                     className="text-xs font-semibold text-[#E10600] hover:underline"
                   >
-                    {agent.phone}
+                    {phoneToCall || agent.phone}
                   </a>
                 )}
                 <span className="text-[#2A2A2E]">•</span>
@@ -394,7 +397,7 @@ export default async function AgentPage({ params }: Props) {
                 )}
                 {agent.phone && (
                   <a
-                    href={`tel:${agent.phone.replace(/\s/g, "")}`}
+                    href={`tel:${(phoneToCall || '').replace(/\s/g, '')}`}
                     className="inline-flex items-center gap-2 rounded-lg border border-[#E10600] px-3 py-2 text-xs font-semibold text-[#E10600] transition hover:bg-[#E10600]/10"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
