@@ -18,7 +18,8 @@ import { PhotoPicker } from '../components/PhotoPicker';
 import { preAngariacaoService } from '../services/preAngariacaoService';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
-  const impressionId = route.params?.impressionId;
+  const initialId = route.params?.impressionId ?? null;
+  const [impressionId, setImpressionId] = useState<number | null>(initialId);
   const isEditMode = !!impressionId;
 
   // Estados Cliente
@@ -54,17 +55,17 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
-    if (isEditMode) {
-      loadImpressionData();
+    if (isEditMode && impressionId) {
+      loadImpressionData(impressionId);
     } else {
       getCurrentLocation();
     }
-  }, []);
+  }, [impressionId]);
 
-  const loadImpressionData = async () => {
+  const loadImpressionData = async (id: number) => {
     try {
       setLoadingData(true);
-      const data = await firstImpressionService.getById(impressionId);
+      const data = await firstImpressionService.getById(id);
 
       setClientName(data.client_name || '');
       setClientPhone(data.client_phone || '');
@@ -122,6 +123,24 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     }
   };
 
+  const buildPayload = () => ({
+    client_name: clientName,
+    client_phone: clientPhone || null,
+    client_email: clientEmail || null,
+    referred_by: referredBy || null,
+    artigo_matricial: artigoMatricial || null,
+    tipologia: tipologia || null,
+    area_bruta: areaBruta ? parseFloat(areaBruta) : null,
+    area_util: areaUtil ? parseFloat(areaUtil) : null,
+    estado_conservacao: estadoConservacao || null,
+    valor_estimado: valorEstimado ? parseFloat(valorEstimado) : null,
+    location: location || null,
+    latitude: latitude,
+    longitude: longitude,
+    photos: photos.length > 0 ? photos : null,
+    observations: observations || null,
+  });
+
   const handleSubmit = async () => {
     if (!clientName.trim()) {
       Alert.alert('Erro', 'Nome do cliente é obrigatório');
@@ -131,29 +150,14 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      const payload = {
-        client_name: clientName,
-        client_phone: clientPhone || null,
-        client_email: clientEmail || null,
-        referred_by: referredBy || null,
-        artigo_matricial: artigoMatricial || null,
-        tipologia: tipologia || null,
-        area_bruta: areaBruta ? parseFloat(areaBruta) : null,
-        area_util: areaUtil ? parseFloat(areaUtil) : null,
-        estado_conservacao: estadoConservacao || null,
-        valor_estimado: valorEstimado ? parseFloat(valorEstimado) : null,
-        location: location || null,
-        latitude: latitude,
-        longitude: longitude,
-        photos: photos.length > 0 ? photos : null,
-        observations: observations || null,
-      };
+      const payload = buildPayload();
 
-      if (isEditMode) {
+      if (isEditMode && impressionId) {
         await firstImpressionService.update(impressionId, payload);
         Alert.alert('Sucesso', 'Documento atualizado com sucesso!');
       } else {
         const created = await firstImpressionService.create(payload);
+        setImpressionId(created.id);
         // Criar pré-angariação ligada a esta 1ª impressão
         try {
           await preAngariacaoService.createFromFirstImpression(created.id);
@@ -167,6 +171,38 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     } catch (error) {
       console.error('[Form] ❌ Erro:', error);
       Alert.alert('Erro', error.message || 'Erro ao salvar documento');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ensureCMI = async () => {
+    if (!clientName.trim()) {
+      Alert.alert('Preencha primeiro', 'Introduza pelo menos o nome do cliente para criar o CMI.');
+      return;
+    }
+
+    // Já existe? Navega de imediato
+    if (impressionId) {
+      navigation.navigate('CMIForm', { firstImpressionId: impressionId });
+      return;
+    }
+
+    // Criar rascunho rápido e ir para CMI
+    setLoading(true);
+    try {
+      const payload = buildPayload();
+      const created = await firstImpressionService.create(payload);
+      setImpressionId(created.id);
+      try {
+        await preAngariacaoService.createFromFirstImpression(created.id);
+      } catch (e) {
+        console.warn('Pré-angariação não criada automaticamente:', e);
+      }
+      navigation.navigate('CMIForm', { firstImpressionId: created.id });
+    } catch (error) {
+      console.error('[CMI] ❌ Erro ao criar rascunho:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
     } finally {
       setLoading(false);
     }
@@ -199,18 +235,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           </Text>
           
           <TouchableOpacity
-            style={styles.cmiMainButton}
-            onPress={() => {
-              if (isEditMode) {
-                navigation.navigate('CMIForm', { firstImpressionId: impressionId });
-              } else {
-                Alert.alert(
-                  'Guardar Primeiro',
-                  'Guarde primeiro o documento de Primeira Impressão antes de criar o CMI.',
-                  [{ text: 'OK' }]
-                );
-              }
-            }}
+            style={[styles.cmiMainButton, loading && { opacity: 0.6 }]}
+            onPress={ensureCMI}
+            disabled={loading}
           >
             <Ionicons name="camera" size={22} color="#fff" />
             <View style={styles.cmiButtonContent}>
