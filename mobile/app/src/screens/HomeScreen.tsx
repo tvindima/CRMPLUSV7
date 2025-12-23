@@ -5,8 +5,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, Image } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useAgent } from '../contexts/AgentContext';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../constants/theme';
 import { visitsService, type UpcomingVisit } from '../services/visits';
 import { apiService } from '../services/api';
@@ -20,6 +21,7 @@ interface DashboardStats {
 
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
+  const { agentProfile, loadAgentData } = useAgent();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     properties: 0,
@@ -64,6 +66,7 @@ export default function HomeScreen({ navigation }: any) {
       await Promise.all([
         loadStats(),
         loadUpcomingVisits(),
+        loadAgentData(),
       ]);
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
@@ -74,7 +77,20 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const getAvatarUrl = () => {
+    const avatarCandidate = agentProfile?.photo || agentProfile?.avatar_url || user?.avatar_url;
+    if (!avatarCandidate) return null;
+    if (avatarCandidate.startsWith('/')) {
+      // Avatar servido via web público (mesma lógica do ProfileScreenV3)
+      return `https://web-nymbcws7r-toinos-projects.vercel.app${avatarCandidate}`;
+    }
+    return avatarCandidate;
+  };
+
+  const avatarUrl = getAvatarUrl();
 
   const StatCard = ({ 
     label, 
@@ -149,9 +165,13 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.userName}>{user?.name || 'Agente'}!</Text>
         </View>
         <TouchableOpacity style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.name?.charAt(0).toUpperCase() || 'A'}
-          </Text>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>
+              {user?.name?.charAt(0).toUpperCase() || 'A'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -271,6 +291,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   avatarText: {
     fontSize: Typography.sizes.lg,

@@ -14,6 +14,19 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_BASE_URL: apiUrl,
   },
+  async rewrites() {
+    return [
+      // Servir placeholders/renders estáticos a partir do site público (evita 404 no backoffice)
+      {
+        source: '/placeholders/:path*',
+        destination: 'https://web-nymbcws7r-toinos-projects.vercel.app/placeholders/:path*',
+      },
+      {
+        source: '/renders/:path*',
+        destination: 'https://web-nymbcws7r-toinos-projects.vercel.app/renders/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

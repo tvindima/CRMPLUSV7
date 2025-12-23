@@ -192,13 +192,20 @@ export default function HomeScreenV5({ navigation }: any) {
   };
 
   const getAvatarUrl = () => {
-    if (agentProfile?.photo) {
-      if (agentProfile.photo.startsWith('http')) {
-        return agentProfile.photo;
-      }
-      return `https://crmplusv7-production.up.railway.app${agentProfile.photo}`;
+    const candidate = agentProfile?.photo || agentProfile?.avatar_url || user?.avatar_url;
+    if (!candidate) return null;
+
+    // Se vier relativo, construir URL absoluto (web serve avatares públicos)
+    if (candidate.startsWith('/')) {
+      return `https://web-nymbcws7r-toinos-projects.vercel.app${candidate}`;
     }
-    return null;
+
+    if (candidate.startsWith('http')) {
+      return candidate;
+    }
+
+    // Fallback: servir do backend (ex.: /media/uploads/avatar.jpg)
+    return `https://crmplusv7-production.up.railway.app${candidate}`;
   };
 
   const handleShortcutPress = (shortcut: Shortcut) => {

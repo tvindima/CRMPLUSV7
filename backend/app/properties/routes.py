@@ -416,15 +416,6 @@ async def upload_property_video(
             detail=f"Tipo de vídeo não suportado. Use: MP4, WebM ou MOV"
         )
 
-    # Validar tamanho antes da compressão (100MB max para upload)
-    MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB
-    content = await file.read()
-    if len(content) > MAX_VIDEO_SIZE:
-        raise HTTPException(
-            status_code=413, 
-            detail=f"Vídeo muito grande. Máximo: {MAX_VIDEO_SIZE // (1024*1024)}MB"
-        )
-
     # Criar pasta para vídeos
     video_root = os.path.join("media", "videos")
     os.makedirs(video_root, exist_ok=True)
@@ -439,11 +430,15 @@ async def upload_property_video(
     optimized_path = os.path.join(video_root, optimized_filename)
 
     try:
-        # 1. Salvar vídeo original temporariamente
+        # 1. Salvar vídeo original temporariamente (streaming para não estourar memória)
         with open(temp_path, "wb") as buffer:
-            buffer.write(content)
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB por chunk
+                if not chunk:
+                    break
+                buffer.write(chunk)
         
-        original_size_mb = len(content) / (1024 * 1024)
+        original_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
         
         # 2. Tentar comprimir com FFmpeg
         success, message, final_size_mb = optimize_video(temp_path, optimized_path)
@@ -454,19 +449,11 @@ async def upload_property_video(
             video_url = f"/media/videos/{optimized_filename}"
             final_message = f"✅ Vídeo otimizado com sucesso! {message}"
         else:
-            # FFmpeg falhou - verificar se arquivo é aceitável sem compressão
-            if original_size_mb <= 20:  # Se for ≤20MB, aceitar original
-                os.rename(temp_path, optimized_path)
-                video_url = f"/media/videos/{optimized_filename}"
-                final_size_mb = original_size_mb
-                final_message = f"⚠️ Vídeo salvo sem compressão ({message}). Tamanho: {original_size_mb:.1f}MB"
-            else:
-                # Arquivo muito grande e FFmpeg falhou
-                os.remove(temp_path)
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Vídeo muito grande ({original_size_mb:.1f}MB) e compressão falhou: {message}. Tente comprimir manualmente antes de enviar."
-                )
+            # FFmpeg falhou - manter original para não bloquear (com aviso)
+            os.rename(temp_path, optimized_path)
+            video_url = f"/media/videos/{optimized_filename}"
+            final_size_mb = original_size_mb
+            final_message = f"⚠️ Compressão falhou, vídeo original mantido ({original_size_mb:.1f}MB). Detalhe: {message}"
         
         # 3. Atualizar propriedade com video_url
         services.update_property(
