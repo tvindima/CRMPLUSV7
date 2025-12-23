@@ -67,12 +67,39 @@ export async function getBackofficeProperties(params?: {
 export type PreAngariacaoListItem = {
   id: number;
   referencia_interna?: string | null;
+  agent_id: number;
+  agent_name?: string | null;
   proprietario_nome: string;
   morada?: string | null;
   status: string;
   progresso: number;
   created_at: string;
-  agent_id?: number;
+};
+
+export type PreAngariacaoDetail = {
+  id: number;
+  referencia_interna?: string | null;
+  agent_id: number;
+  agent_name?: string | null;
+  first_impression_id?: number | null;
+  property_id?: number | null;
+  proprietario_nome: string;
+  proprietario_nif?: string | null;
+  proprietario_telefone?: string | null;
+  proprietario_email?: string | null;
+  morada?: string | null;
+  freguesia?: string | null;
+  concelho?: string | null;
+  distrito?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  status: string;
+  progresso: number;
+  documentos: { type: string; name: string; url: string; uploaded_at?: string | null }[];
+  fotos: { url: string; caption?: string | null; room_type?: string | null }[];
+  checklist: { id: string; title: string; completed: boolean; completed_at?: string | null }[];
+  created_at: string;
+  updated_at: string;
 };
 
 export async function getPreAngariacoes(params?: {
@@ -90,6 +117,10 @@ export async function getPreAngariacoes(params?: {
   const url = qs ? `/pre-angariacoes/?${qs}` : '/pre-angariacoes/';
   // Usar proxy para enviar cookies de sessão admin
   return request(url, undefined, true);
+}
+
+export async function getPreAngariacao(id: number): Promise<PreAngariacaoDetail> {
+  return request(`/pre-angariacoes/${id}`, undefined, true);
 }
 
 export async function getBackofficeProperty(id: number): Promise<BackofficeProperty> {

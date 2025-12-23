@@ -3,7 +3,7 @@ Routes API para Pré-Angariação
 CRUD completo + gestão de documentos, fotos e checklist
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func
 from typing import List, Optional
 from datetime import datetime
@@ -45,7 +45,7 @@ def listar_pre_angariacoes(
     if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    query = db.query(PreAngariacao)
+    query = db.query(PreAngariacao).options(joinedload(PreAngariacao.agent))
 
     if not is_admin:
         query = query.filter(PreAngariacao.agent_id == current_user.agent_id)
@@ -106,7 +106,7 @@ def obter_pre_angariacao(
     if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    item_query = db.query(PreAngariacao).filter(PreAngariacao.id == pre_angariacao_id)
+    item_query = db.query(PreAngariacao).options(joinedload(PreAngariacao.agent)).filter(PreAngariacao.id == pre_angariacao_id)
     if not is_admin:
         item_query = item_query.filter(PreAngariacao.agent_id == current_user.agent_id)
     item = item_query.first()

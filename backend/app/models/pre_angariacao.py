@@ -130,6 +130,11 @@ class PreAngariacao(Base):
     first_impression = relationship("FirstImpression", backref="pre_angariacao", uselist=False)
     property = relationship("Property", backref="pre_angariacao", uselist=False)
     
+    @property
+    def agent_name(self):
+        """Nome do agente associado (evita joins extras no frontend)."""
+        return self.agent.name if self.agent else None
+    
     def __repr__(self):
         return f"<PreAngariacao(id={self.id}, ref={self.referencia_interna}, status={self.status})>"
     

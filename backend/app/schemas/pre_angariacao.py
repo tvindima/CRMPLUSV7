@@ -132,6 +132,7 @@ class PreAngariacaoResponse(PreAngariacaoBase):
     """Schema de resposta da Pré-Angariação"""
     id: int
     agent_id: int
+    agent_name: Optional[str] = None
     first_impression_id: Optional[int] = None
     property_id: Optional[int] = None
     referencia_interna: Optional[str] = None
@@ -159,6 +160,8 @@ class PreAngariacaoListItem(BaseModel):
     """Schema simplificado para listagem"""
     id: int
     referencia_interna: Optional[str] = None
+    agent_id: int
+    agent_name: Optional[str] = None
     proprietario_nome: str
     morada: Optional[str] = None
     tipologia: Optional[str] = None
