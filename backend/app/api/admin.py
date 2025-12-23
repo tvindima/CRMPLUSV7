@@ -739,3 +739,59 @@ def create_user(
         "message": f"Utilizador criado com sucesso",
         "user": {"id": new_id, "email": email, "name": name, "role": role}
     }
+
+# ============ BOOTSTRAP (TEMPORÁRIO) ============
+# NOTA: Este endpoint deve ser removido após configuração inicial
+
+@router.post("/bootstrap/setup-admins")
+def bootstrap_setup_admins(
+    secret_key: str,
+    db: Session = Depends(get_db)
+):
+    """
+    ⚠️ ENDPOINT TEMPORÁRIO para configuração inicial.
+    Requer SECRET_KEY para funcionar.
+    """
+    import os
+    expected_key = os.getenv("SECRET_KEY", "")
+    
+    if secret_key != expected_key:
+        raise HTTPException(status_code=403, detail="Chave inválida")
+    
+    # Lista de emails para tornar admin
+    admin_emails = [
+        "tvindima@imoveismais.pt",
+        "jcarvalho@imoveismais.pt",
+        "msoares@imoveismais.pt",
+        "prodrigues@imoveismais.pt",
+        "hmota@imoveismais.pt",
+        "leiria@imoveismais.pt",
+        "faturacao@imoveismais.pt"
+    ]
+    
+    results = []
+    
+    # Primeiro listar todos os existentes
+    all_users = db.execute(text("SELECT id, email, name, role FROM agents")).fetchall()
+    existing_emails = {row[1]: row for row in all_users}
+    
+    for email in admin_emails:
+        if email in existing_emails:
+            user = existing_emails[email]
+            if user[3] != "admin":
+                db.execute(
+                    text("UPDATE agents SET role = 'admin' WHERE email = :email"),
+                    {"email": email}
+                )
+                results.append({"email": email, "status": "updated_to_admin", "was": user[3]})
+            else:
+                results.append({"email": email, "status": "already_admin"})
+        else:
+            results.append({"email": email, "status": "not_found"})
+    
+    db.commit()
+    
+    return {
+        "all_users": [{"id": u[0], "email": u[1], "name": u[2], "role": u[3]} for u in all_users],
+        "admin_updates": results
+    }
