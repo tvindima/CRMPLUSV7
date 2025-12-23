@@ -129,16 +129,16 @@ function SpotlightCardVertical({ property }: { property: Property }) {
 // ✅ DEFINIÇÃO DE EQUIPAS - partilha de carteira de imóveis
 const TEAMS = {
   "Pedro Olaio": {
-    teamLeader: 40, // Pedro Olaio
-    members: [40, 41, 39], // Pedro Olaio, João Olaio, Nuno Faria
+    teamLeader: 2, // IDs reais do backend
+    members: [2, 3, 1], // Pedro Olaio, João Olaio, Nuno Faria
   },
   "João Olaio": {
-    teamLeader: 40, // Pedro Olaio (chefe)
-    members: [40, 41, 39], // Mesma equipa
+    teamLeader: 2, // Pedro Olaio (chefe)
+    members: [2, 3, 1], // Mesma equipa
   },
   "Nuno Faria": {
-    teamLeader: 40, // Pedro Olaio (chefe)
-    members: [40, 41, 39], // Mesma equipa
+    teamLeader: 2, // Pedro Olaio (chefe)
+    members: [2, 3, 1], // Mesma equipa
   },
 };
 
