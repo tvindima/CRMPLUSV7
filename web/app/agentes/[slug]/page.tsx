@@ -306,7 +306,7 @@ export default async function AgentPage({ params }: Props) {
     <div className="min-h-screen bg-[#050506] text-white">
       {/* Agent Header Banner */}
       <div className="relative border-b border-[#111113] bg-gradient-to-br from-[#E10600]/10 via-[#0B0B0D] to-[#050506]">
-        <div className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mx-auto max-w-6xl px-6 py-6 sm:py-8">
           <Link
             href="/agentes"
             className="mb-4 inline-flex items-center gap-2 text-sm text-[#C5C5C5] transition hover:text-white"
@@ -317,8 +317,8 @@ export default async function AgentPage({ params }: Props) {
             Voltar à equipa
           </Link>
 
-          <div className="flex flex-row flex-wrap items-start gap-6">
-            <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-[#E10600]/30">
+          <div className="flex flex-row flex-wrap items-start gap-4 sm:gap-6">
+            <div className="relative h-16 w-16 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-[#E10600]/30">
               <Image
                 src={optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeSlug(agent.name)}.png`}
                 alt={agent.name}
