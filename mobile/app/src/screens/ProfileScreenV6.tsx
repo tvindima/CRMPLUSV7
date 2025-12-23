@@ -141,13 +141,14 @@ export default function ProfileScreenV6() {
   };
 
   const getAvatarUrl = () => {
-    if (agentProfile?.photo) {
-      if (agentProfile.photo.startsWith('http')) {
-        return agentProfile.photo;
-      }
-      return `https://crmplusv7-production.up.railway.app${agentProfile.photo}`;
+    const candidate = agentProfile?.photo || (user as any)?.avatar_url;
+    if (!candidate) return null;
+    
+    // Se vier relativo (ex.: /media/avatars/...), servir pelo domínio público/web
+    if (candidate.startsWith('/')) {
+      return `https://web-nymbcws7r-toinos-projects.vercel.app${candidate}`;
     }
-    return null;
+    return candidate;
   };
 
   // =====================================================
@@ -237,15 +238,15 @@ export default function ProfileScreenV6() {
         type,
       } as any);
 
-      // Upload via endpoint de avatar do agente
-      const response = await apiService.uploadFile<{ photo_url: string }>(
-        `/agents/${agentProfile.id}/avatar`,
+      // Upload via endpoint de foto do agente (shared com backoffice)
+      const response = await apiService.uploadFile<{ photo: string }>(
+        `/agents/${agentProfile.id}/upload-photo`,
         formData
       );
 
-      if (response?.photo_url) {
+      if (response?.photo) {
         // Atualizar estado local
-        setAgentProfile(prev => prev ? { ...prev, photo: response.photo_url } : null);
+        setAgentProfile(prev => prev ? { ...prev, photo: response.photo } : null);
         Alert.alert('Sucesso! 🎉', 'Foto de perfil atualizada com sucesso!');
       }
     } catch (error: any) {
