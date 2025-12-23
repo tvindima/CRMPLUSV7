@@ -258,6 +258,64 @@ def criar_de_first_impression(
         # Data visita
         data_primeira_visita=fi.created_at
     )
+
+    # Copiar anexos da 1ª impressão como documentos iniciais
+    documentos_iniciais = []
+    for att in fi.attachments or []:
+        url = att.get('url')
+        if not url:
+            continue
+        documentos_iniciais.append({
+            "type": att.get('type') or "outro",
+            "name": att.get('name') or att.get('filename') or "Anexo",
+            "url": url,
+            "uploaded_at": (fi.created_at or datetime.now()).isoformat(),
+            "status": "uploaded",
+            "notes": att.get('notes')
+        })
+    if documentos_iniciais:
+        pre_ang.documentos = documentos_iniciais
+
+    # Copiar fotos da 1ª impressão
+    fotos_iniciais = []
+    for idx, foto in enumerate(fi.photos or []):
+        url = foto if isinstance(foto, str) else foto.get('url')
+        if not url:
+            continue
+        fotos_iniciais.append({
+            "url": url,
+            "caption": None if isinstance(foto, str) else foto.get('caption'),
+            "room_type": None,
+            "order": idx,
+            "uploaded_at": (fi.created_at or datetime.now()).isoformat()
+        })
+    if fotos_iniciais:
+        pre_ang.fotos = fotos_iniciais
+
+    # Marcar checklist com base nos docs/fotos copiados
+    checklist_map = {
+        "caderneta_predial": "caderneta",
+        "certidao_permanente": "certidao",
+        "licenca_utilizacao": "licenca",
+        "certificado_energetico": "certificado_energetico",
+        "contrato_mediacao": "contrato",
+        "documentos_proprietario": "docs_proprietario"
+    }
+    if documentos_iniciais:
+        for doc in documentos_iniciais:
+            if doc["type"] in checklist_map:
+                checklist_id = checklist_map[doc["type"]]
+                for item in pre_ang.checklist or []:
+                    if item["id"] == checklist_id and not item.get("completed"):
+                        item["completed"] = True
+                        item["completed_at"] = datetime.now().isoformat()
+                        break
+    if fotos_iniciais and len(fotos_iniciais) >= 5:
+        for item in pre_ang.checklist or []:
+            if item["id"] == "fotos" and not item.get("completed"):
+                item["completed"] = True
+                item["completed_at"] = datetime.now().isoformat()
+                break
     
     pre_ang.atualizar_status()
     
