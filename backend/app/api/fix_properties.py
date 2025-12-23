@@ -342,3 +342,61 @@ async def fix_avatars(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/duplicate-agents")
+def delete_duplicate_agents(db: Session = Depends(get_db)):
+    """
+    Remove agentes duplicados (IDs > 19).
+    Os agentes válidos são IDs 1-19.
+    Agentes com IDs >= 20 são duplicados criados por erro.
+    """
+    try:
+        # Primeiro verificar quais vão ser apagados
+        result = db.execute(text("""
+            SELECT id, name, email FROM agents WHERE id > 19 ORDER BY id
+        """))
+        to_delete = [{"id": r[0], "name": r[1], "email": r[2]} for r in result.fetchall()]
+        
+        if not to_delete:
+            return {
+                "success": True,
+                "message": "Não há agentes duplicados para eliminar",
+                "deleted_count": 0
+            }
+        
+        # Verificar se alguma propriedade referencia estes agentes
+        result = db.execute(text("""
+            SELECT COUNT(*) FROM properties WHERE agent_id > 19
+        """))
+        props_with_invalid_agent = result.scalar()
+        
+        if props_with_invalid_agent > 0:
+            # Reassignar propriedades ao agente 19 (coordenador)
+            db.execute(text("""
+                UPDATE properties SET agent_id = 19 WHERE agent_id > 19
+            """))
+        
+        # Eliminar users associados aos agentes duplicados
+        db.execute(text("""
+            DELETE FROM users WHERE agent_id > 19
+        """))
+        
+        # Eliminar os agentes duplicados
+        result = db.execute(text("""
+            DELETE FROM agents WHERE id > 19 RETURNING id, name
+        """))
+        deleted = result.fetchall()
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "deleted_count": len(deleted),
+            "deleted_agents": to_delete,
+            "properties_reassigned": props_with_invalid_agent
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
