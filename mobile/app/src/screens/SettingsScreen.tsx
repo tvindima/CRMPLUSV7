@@ -12,11 +12,13 @@ import {
   TouchableOpacity,
   Switch,
   Modal,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AppTheme {
   id: string;
@@ -86,6 +88,7 @@ const SETTINGS_STORAGE_KEY = '@crm_plus_settings';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
+  const { signOut } = useAuth();
   
   // Notifications
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -350,6 +353,28 @@ export default function SettingsScreen() {
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#6b7280" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Logout Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Sessão</Text>
+          
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => {
+              Alert.alert(
+                'Terminar Sessão',
+                'Tem a certeza que deseja sair da aplicação?',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Sair', style: 'destructive', onPress: signOut },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#fff" />
+            <Text style={styles.logoutText}>Terminar Sessão</Text>
           </TouchableOpacity>
         </View>
 
@@ -664,5 +689,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

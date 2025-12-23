@@ -646,42 +646,67 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         {/* SECÇÃO 4: ASSINATURAS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✍️ ASSINATURAS</Text>
+          <Text style={styles.hint}>Toque para assinar diretamente no ecrã</Text>
 
           <View style={styles.signatureRow}>
             <View style={styles.signatureBox}>
-              <Text style={styles.signatureLabel}>Cliente</Text>
+              <Text style={styles.signatureLabel}>Proprietário / Cliente</Text>
               {assinaturaCliente ? (
-                <Image
-                  source={{ uri: assinaturaCliente }}
-                  style={styles.signatureImage}
-                  resizeMode="contain"
-                />
+                <View style={styles.signatureWithImage}>
+                  <Image
+                    source={{ uri: assinaturaCliente }}
+                    style={styles.signatureImage}
+                    resizeMode="contain"
+                  />
+                  <TouchableOpacity
+                    style={styles.resignButton}
+                    onPress={() => {
+                      setAssinaturaCliente(null);
+                      openSignatureModal('cliente');
+                    }}
+                  >
+                    <Ionicons name="refresh" size={16} color="#fff" />
+                    <Text style={styles.resignText}>Reassinar</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <TouchableOpacity
                   style={styles.signatureButton}
                   onPress={() => openSignatureModal('cliente')}
                 >
-                  <Ionicons name="create" size={32} color="#00d9ff" />
-                  <Text style={styles.signatureButtonText}>Assinar</Text>
+                  <Ionicons name="finger-print" size={48} color="#00d9ff" />
+                  <Text style={styles.signatureButtonText}>Toque para Assinar</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <View style={styles.signatureBox}>
-              <Text style={styles.signatureLabel}>Mediador</Text>
+              <Text style={styles.signatureLabel}>Mediador / Agente</Text>
               {assinaturaMediador ? (
-                <Image
-                  source={{ uri: assinaturaMediador }}
-                  style={styles.signatureImage}
-                  resizeMode="contain"
-                />
+                <View style={styles.signatureWithImage}>
+                  <Image
+                    source={{ uri: assinaturaMediador }}
+                    style={styles.signatureImage}
+                    resizeMode="contain"
+                  />
+                  <TouchableOpacity
+                    style={styles.resignButton}
+                    onPress={() => {
+                      setAssinaturaMediador(null);
+                      openSignatureModal('mediador');
+                    }}
+                  >
+                    <Ionicons name="refresh" size={16} color="#fff" />
+                    <Text style={styles.resignText}>Reassinar</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <TouchableOpacity
                   style={styles.signatureButton}
                   onPress={() => openSignatureModal('mediador')}
                 >
-                  <Ionicons name="create" size={32} color="#00d9ff" />
-                  <Text style={styles.signatureButtonText}>Assinar</Text>
+                  <Ionicons name="finger-print" size={48} color="#00d9ff" />
+                  <Text style={styles.signatureButtonText}>Toque para Assinar</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -715,30 +740,80 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
       </ScrollView>
 
-      {/* MODAL ASSINATURA */}
+      {/* MODAL ASSINATURA - Fullscreen como entregas de estafetas */}
       <Modal visible={showSignatureModal} animationType="slide">
         <View style={styles.signatureModal}>
           <View style={styles.signatureHeader}>
-            <Text style={styles.signatureModalTitle}>
-              Assinatura do {signatureType === 'cliente' ? 'Cliente' : 'Mediador'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowSignatureModal(false)}>
+            <TouchableOpacity 
+              style={styles.signatureCloseButton}
+              onPress={() => setShowSignatureModal(false)}
+            >
               <Ionicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
+            <View style={styles.signatureHeaderCenter}>
+              <Ionicons 
+                name={signatureType === 'cliente' ? 'person' : 'briefcase'} 
+                size={24} 
+                color="#00d9ff" 
+              />
+              <Text style={styles.signatureModalTitle}>
+                Assinatura do {signatureType === 'cliente' ? 'Proprietário' : 'Mediador'}
+              </Text>
+            </View>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <View style={styles.signatureInstructions}>
+            <Text style={styles.signatureInstructionsText}>
+              ✍️ Assine com o dedo na área abaixo
+            </Text>
           </View>
           
-          <SignatureScreen
-            ref={signatureRef}
-            onOK={handleSignature}
-            onEmpty={() => Alert.alert('Aviso', 'Por favor assine primeiro')}
-            descriptionText="Assine aqui"
-            clearText="Limpar"
-            confirmText="Confirmar"
-            webStyle={`
-              .m-signature-pad--footer { background-color: #0a0e1a; }
-              .m-signature-pad--footer .button { background-color: #00d9ff; color: white; }
-            `}
-          />
+          <View style={styles.signatureCanvasContainer}>
+            <SignatureScreen
+              ref={signatureRef}
+              onOK={handleSignature}
+              onEmpty={() => Alert.alert('Aviso', 'Por favor assine primeiro')}
+              descriptionText=""
+              clearText="Limpar"
+              confirmText="Confirmar Assinatura"
+              webStyle={`
+                .m-signature-pad { 
+                  background-color: #ffffff; 
+                  border-radius: 12px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                .m-signature-pad--body { 
+                  border: none; 
+                }
+                .m-signature-pad--footer { 
+                  background-color: #0a0e1a; 
+                  padding: 16px;
+                  margin-top: 16px;
+                }
+                .m-signature-pad--footer .button { 
+                  background-color: #00d9ff; 
+                  color: #000;
+                  font-weight: bold;
+                  padding: 16px 32px;
+                  border-radius: 12px;
+                  font-size: 16px;
+                }
+                .m-signature-pad--footer .button.clear {
+                  background-color: #ef4444;
+                  color: white;
+                }
+              `}
+              penColor="#000"
+              backgroundColor="#ffffff"
+            />
+          </View>
+
+          <View style={styles.signatureLegalText}>
+            <Text style={styles.legalText}>
+              Ao assinar, confirmo que li e aceito os termos do contrato de mediação imobiliária.
+            </Text>
+          </View>
         </View>
       </Modal>
 
@@ -941,14 +1016,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
   },
   signatureButtonText: {
     color: '#00d9ff',
-    marginTop: 4,
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  signatureWithImage: {
+    flex: 1,
+    width: '100%',
   },
   signatureImage: {
     width: '100%',
-    height: 80,
+    height: 60,
+    marginBottom: 8,
+  },
+  resignButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#8b5cf6',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+  },
+  resignText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
   saveButton: {
     flexDirection: 'row',
@@ -992,12 +1090,52 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 50,
     backgroundColor: '#1a1f2e',
+  },
+  signatureCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ef444440',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signatureHeaderCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   signatureModalTitle: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  signatureInstructions: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  signatureInstructionsText: {
+    color: '#888',
+    fontSize: 14,
+  },
+  signatureCanvasContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  signatureLegalText: {
+    padding: 16,
+    paddingBottom: 32,
+    backgroundColor: '#1a1f2e',
+  },
+  legalText: {
+    color: '#666',
+    fontSize: 11,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   cameraModal: {
     flex: 1,

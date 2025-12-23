@@ -402,7 +402,7 @@ export default function ProfileScreenV6() {
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          <Ionicons name="log-out-outline" size={22} color="#fff" />
           <Text style={styles.logoutText}>Terminar Sessão</Text>
         </TouchableOpacity>
 
@@ -748,19 +748,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     marginHorizontal: 20,
     marginTop: 24,
     paddingVertical: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ef444440',
-    backgroundColor: '#ef444410',
+    backgroundColor: '#ef4444',
   },
   logoutText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
   version: {
     textAlign: 'center',
