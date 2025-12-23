@@ -3,7 +3,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000',
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
 };

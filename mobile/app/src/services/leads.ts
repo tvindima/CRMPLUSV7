@@ -57,31 +57,28 @@ const leadsService = {
    * Atualiza um lead existente
    */
   async update(id: number, data: Partial<LeadCreateInput>): Promise<Lead> {
-    const response = await api.put(`/leads/${id}`, data);
-    return response.data;
+    return apiService.put<Lead>(`/leads/${id}`, data);
   },
 
   /**
    * Atualiza apenas o status de um lead
    */
   async updateStatus(id: number, status: LeadStatus): Promise<Lead> {
-    const response = await api.patch(`/leads/${id}/status`, { status });
-    return response.data;
+    return apiService.patch<Lead>(`/leads/${id}/status`, { status });
   },
 
   /**
    * Remove um lead
    */
   async delete(id: number): Promise<void> {
-    await api.delete(`/leads/${id}`);
+    await apiService.delete<void>(`/leads/${id}`);
   },
 
   /**
    * Obtém leads de um agente específico
    */
   async getByAgent(agentId: number): Promise<Lead[]> {
-    const response = await api.get(`/agents/${agentId}/leads`);
-    return response.data;
+    return apiService.get<Lead[]>(`/agents/${agentId}/leads`);
   },
 
   /**
@@ -95,16 +92,21 @@ const leadsService = {
     converted: number;
     lost: number;
   }> {
-    const response = await api.get('/leads/stats');
-    return response.data;
+    return apiService.get<{
+      total: number;
+      new: number;
+      contacted: number;
+      qualified: number;
+      converted: number;
+      lost: number;
+    }>('/leads/stats');
   },
 
   /**
    * Adiciona uma nota ao histórico do lead
    */
   async addNote(id: number, note: string): Promise<Lead> {
-    const response = await api.post(`/leads/${id}/notes`, { note });
-    return response.data;
+    return apiService.post<Lead>(`/leads/${id}/notes`, { note });
   },
 
   /**
@@ -117,7 +119,7 @@ const leadsService = {
       notes?: string;
     }
   ): Promise<void> {
-    await api.post(`/leads/${id}/interactions`, data);
+    await apiService.post<void>(`/leads/${id}/interactions`, data);
   },
 };
 

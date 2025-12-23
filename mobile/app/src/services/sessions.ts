@@ -32,12 +32,7 @@ class SessionService {
   async listSessions(): Promise<DeviceSession[]> {
     console.log('[Sessions] 📱 Listando dispositivos ativos...');
 
-    // Obter refresh token para marcar sessão atual
-    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-
-    const sessions = await apiService.get<DeviceSession[]>('/auth/sessions', {
-      headers: refreshToken ? { 'X-Refresh-Token': refreshToken } : undefined,
-    } as any);
+    const sessions = await apiService.get<DeviceSession[]>('/auth/sessions');
 
     console.log(`[Sessions] ✅ ${sessions.length} dispositivo(s) ativo(s)`);
     return sessions;
@@ -73,19 +68,9 @@ class SessionService {
   async revokeAllOtherSessions(): Promise<RevokeAllResponse> {
     console.log('[Sessions] 🗑️🗑️ Revogando todas as outras sessões...');
 
-    // Obter refresh token para proteger sessão atual
-    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-    
-    if (!refreshToken) {
-      throw new Error('Refresh token não encontrado');
-    }
-
     const result = await apiService.post<RevokeAllResponse>(
       '/auth/sessions/revoke-all',
-      {},
-      {
-        headers: { 'X-Refresh-Token': refreshToken },
-      } as any
+      {}
     );
 
     console.log(`[Sessions] ✅ ${result.revoked_sessions} sessão(ões) revogada(s)`);

@@ -20,12 +20,23 @@ export interface FirstImpressionData {
   tipologia?: string | null;
   ano_construcao?: number | null;
   valor_patrimonial?: number | null;
+  estado_conservacao?: string | null;
+  valor_estimado?: number | null;
   
   // Dados Cliente
   client_name: string;
   client_nif?: string | null;
-  client_phone: string;
+  client_phone?: string | null;
   client_email?: string | null;
+  referred_by?: string | null;
+  
+  // Localização
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  
+  // Fotos
+  photos?: string[] | null;
   
   // Observações
   observations?: string | null;
@@ -74,7 +85,7 @@ export const firstImpressionService = {
    */
   create: async (data: Omit<FirstImpressionData, 'id' | 'agent_id' | 'status' | 'created_at' | 'updated_at'>): Promise<FirstImpressionData> => {
     try {
-      const response = await apiService.post('/mobile/first-impressions', data);
+      const response = await apiService.post<FirstImpressionData>('/mobile/first-impressions', data);
       console.log('[FirstImpression] ✅ Criado:', response.id);
       return response;
     } catch (error: any) {
@@ -100,7 +111,7 @@ export const firstImpressionService = {
       const queryString = params.toString();
       const url = queryString ? `/mobile/first-impressions?${queryString}` : '/mobile/first-impressions';
       
-      const response = await apiService.get(url);
+      const response = await apiService.get<FirstImpressionListItem[]>(url);
       console.log(`[FirstImpression] ✅ Listados: ${response.length} documentos`);
       return response;
     } catch (error: any) {
@@ -114,7 +125,7 @@ export const firstImpressionService = {
    */
   getById: async (id: number): Promise<FirstImpressionData> => {
     try {
-      const response = await apiService.get(`/mobile/first-impressions/${id}`);
+      const response = await apiService.get<FirstImpressionData>(`/mobile/first-impressions/${id}`);
       console.log('[FirstImpression] ✅ Detalhes obtidos:', id);
       return response;
     } catch (error: any) {
@@ -128,7 +139,7 @@ export const firstImpressionService = {
    */
   update: async (id: number, data: Partial<FirstImpressionData>): Promise<FirstImpressionData> => {
     try {
-      const response = await apiService.put(`/mobile/first-impressions/${id}`, data);
+      const response = await apiService.put<FirstImpressionData>(`/mobile/first-impressions/${id}`, data);
       console.log('[FirstImpression] ✅ Atualizado:', id);
       return response;
     } catch (error: any) {
@@ -142,7 +153,7 @@ export const firstImpressionService = {
    */
   addSignature: async (id: number, signatureBase64: string): Promise<FirstImpressionData> => {
     try {
-      const response = await apiService.post(`/mobile/first-impressions/${id}/signature`, {
+      const response = await apiService.post<FirstImpressionData>(`/mobile/first-impressions/${id}/signature`, {
         signature_image: signatureBase64,
       });
       console.log('[FirstImpression] ✅ Assinatura adicionada:', id);

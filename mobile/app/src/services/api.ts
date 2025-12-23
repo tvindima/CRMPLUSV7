@@ -72,9 +72,9 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     console.log('[API] 🌐 Request:', options.method || 'GET', url);
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.accessToken) {

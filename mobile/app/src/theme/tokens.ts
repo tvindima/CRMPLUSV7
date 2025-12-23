@@ -29,6 +29,7 @@ export const colors = {
   primary: '#00D9FF',
   secondary: '#E946D5',
   accent: '#A855F7',
+  textSecondary: '#CBD5E1',
 
   // Status Colors
   success: '#10B981',
@@ -74,6 +75,7 @@ export const spacing = {
   md: 12,
   lg: 16,
   xl: 20,
+  xxl: 28,
   '2xl': 24,
   '3xl': 32,
   '4xl': 40,

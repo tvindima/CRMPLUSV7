@@ -8,12 +8,13 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "baseUrl": "./src",
     "paths": {
       "@/components/*": [
-        "components/*"
+        "./components/*"
       ],
       "@/hooks/*": [
-        "hooks/*"
+        "./hooks/*"
       ]
     }
   },

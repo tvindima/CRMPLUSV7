@@ -2,12 +2,19 @@
  * Tipos globais da aplicação CRM PLUS Mobile
  */
 
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
+export type LeadSource = 'website' | 'facebook' | 'instagram' | 'referral' | 'other' | 'walk_in' | 'phone';
+export type PropertyStatus = 'available' | 'sold' | 'rented' | 'pending';
+export type PropertyType = 'house' | 'apartment' | 'land' | 'commercial' | 'villa' | 'studio';
+export type VisitStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'in_progress';
+
 export interface User {
   id: number;
   email: string;
   name: string;
   role: 'admin' | 'agent' | 'manager';
   avatar_url?: string;
+  avatar?: string;
   is_active: boolean;
 }
 
@@ -24,8 +31,8 @@ export interface Property {
   price: number | null;
   area: number | null;
   location: string | null;
-  status: 'available' | 'sold' | 'rented' | 'pending' | null;
-  type?: 'house' | 'apartment' | 'land' | 'commercial';
+  status: PropertyStatus | null;
+  type?: PropertyType;
   bedrooms?: number;
   bathrooms?: number;
   garage_spaces?: number;
@@ -43,8 +50,8 @@ export interface Lead {
   phone?: string;
   message?: string;
   property_id?: number;
-  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
-  source?: string;
+  status: LeadStatus;
+  source?: LeadSource;
   created_at: string;
   updated_at?: string;
 }
@@ -54,7 +61,7 @@ export interface Visit {
   property_id: number;
   lead_id?: number;
   scheduled_at: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  status: VisitStatus;
   notes?: string;
   agent_id?: number;
   created_at: string;
