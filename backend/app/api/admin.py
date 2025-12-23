@@ -602,3 +602,140 @@ def delete_watermark_image(
     return {"success": True, "message": "Marca de água removida"}
 
 
+# ============ GESTÃO DE UTILIZADORES ============
+
+@router.get("/users/list")
+def list_all_users(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Lista todos os utilizadores/agentes do sistema.
+    """
+    result = db.execute(text("""
+        SELECT id, email, name, role, phone, is_active, created_at 
+        FROM agents 
+        ORDER BY email
+    """))
+    
+    users = []
+    for row in result:
+        users.append({
+            "id": row[0],
+            "email": row[1],
+            "name": row[2],
+            "role": row[3],
+            "phone": row[4],
+            "is_active": row[5],
+            "created_at": str(row[6]) if row[6] else None
+        })
+    
+    return {"total": len(users), "users": users}
+
+
+@router.post("/users/set-role/{user_id}")
+def set_user_role(
+    user_id: int,
+    role: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Alterar role de um utilizador.
+    Roles: admin, staff, agent, guest
+    """
+    valid_roles = ["admin", "staff", "agent", "guest"]
+    if role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Role inválida. Use: {valid_roles}")
+    
+    result = db.execute(
+        text("UPDATE agents SET role = :role WHERE id = :id"),
+        {"role": role, "id": user_id}
+    )
+    db.commit()
+    
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado")
+    
+    return {"success": True, "message": f"Utilizador {user_id} agora tem role: {role}"}
+
+
+@router.post("/users/bulk-set-admin")
+def bulk_set_admin(
+    emails: list[str],
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Definir múltiplos utilizadores como admin através dos emails.
+    """
+    results = []
+    for email in emails:
+        result = db.execute(
+            text("SELECT id, role FROM agents WHERE email = :email"),
+            {"email": email}
+        )
+        row = result.fetchone()
+        
+        if row:
+            if row[1] == "admin":
+                results.append({"email": email, "status": "already_admin"})
+            else:
+                db.execute(
+                    text("UPDATE agents SET role = 'admin' WHERE email = :email"),
+                    {"email": email}
+                )
+                results.append({"email": email, "status": "updated_to_admin", "was": row[1]})
+        else:
+            results.append({"email": email, "status": "not_found"})
+    
+    db.commit()
+    return {"results": results}
+
+
+@router.post("/users/create")
+def create_user(
+    email: str,
+    name: str,
+    role: str = "agent",
+    password: str = "Sucesso2025!",
+    phone: str = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Criar novo utilizador/agente.
+    """
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    
+    # Verificar se email já existe
+    existing = db.execute(
+        text("SELECT id FROM agents WHERE email = :email"),
+        {"email": email}
+    ).fetchone()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já existe")
+    
+    # Hash password
+    hashed_pw = pwd_context.hash(password)
+    
+    # Criar utilizador
+    result = db.execute(
+        text("""
+            INSERT INTO agents (email, name, role, password, phone, is_active)
+            VALUES (:email, :name, :role, :password, :phone, true)
+            RETURNING id
+        """),
+        {"email": email, "name": name, "role": role, "password": hashed_pw, "phone": phone}
+    )
+    
+    new_id = result.fetchone()[0]
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": f"Utilizador criado com sucesso",
+        "user": {"id": new_id, "email": email, "name": name, "role": role}
+    }
