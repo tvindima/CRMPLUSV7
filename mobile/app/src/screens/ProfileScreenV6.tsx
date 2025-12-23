@@ -35,6 +35,8 @@ interface AgentProfile {
   instagram?: string;
   facebook?: string;
   linkedin?: string;
+  twitter?: string;
+  tiktok?: string;
   whatsapp?: string;
 }
 
@@ -48,6 +50,8 @@ const SOCIAL_NETWORKS = [
   { id: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', placeholder: '@username' },
   { id: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', placeholder: 'facebook.com/username' },
   { id: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', placeholder: 'linkedin.com/in/username' },
+  { id: 'twitter', label: 'X (Twitter)', icon: 'logo-twitter', color: '#000000', placeholder: 'x.com/username' },
+  { id: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#000000', placeholder: '@username' },
   { id: 'whatsapp', label: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', placeholder: '+351 900 000 000' },
 ];
 
@@ -67,6 +71,8 @@ export default function ProfileScreenV6() {
   const [editInstagram, setEditInstagram] = useState('');
   const [editFacebook, setEditFacebook] = useState('');
   const [editLinkedin, setEditLinkedin] = useState('');
+  const [editTwitter, setEditTwitter] = useState('');
+  const [editTiktok, setEditTiktok] = useState('');
   const [editWhatsapp, setEditWhatsapp] = useState('');
 
   useEffect(() => {
@@ -94,7 +100,7 @@ export default function ProfileScreenV6() {
         phone = phone.replace(/\.0$/, '').replace(/\.0/g, '');
         
         // Also load site preferences for bio and social networks
-        let sitePrefs = { bio: '', instagram: '', facebook: '', linkedin: '', whatsapp: '' };
+        let sitePrefs = { bio: '', instagram: '', facebook: '', linkedin: '', twitter: '', tiktok: '', whatsapp: '' };
         try {
           const prefsResponse = await apiService.get<any>('/mobile/site-preferences');
           if (prefsResponse) {
@@ -103,6 +109,8 @@ export default function ProfileScreenV6() {
               instagram: prefsResponse.instagram || '',
               facebook: prefsResponse.facebook || '',
               linkedin: prefsResponse.linkedin || '',
+              twitter: prefsResponse.twitter || '',
+              tiktok: prefsResponse.tiktok || '',
               whatsapp: prefsResponse.whatsapp || '',
             };
           }
@@ -120,6 +128,8 @@ export default function ProfileScreenV6() {
           instagram: sitePrefs.instagram || agentResponse.instagram || '',
           facebook: sitePrefs.facebook || agentResponse.facebook || '',
           linkedin: sitePrefs.linkedin || agentResponse.linkedin || '',
+          twitter: sitePrefs.twitter || '',
+          tiktok: sitePrefs.tiktok || '',
           whatsapp: sitePrefs.whatsapp || agentResponse.whatsapp || phone,
         });
       }
@@ -273,6 +283,8 @@ export default function ProfileScreenV6() {
       setEditInstagram(agentProfile.instagram || '');
       setEditFacebook(agentProfile.facebook || '');
       setEditLinkedin(agentProfile.linkedin || '');
+      setEditTwitter(agentProfile.twitter || '');
+      setEditTiktok(agentProfile.tiktok || '');
       setEditWhatsapp(agentProfile.whatsapp || '');
     }
     setShowEditModal(true);
@@ -286,6 +298,8 @@ export default function ProfileScreenV6() {
         instagram: editInstagram,
         facebook: editFacebook,
         linkedin: editLinkedin,
+        twitter: editTwitter,
+        tiktok: editTiktok,
         whatsapp: editWhatsapp,
       });
       
@@ -299,6 +313,8 @@ export default function ProfileScreenV6() {
           instagram: editInstagram,
           facebook: editFacebook,
           linkedin: editLinkedin,
+          twitter: editTwitter,
+          tiktok: editTiktok,
           whatsapp: editWhatsapp,
         });
       }
@@ -316,6 +332,8 @@ export default function ProfileScreenV6() {
           instagram: editInstagram,
           facebook: editFacebook,
           linkedin: editLinkedin,
+          twitter: editTwitter,
+          tiktok: editTiktok,
           whatsapp: editWhatsapp,
         });
       }

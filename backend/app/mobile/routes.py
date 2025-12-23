@@ -1817,6 +1817,8 @@ def get_user_preferences(
             instagram=prefs.instagram,
             facebook=prefs.facebook,
             linkedin=prefs.linkedin,
+            twitter=prefs.twitter,
+            tiktok=prefs.tiktok,
             whatsapp=prefs.whatsapp
         )
     
@@ -1834,6 +1836,8 @@ def get_user_preferences(
         instagram=None,
         facebook=None,
         linkedin=None,
+        twitter=None,
+        tiktok=None,
         whatsapp=None
     )
 
@@ -1874,6 +1878,10 @@ def update_user_preferences(
         prefs.facebook = preferences.facebook
     if preferences.linkedin is not None:
         prefs.linkedin = preferences.linkedin
+    if preferences.twitter is not None:
+        prefs.twitter = preferences.twitter
+    if preferences.tiktok is not None:
+        prefs.tiktok = preferences.tiktok
     if preferences.whatsapp is not None:
         prefs.whatsapp = preferences.whatsapp
     
@@ -1896,6 +1904,8 @@ def update_user_preferences(
         instagram=prefs.instagram,
         facebook=prefs.facebook,
         linkedin=prefs.linkedin,
+        twitter=prefs.twitter,
+        tiktok=prefs.tiktok,
         whatsapp=prefs.whatsapp
     )
 

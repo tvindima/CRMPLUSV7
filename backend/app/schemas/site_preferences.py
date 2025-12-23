@@ -17,6 +17,8 @@ class SitePreferencesBase(BaseModel):
     instagram: Optional[str] = Field(default=None, description="Username/URL do Instagram")
     facebook: Optional[str] = Field(default=None, description="Username/URL do Facebook")
     linkedin: Optional[str] = Field(default=None, description="Username/URL do LinkedIn")
+    twitter: Optional[str] = Field(default=None, description="Username/URL do X (Twitter)")
+    tiktok: Optional[str] = Field(default=None, description="Username/URL do TikTok")
     whatsapp: Optional[str] = Field(default=None, description="Número do WhatsApp")
 
     @field_validator('theme')

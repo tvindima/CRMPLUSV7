@@ -17,4 +17,5 @@ Pillow>=10.0.0  # Para redimensionamento e otimização de imagens
 cloudinary>=1.36.0  # Storage persistente de imagens
 websockets>=12.0  # FASE 2: WebSocket real-time notifications
 python-json-logger>=2.0.7  # FASE 2: Structured JSON logging
+requests>=2.31.0  # HTTP requests para integrações externas
 
