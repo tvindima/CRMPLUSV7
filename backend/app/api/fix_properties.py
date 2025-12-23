@@ -396,8 +396,7 @@ def delete_duplicate_agents(db: Session = Depends(get_db)):
         return {
             "success": True,
             "deleted_count": len(deleted),
-            "deleted_agents": to_delete,
-            "properties_reassigned": props_with_invalid_agent
+            "deleted_agents": to_delete
         }
         
     except Exception as e:
