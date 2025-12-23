@@ -143,8 +143,8 @@ const TEAMS = {
 };
 
 export default async function AgentPage({ params }: Props) {
-  const agents = await getAgents(50);
-  const allProperties = await getProperties(500);
+  const agents = await getAgents(200);
+  const allProperties = await getProperties(1000);
 
   const normalizedSlug = normalizeSlug(decodeURIComponent(params.slug));
   const agent = agents.find((a) => normalizeSlug(a.name) === normalizedSlug);
