@@ -46,7 +46,7 @@ export default function FirstImpressionListScreen() {
       setImpressions(data);
     } catch (error: any) {
       console.error('Erro ao carregar First Impressions:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os documentos');
+      Alert.alert('Erro', 'Não foi possível carregar as pré-angariações');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,7 +70,7 @@ export default function FirstImpressionListScreen() {
   const handleDelete = (id: number, clientName: string) => {
     Alert.alert(
       'Confirmar',
-      `Apagar documento de ${clientName}?`,
+      `Apagar pré-angariação de ${clientName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -79,7 +79,7 @@ export default function FirstImpressionListScreen() {
           onPress: async () => {
             try {
               await firstImpressionService.delete(id);
-              Alert.alert('Sucesso', 'Documento apagado');
+              Alert.alert('Sucesso', 'Pré-angariação apagada');
               loadImpressions(false);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível apagar');
@@ -102,7 +102,7 @@ export default function FirstImpressionListScreen() {
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardTitle}>
-            <Ionicons name="document-text" size={20} color="#00d9ff" />
+            <Ionicons name="folder" size={20} color="#00d9ff" />
             <Text style={styles.clientName}>{item.client_name}</Text>
           </View>
           
@@ -181,7 +181,7 @@ export default function FirstImpressionListScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📄 1ª Impressões</Text>
+        <Text style={styles.headerTitle}>📁 Pré-Angariações</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate('FirstImpressionForm' as never)}
@@ -212,9 +212,9 @@ export default function FirstImpressionListScreen() {
         </View>
       ) : impressions.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="document-text-outline" size={64} color="#6b7280" />
-          <Text style={styles.emptyText}>Nenhum documento encontrado</Text>
-          <Text style={styles.emptySubtext}>Crie sua primeira impressão tocando no botão +</Text>
+          <Ionicons name="folder-open-outline" size={64} color="#6b7280" />
+          <Text style={styles.emptyText}>Nenhuma pré-angariação encontrada</Text>
+          <Text style={styles.emptySubtext}>Crie uma nova tocando no botão +</Text>
         </View>
       ) : (
         <FlatList

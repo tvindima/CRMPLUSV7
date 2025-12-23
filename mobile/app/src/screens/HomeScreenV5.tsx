@@ -55,7 +55,7 @@ const ALL_SHORTCUTS: Shortcut[] = [
   { id: 'site-editor', label: 'Editor Montra', icon: 'globe', color: '#ec4899', route: 'SiteEditor', enabled: true },
   { id: 'messages', label: 'Mensagens', icon: 'chatbubbles', color: '#06b6d4', route: 'Messages', enabled: false },
   { id: 'reports', label: 'Relatórios', icon: 'stats-chart', color: '#84cc16', route: 'Reports', enabled: false },
-  { id: 'first-impression', label: '1ª Impressões', icon: 'document-text', color: '#8b5cf6', route: 'FirstImpressionList', enabled: true },
+  { id: 'first-impression', label: 'Pré-Angariações', icon: 'folder', color: '#8b5cf6', route: 'FirstImpressionList', enabled: true },
   { id: 'documents', label: 'Documentos', icon: 'folder', color: '#f97316', route: 'Documents', enabled: false },
   { id: 'contacts', label: 'Contactos', icon: 'call', color: '#14b8a6', route: 'Contacts', enabled: false },
   { id: 'notifications', label: 'Alertas', icon: 'notifications', color: '#ef4444', route: 'Notifications', enabled: false },
