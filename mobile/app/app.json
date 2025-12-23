@@ -50,7 +50,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/icon.png",
+      "favicon": "./web/favicon.png",
       "name": "CRM PLUS",
       "shortName": "CRMPLUS",
       "themeColor": "#E10600",
