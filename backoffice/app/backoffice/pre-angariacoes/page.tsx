@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BackofficeLayout } from "../../backoffice/components/BackofficeLayout";
-import { ToastProvider, useToast } from "../../backoffice/components/ToastProvider";
-import { getPreAngariacoes, type PreAngariacaoListItem } from "../../src/services/backofficeApi";
+import { BackofficeLayout } from "../../../backoffice/components/BackofficeLayout";
+import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
+import { getPreAngariacoes, type PreAngariacaoListItem } from "../../../src/services/backofficeApi";
 
 function PreAngariacoesInner() {
   const toast = useToast();
