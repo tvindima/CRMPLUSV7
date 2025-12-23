@@ -2,6 +2,7 @@
 Modelo SQLAlchemy para Pré-Angariação
 Pasta virtual que agrega todo o processo de angariação de um imóvel
 """
+import builtins
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -130,7 +131,7 @@ class PreAngariacao(Base):
     first_impression = relationship("FirstImpression", backref="pre_angariacao", uselist=False)
     property = relationship("Property", backref="pre_angariacao", uselist=False)
     
-    @property
+    @builtins.property
     def agent_name(self):
         """Nome do agente associado (evita joins extras no frontend)."""
         return self.agent.name if self.agent else None
