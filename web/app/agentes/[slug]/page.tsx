@@ -170,7 +170,22 @@ export default async function AgentPage({ params }: Props) {
     ? heroProperties
     : properties.slice(0, 4);
 
-  // Staff members (support team) - matching structure from /agentes page
+  
+  // HERO: preferir vídeo; fallback para imóveis do agente/equipa
+  const heroPropertiesVideo = properties
+    .filter((p) => p.video_url && p.is_published)
+    .sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    })
+    .slice(0, 4);
+
+  const heroPropsFinal = heroPropertiesVideo.length > 0
+    ? heroPropertiesVideo
+    : properties.slice(0, 4);
+
+// Staff members (support team) - matching structure from /agentes page
   const allStaffMembers = [
     { id: 19, name: "Ana Vindima", role: "Assistente de Tiago Vindima", phone: "918 503 014", avatar: "/avatars/19.png", isAgent: false, supportFor: "Tiago Vindima" },
     { id: 20, name: "Maria Olaio", role: "Diretora Financeira", phone: "244 001 003", avatar: "/avatars/20.png", isAgent: false },
