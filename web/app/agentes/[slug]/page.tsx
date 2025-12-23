@@ -155,22 +155,6 @@ export default async function AgentPage({ params }: Props) {
   const properties = teamConfig
     ? allProperties.filter((p) => teamConfig.members.includes(p.agent_id ?? 0))
     : allProperties.filter((p) => p.agent_id === agent.id);
-
-  // HERO: preferir vídeo; fallback para imóveis do agente/equipa
-  const heroProperties = properties
-    .filter((p) => p.video_url)
-    .sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return dateB - dateA;
-    })
-    .slice(0, 4);
-
-  const heroPropsFinal = heroProperties.length > 0
-    ? heroProperties
-    : properties.slice(0, 4);
-
-  
   // HERO: preferir vídeo; fallback para imóveis do agente/equipa
   const heroPropertiesVideo = properties
     .filter((p) => p.video_url && p.is_published)
