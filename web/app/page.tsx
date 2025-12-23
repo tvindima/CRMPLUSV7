@@ -8,9 +8,8 @@ import { SafeImage } from "../components/SafeImage";
 import { getPropertyCover, getPlaceholderImage } from "../src/utils/placeholders";
 import { HeroCarousel } from "../components/HeroCarousel";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type RailConfig = {
   title: string;
