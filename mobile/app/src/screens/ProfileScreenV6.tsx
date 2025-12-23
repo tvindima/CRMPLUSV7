@@ -16,12 +16,14 @@ import {
   Modal,
   TextInput,
   Platform,
+  ActionSheetIOS,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
+import * as ImagePicker from 'expo-image-picker';
 
 interface AgentProfile {
   id: number;
@@ -53,6 +55,7 @@ export default function ProfileScreenV6() {
   const navigation = useNavigation<NavigationProp<any>>();
   const { signOut, user } = useAuth();
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [stats, setStats] = useState<AgentStats>({ properties: 0, leads: 0, visits_today: 0 });
   const [loading, setLoading] = useState(true);
   
@@ -135,6 +138,112 @@ export default function ProfileScreenV6() {
       return `https://crmplusv7-production.up.railway.app${agentProfile.photo}`;
     }
     return null;
+  };
+
+  // =====================================================
+  // ALTERAR FOTO DE PERFIL
+  // =====================================================
+  const handleChangePhoto = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', '📷 Tirar Foto', '🖼️ Escolher da Galeria'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            takePhotoFromCamera();
+          } else if (buttonIndex === 2) {
+            pickPhotoFromGallery();
+          }
+        }
+      );
+    } else {
+      // Android e Web
+      Alert.alert(
+        'Alterar Foto',
+        'Como deseja escolher a nova foto?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: '📷 Tirar Foto', onPress: takePhotoFromCamera },
+          { text: '🖼️ Galeria', onPress: pickPhotoFromGallery },
+        ]
+      );
+    }
+  };
+
+  const takePhotoFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Permita acesso à câmara nas definições.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadNewPhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickPhotoFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Permita acesso à galeria nas definições.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadNewPhoto(result.assets[0].uri);
+    }
+  };
+
+  const uploadNewPhoto = async (imageUri: string) => {
+    if (!agentProfile?.id) return;
+
+    setUploadingPhoto(true);
+    try {
+      // Criar FormData com a imagem
+      const formData = new FormData();
+      const filename = imageUri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('file', {
+        uri: imageUri,
+        name: filename,
+        type,
+      } as any);
+
+      // Upload via endpoint de avatar do agente
+      const response = await apiService.uploadFile<{ photo_url: string }>(
+        `/agents/${agentProfile.id}/avatar`,
+        formData
+      );
+
+      if (response?.photo_url) {
+        // Atualizar estado local
+        setAgentProfile(prev => prev ? { ...prev, photo: response.photo_url } : null);
+        Alert.alert('Sucesso! 🎉', 'Foto de perfil atualizada com sucesso!');
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar foto:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar a foto. Tente novamente.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -266,9 +375,27 @@ export default function ProfileScreenV6() {
 
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarWrapper}>
-            {getAvatarUrl() ? (
-              <Image source={{ uri: getAvatarUrl()! }} style={styles.avatar} />
+          <TouchableOpacity 
+            style={styles.avatarWrapper}
+            onPress={handleChangePhoto}
+            disabled={uploadingPhoto}
+          >
+            {uploadingPhoto ? (
+              <View style={styles.avatarLoading}>
+                <ActivityIndicator size="large" color="#00d9ff" />
+                <Text style={styles.avatarLoadingText}>A carregar...</Text>
+              </View>
+            ) : getAvatarUrl() ? (
+              <>
+                <Image 
+                  source={{ uri: getAvatarUrl()! }} 
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+                <View style={styles.avatarOverlay}>
+                  <Ionicons name="camera" size={24} color="#fff" />
+                </View>
+              </>
             ) : (
               <LinearGradient
                 colors={['#00d9ff', '#8b5cf6', '#d946ef']}
@@ -277,9 +404,13 @@ export default function ProfileScreenV6() {
                 style={styles.avatarGradient}
               >
                 <Text style={styles.avatarInitials}>{getInitials()}</Text>
+                <View style={styles.avatarOverlay}>
+                  <Ionicons name="camera" size={24} color="#fff" />
+                </View>
               </LinearGradient>
             )}
-          </View>
+          </TouchableOpacity>
+          <Text style={styles.avatarHint}>Toque para alterar foto</Text>
           <Text style={styles.userName}>{getDisplayName()}</Text>
           <Text style={styles.userRole}>Agente Imobiliário</Text>
           <TouchableOpacity style={styles.editProfileButton} onPress={openEditModal}>
@@ -577,17 +708,18 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   avatarWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 3,
     borderColor: '#00d9ff',
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 8,
     shadowColor: '#00d9ff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
+    position: 'relative',
   },
   avatar: {
     width: '100%',
@@ -598,11 +730,39 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   avatarInitials: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 36,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLoading: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1a1f2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLoadingText: {
+    fontSize: 10,
+    color: '#00d9ff',
+    marginTop: 4,
+  },
+  avatarHint: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginBottom: 12,
   },
   userName: {
     fontSize: 24,

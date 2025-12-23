@@ -222,9 +222,21 @@ function ImoveisInner() {
         <div className="hidden md:block overflow-hidden rounded-2xl border border-[#1F1F22] bg-[#0F0F10]">
           <DataTable
             dense
-            columns={["Referência", "Negócio", "Tipo", "Tipologia", "Preço", "Quartos", "Estado", "Área útil", "Área terreno"]}
+            columns={["Referência", "Foto", "Negócio", "Tipo", "Tipologia", "Preço", "Quartos", "Estado", "Área útil", "Área terreno"]}
             rows={filtered.map((p) => [
               p.reference || "—",
+              // Foto de capa (primeira imagem)
+              p.images && p.images.length > 0 ? (
+                <img 
+                  src={p.images[0]} 
+                  alt="Capa" 
+                  className="w-12 h-9 object-cover rounded"
+                />
+              ) : (
+                <span className="inline-flex items-center justify-center w-12 h-9 bg-[#1F1F22] rounded text-[#666] text-xs">
+                  📷
+                </span>
+              ),
               p.business_type || "—",
               p.property_type || "—",
               p.typology || "—",
@@ -252,20 +264,34 @@ function ImoveisInner() {
         {/* Mobile: Cards */}
         <div className="md:hidden space-y-3">
           {filtered.map((property, idx) => (
-            <div key={property.id} className="relative rounded-xl border border-[#1F1F22] bg-[#0F0F10] p-3">
-              {/* Header com Referência e Menu */}
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-white truncate">{property.reference || "—"}</h3>
-                  <p className="text-xs text-[#C5C5C5] truncate">{property.title || property.location || "—"}</p>
+            <div key={property.id} className="relative rounded-xl border border-[#1F1F22] bg-[#0F0F10] overflow-hidden">
+              {/* Foto de Capa */}
+              {property.images && property.images.length > 0 ? (
+                <img 
+                  src={property.images[0]} 
+                  alt={property.reference || 'Imóvel'}
+                  className="w-full h-32 object-cover"
+                />
+              ) : (
+                <div className="w-full h-32 bg-[#1F1F22] flex items-center justify-center text-3xl text-[#444]">
+                  🏠
                 </div>
-                <div className="relative ml-2">
-                  <button
-                    onClick={() => setActiveMenu(activeMenu === idx ? null : idx)}
-                    className="p-1.5 rounded-lg hover:bg-[#1F1F22] transition-colors"
-                  >
-                    <EllipsisVerticalIcon className="w-5 h-5 text-[#C5C5C5]" />
-                  </button>
+              )}
+              
+              <div className="p-3">
+                {/* Header com Referência e Menu */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-white truncate">{property.reference || "—"}</h3>
+                    <p className="text-xs text-[#C5C5C5] truncate">{property.title || property.location || "—"}</p>
+                  </div>
+                  <div className="relative ml-2">
+                    <button
+                      onClick={() => setActiveMenu(activeMenu === idx ? null : idx)}
+                      className="p-1.5 rounded-lg hover:bg-[#1F1F22] transition-colors"
+                    >
+                      <EllipsisVerticalIcon className="w-5 h-5 text-[#C5C5C5]" />
+                    </button>
                   {activeMenu === idx && (
                     <div className="absolute right-0 top-8 z-10 w-36 rounded-lg border border-[#1F1F22] bg-[#0B0B0D] shadow-xl">
                       <button
@@ -349,6 +375,7 @@ function ImoveisInner() {
                   </span>
                 </div>
               )}
+              </div>{/* Fecha div p-3 */}
             </div>
           ))}
         </div>

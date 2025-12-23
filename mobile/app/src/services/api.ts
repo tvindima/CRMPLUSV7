@@ -250,6 +250,49 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
+  /**
+   * Upload de ficheiros (FormData)
+   * Usado para upload de fotos de perfil, documentos, etc.
+   */
+  async uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    console.log('[API] 📤 Upload:', url);
+
+    const headers: Record<string, string> = {};
+    // Não incluir Content-Type para FormData - o fetch define automaticamente com boundary
+    
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          detail: `HTTP ${response.status}: ${response.statusText}`,
+          status: response.status,
+        }));
+        throw this.handleErrorResponse(response.status, errorData);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error.detail || error.message) {
+        throw error;
+      }
+      throw {
+        detail: 'Erro ao enviar ficheiro. Verifique a ligação.',
+        status: 0,
+        retry: true,
+      };
+    }
+  }
+
   // Mock responses para desenvolvimento quando backend estiver com problemas
   private getMockedResponse<T>(endpoint: string): T {
     console.log(`[API MOCK] Gerando resposta mockada para: ${endpoint}`);
