@@ -39,8 +39,9 @@ def listar_pre_angariacoes(
     """
     Listar todas as pré-angariações do agente
     """
-    # Admin e staff podem ver todas; agentes só as suas
-    is_admin = current_user.role in (UserRole.ADMIN.value, "staff")
+    # Perfis com permissão total
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
 
     if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
@@ -102,7 +103,8 @@ def obter_pre_angariacao(
     """
     Obter detalhes de uma pré-angariação
     """
-    is_admin = current_user.role in (UserRole.ADMIN.value, "staff")
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
     if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
