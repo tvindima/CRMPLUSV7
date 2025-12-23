@@ -15,7 +15,7 @@ function PreAngariacoesInner() {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await getPreAngariacoes({ status: status || undefined, limit: 200 });
+        const data = await getPreAngariacoes({ status: status || undefined, limit: 100 });
         setItems(data);
       } catch (error: any) {
         console.error("Erro ao carregar pré-angariações:", error);
