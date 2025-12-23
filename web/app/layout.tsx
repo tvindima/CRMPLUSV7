@@ -44,6 +44,7 @@ export const metadata = {
     description: "Encontre a casa perfeita ou o investimento ideal em Portugal.",
     images: ["/brand/agency-logo.svg"],
   },
+  // Ícones para todas as páginas (inclui login)
   robots: {
     index: false,  // 🚫 BLOQUEADO - Site em testes
     follow: false, // 🚫 BLOQUEADO - Site em testes
@@ -56,8 +57,11 @@ export const metadata = {
     },
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/icon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icon.png',
   },
 };
 
