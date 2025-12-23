@@ -365,17 +365,20 @@ def delete_duplicate_agents(db: Session = Depends(get_db)):
                 "deleted_count": 0
             }
         
-        # Verificar se alguma propriedade referencia estes agentes
-        result = db.execute(text("""
-            SELECT COUNT(*) FROM properties WHERE agent_id > 19
+        # Reassignar propriedades ao agente 19 (coordenador)
+        db.execute(text("""
+            UPDATE properties SET agent_id = 19 WHERE agent_id > 19
         """))
-        props_with_invalid_agent = result.scalar()
         
-        if props_with_invalid_agent > 0:
-            # Reassignar propriedades ao agente 19 (coordenador)
-            db.execute(text("""
-                UPDATE properties SET agent_id = 19 WHERE agent_id > 19
-            """))
+        # Reassignar leads ao agente 19 (coordenador)
+        db.execute(text("""
+            UPDATE leads SET assigned_agent_id = 19 WHERE assigned_agent_id > 19
+        """))
+        
+        # Eliminar refresh_tokens associados aos users dos agentes duplicados
+        db.execute(text("""
+            DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE agent_id > 19)
+        """))
         
         # Eliminar users associados aos agentes duplicados
         db.execute(text("""
