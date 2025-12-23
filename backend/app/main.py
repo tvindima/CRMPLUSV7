@@ -31,6 +31,7 @@ from app.api.admin_migration import router as admin_migration_router
 from app.routers.first_impressions import router as first_impressions_router
 from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
+from app.api.fix_properties import router as fix_properties_router
 
 
 # Debug endpoint to check database connection
@@ -283,6 +284,7 @@ app.include_router(admin_migration_router)
 app.include_router(first_impressions_router)
 app.include_router(admin_setup_router)
 app.include_router(migrate_agents_router)
+app.include_router(fix_properties_router)
 
 os.makedirs("media", exist_ok=True)
 app.mount("/media", StaticFiles(directory="media"), name="media")
