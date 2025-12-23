@@ -6,7 +6,7 @@ import { ToastProvider, useToast } from "../../../backoffice/components/ToastPro
 import { getPreAngariacoes, type PreAngariacaoListItem } from "../../../src/services/backofficeApi";
 
 function PreAngariacoesInner() {
-  const toast = useToast();
+  const { push } = useToast();
   const [items, setItems] = useState<PreAngariacaoListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
@@ -19,13 +19,13 @@ function PreAngariacoesInner() {
         setItems(data);
       } catch (error: any) {
         console.error("Erro ao carregar pré-angariações:", error);
-        toast?.push("Erro ao carregar pré-angariações", "error");
+        push("Erro ao carregar pré-angariações", "error");
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [status, toast]);
+  }, [status, push]);
 
   return (
     <BackofficeLayout title="Pré-Angariações">

@@ -1,11 +1,10 @@
 'use client';
 
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
 type Toast = { id: string; message: string; type: "success" | "error" | "info" };
 
 type ToastContextValue = {
-  toasts: Toast[];
   push: (message: string, type?: Toast["type"]) => void;
   remove: (id: string) => void;
 };
@@ -15,16 +14,20 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const push = (message: string, type: Toast["type"] = "info") => {
+  const remove = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const push = useCallback((message: string, type: Toast["type"] = "info") => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => remove(id), 3500);
-  };
+  }, [remove]);
 
-  const remove = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
+  const value = useMemo(() => ({ push, remove }), [push, remove]);
 
   return (
-    <ToastContext.Provider value={{ toasts, push, remove }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="fixed right-4 top-16 z-50 space-y-2">
         {toasts.map((toast) => (
