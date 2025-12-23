@@ -63,8 +63,8 @@ export default function ProfileScreenV3() {
     if (agentProfile?.photo) return agentProfile.photo;
     if (agentProfile?.avatar_url) {
       if (agentProfile.avatar_url.startsWith('/')) {
-        // Usar URL do backoffice Vercel para avatares locais
-        return `https://crmplusv7-backoffice.vercel.app${agentProfile.avatar_url}`;
+        // Usar URL do web Vercel para avatares públicos
+        return `https://web-nymbcws7r-toinos-projects.vercel.app${agentProfile.avatar_url}`;
       }
       return agentProfile.avatar_url;
     }
