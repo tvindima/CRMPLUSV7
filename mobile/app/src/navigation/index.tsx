@@ -384,6 +384,7 @@ export default function Navigation() {
           // Utilizador autenticado - mostrar app
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
+            <Stack.Screen name="FirstImpressionList" component={FirstImpressionStackNavigator} />
           </>
         ) : (
           // Não autenticado - mostrar login

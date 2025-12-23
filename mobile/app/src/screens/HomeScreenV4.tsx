@@ -165,7 +165,7 @@ export default function HomeScreenV4({ navigation }: any) {
     if (agentProfile?.avatar_url) {
       // If it's a relative path, prepend API base URL
       if (agentProfile.avatar_url.startsWith('/')) {
-        return `https://fantastic-simplicity-production.up.railway.app${agentProfile.avatar_url}`;
+        return `https://crmplusv7-production.up.railway.app${agentProfile.avatar_url}`;
       }
       return agentProfile.avatar_url;
     }

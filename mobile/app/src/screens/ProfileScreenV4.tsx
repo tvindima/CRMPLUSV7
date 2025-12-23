@@ -65,7 +65,7 @@ export default function ProfileScreenV4() {
       if (agentProfile.photo.startsWith('http')) {
         return agentProfile.photo;
       }
-      return `https://fantastic-simplicity-production.up.railway.app${agentProfile.photo}`;
+      return `https://crmplusv7-production.up.railway.app${agentProfile.photo}`;
     }
     return null;
   };
