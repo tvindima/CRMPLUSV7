@@ -170,7 +170,7 @@ export default async function AgentPage({ params }: Props) {
     ? heroPropertiesVideo
     : properties.slice(0, 4);
 
-// Staff members (support team) - matching structure from /agentes page
+  // Staff members (support team) - matching structure from /agentes page
   const allStaffMembers = [
     { id: 19, name: "Ana Vindima", role: "Assistente de Tiago Vindima", phone: "918 503 014", avatar: "/avatars/19.png", isAgent: false, supportFor: "Tiago Vindima" },
     { id: 20, name: "Maria Olaio", role: "Diretora Financeira", phone: "244 001 003", avatar: "/avatars/20.png", isAgent: false },
@@ -179,12 +179,13 @@ export default async function AgentPage({ params }: Props) {
     { id: 23, name: "Cláudia Libânio", role: "Assistente de Bruno Libânio", phone: "912 118 911", avatar: "/avatars/23.png", isAgent: false, supportFor: "Bruno Libânio" },
   ];
 
-  // Build team members list: only staff directly supporting this agent (or generic staff if no specific support)
-  const teamMembers = [
-    // Staff members that support this specific agent or general staff
+  // Telefone prioritário: assistente dedicado, senão do agente
   const supportAssistant = allStaffMembers.find((staff) => staff.supportFor === agent.name && staff.phone);
   const phoneToCall = supportAssistant?.phone || agent.phone;
 
+  // Build team members list: only staff directly supporting this agent (or generic staff if no specific support)
+  const teamMembers = [
+    // Staff members that support this specific agent or general staff
     ...allStaffMembers
       .filter(staff => {
         // Include if staff supports this specific agent
