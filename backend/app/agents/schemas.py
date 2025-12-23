@@ -21,7 +21,19 @@ class AgentCreate(AgentBase):
     agency_id: Optional[int] = None
 
 
-class AgentUpdate(AgentBase):
+class AgentUpdate(BaseModel):
+    """Schema para atualização parcial de agente - todos campos opcionais"""
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    photo: Optional[str] = None
+    license_ami: Optional[str] = None
+    bio: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    linkedin: Optional[str] = None
+    whatsapp: Optional[str] = None
     team_id: Optional[int] = None
     agency_id: Optional[int] = None
 

@@ -291,8 +291,19 @@ export default function ProfileScreenV6() {
   };
 
   const saveProfile = async () => {
+    if (!agentProfile?.id) {
+      Alert.alert('Erro', 'Não foi possível identificar o agente.');
+      return;
+    }
+    
     try {
-      // Save bio and social networks to site preferences
+      // 1. Atualizar dados do agente (nome, telefone) na tabela agents
+      await apiService.put(`/agents/${agentProfile.id}`, {
+        name: editName,
+        phone: editPhone,
+      });
+      
+      // 2. Guardar bio e redes sociais nas site preferences
       await apiService.put('/mobile/site-preferences', {
         bio: editBio,
         instagram: editInstagram,
@@ -303,42 +314,25 @@ export default function ProfileScreenV6() {
         whatsapp: editWhatsapp,
       });
       
-      // Update local state
-      if (agentProfile) {
-        setAgentProfile({
-          ...agentProfile,
-          name: editName,
-          phone: editPhone,
-          bio: editBio,
-          instagram: editInstagram,
-          facebook: editFacebook,
-          linkedin: editLinkedin,
-          twitter: editTwitter,
-          tiktok: editTiktok,
-          whatsapp: editWhatsapp,
-        });
-      }
+      // 3. Atualizar estado local
+      setAgentProfile({
+        ...agentProfile,
+        name: editName,
+        phone: editPhone,
+        bio: editBio,
+        instagram: editInstagram,
+        facebook: editFacebook,
+        linkedin: editLinkedin,
+        twitter: editTwitter,
+        tiktok: editTiktok,
+        whatsapp: editWhatsapp,
+      });
+      
       setShowEditModal(false);
-      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!\nAs alterações serão visíveis no seu site montra.');
+      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!\nAs alterações serão visíveis em todos os dispositivos.');
     } catch (error) {
       console.error('Error saving profile:', error);
-      // Still update local state even if API fails
-      if (agentProfile) {
-        setAgentProfile({
-          ...agentProfile,
-          name: editName,
-          phone: editPhone,
-          bio: editBio,
-          instagram: editInstagram,
-          facebook: editFacebook,
-          linkedin: editLinkedin,
-          twitter: editTwitter,
-          tiktok: editTiktok,
-          whatsapp: editWhatsapp,
-        });
-      }
-      setShowEditModal(false);
-      Alert.alert('Aviso', 'Perfil guardado localmente. Sincronização com servidor pendente.');
+      Alert.alert('Erro', 'Não foi possível guardar o perfil. Verifique a sua ligação.');
     }
   };
 
