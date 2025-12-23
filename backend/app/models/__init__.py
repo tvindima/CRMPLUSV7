@@ -9,5 +9,6 @@ from app.models.event import Event  # Event precisa vir depois de Agent, Propert
 from app.models.first_impression import FirstImpression  # FirstImpression precisa vir depois de Agent, Property e Lead
 from app.models.draft_ingestion import DraftProperty, IngestionFile  # Modelos de ingestion
 from app.models.agent_site_preferences import AgentSitePreferences  # Preferências site agente
+from app.models.pre_angariacao import PreAngariacao  # Pré-angariação / Dossier
 
-__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences"]
+__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao"]

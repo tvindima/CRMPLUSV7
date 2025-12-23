@@ -29,6 +29,7 @@ from app.api.avatars import router as avatars_router
 from app.api.dashboard import router as dashboard_router
 from app.api.admin_migration import router as admin_migration_router
 from app.routers.first_impressions import router as first_impressions_router
+from app.routers.pre_angariacoes import router as pre_angariacoes_router
 from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
@@ -282,6 +283,7 @@ app.include_router(avatars_router)
 app.include_router(dashboard_router)
 app.include_router(admin_migration_router)
 app.include_router(first_impressions_router)
+app.include_router(pre_angariacoes_router)
 app.include_router(admin_setup_router)
 app.include_router(migrate_agents_router)
 app.include_router(fix_properties_router)
