@@ -1,10 +1,11 @@
 import os
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from PIL import Image
 import io
+import requests
 from . import services, schemas
 from app.database import get_db
 from app.properties.models import PropertyStatus
@@ -23,52 +24,130 @@ IMAGE_SIZES = {
     "large": (1920, 1920),         # Visualização detalhada
 }
 IMAGE_QUALITY = 85  # Qualidade JPEG/WebP (0-100)
-WATERMARK_OPACITY = 0.6  # Opacidade da marca d'água (60%)
-WATERMARK_SCALE = 0.15  # Tamanho da marca d'água (15% da largura da imagem)
+
+# Cache para watermark (evita carregar de URL a cada imagem)
+_watermark_cache = {
+    "image": None,
+    "url": None,
+    "settings": None
+}
 
 
-def apply_watermark(img: Image.Image, watermark_path: str = "media/logo-watermark.png") -> Image.Image:
+def get_watermark_settings(db: Session) -> Optional[dict]:
+    """
+    Obtém configurações de watermark da base de dados.
+    Retorna None se watermark não estiver configurado/ativado.
+    """
+    try:
+        from app.models.crm_settings import CRMSettings
+        settings = db.query(CRMSettings).first()
+        
+        if not settings or not settings.watermark_enabled or not settings.watermark_image_url:
+            return None
+        
+        return {
+            "url": settings.watermark_image_url,
+            "opacity": settings.watermark_opacity,
+            "scale": settings.watermark_scale,
+            "position": settings.watermark_position
+        }
+    except Exception as e:
+        print(f"[Watermark] Erro ao obter settings: {e}")
+        return None
+
+
+def load_watermark_from_url(url: str) -> Optional[Image.Image]:
+    """
+    Carrega imagem de watermark a partir de URL (Cloudinary).
+    Usa cache para evitar downloads repetidos.
+    """
+    global _watermark_cache
+    
+    # Verificar cache
+    if _watermark_cache["url"] == url and _watermark_cache["image"] is not None:
+        return _watermark_cache["image"].copy()
+    
+    try:
+        print(f"[Watermark] Carregando de URL: {url}")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        watermark = Image.open(io.BytesIO(response.content)).convert("RGBA")
+        
+        # Atualizar cache
+        _watermark_cache["url"] = url
+        _watermark_cache["image"] = watermark
+        
+        return watermark.copy()
+        
+    except Exception as e:
+        print(f"[Watermark] Erro ao carregar de URL: {e}")
+        return None
+
+
+def apply_watermark(img: Image.Image, db: Session = None) -> Image.Image:
     """
     Aplica marca d'água com logo da agência na imagem.
+    Usa configurações dinâmicas da base de dados.
     
     Args:
         img: Imagem PIL
-        watermark_path: Caminho para o logo da agência
+        db: Sessão da base de dados (para obter settings)
     
     Returns:
-        Imagem com marca d'água aplicada
+        Imagem com marca d'água aplicada (ou original se watermark desativado)
     """
     try:
-        # Tentar carregar logo da agência
-        if not os.path.exists(watermark_path):
-            # Se não existir, retornar imagem sem watermark
+        # Obter configurações
+        if db is None:
+            print("[Watermark] Sem sessão DB, não aplicar watermark")
             return img
         
-        watermark = Image.open(watermark_path).convert("RGBA")
+        settings = get_watermark_settings(db)
+        if settings is None:
+            print("[Watermark] Watermark desativado ou não configurado")
+            return img
         
-        # Calcular tamanho proporcional do watermark (15% da largura da imagem)
+        # Carregar watermark de URL
+        watermark = load_watermark_from_url(settings["url"])
+        if watermark is None:
+            return img
+        
+        # Calcular tamanho proporcional do watermark
         img_width, img_height = img.size
-        wm_width = int(img_width * WATERMARK_SCALE)
+        wm_scale = settings["scale"]  # Ex: 0.15 = 15%
+        wm_width = int(img_width * wm_scale)
         wm_ratio = watermark.size[0] / watermark.size[1]
         wm_height = int(wm_width / wm_ratio)
         
         # Redimensionar watermark
         watermark = watermark.resize((wm_width, wm_height), Image.Resampling.LANCZOS)
         
-        # Ajustar opacidade (60%)
+        # Ajustar opacidade
+        opacity = settings["opacity"]  # Ex: 0.6 = 60%
         alpha = watermark.split()[3]
-        alpha = Image.eval(alpha, lambda a: int(a * WATERMARK_OPACITY))
+        alpha = Image.eval(alpha, lambda a: int(a * opacity))
         watermark.putalpha(alpha)
         
         # Criar camada para watermark
         layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
         
-        # Posição: canto inferior direito com margem
+        # Calcular posição baseado na configuração
         margin = 20
-        position = (
-            img_width - wm_width - margin,
-            img_height - wm_height - margin
-        )
+        position_name = settings["position"]
+        
+        if position_name == "bottom-right":
+            position = (img_width - wm_width - margin, img_height - wm_height - margin)
+        elif position_name == "bottom-left":
+            position = (margin, img_height - wm_height - margin)
+        elif position_name == "top-right":
+            position = (img_width - wm_width - margin, margin)
+        elif position_name == "top-left":
+            position = (margin, margin)
+        elif position_name == "center":
+            position = ((img_width - wm_width) // 2, (img_height - wm_height) // 2)
+        else:
+            position = (img_width - wm_width - margin, img_height - wm_height - margin)
         
         layer.paste(watermark, position)
         
@@ -80,6 +159,7 @@ def apply_watermark(img: Image.Image, watermark_path: str = "media/logo-watermar
         final = Image.new('RGB', img_with_wm.size, (255, 255, 255))
         final.paste(img_with_wm, mask=img_with_wm.split()[3])
         
+        print(f"[Watermark] Aplicado com sucesso (opacity={opacity}, scale={wm_scale}, pos={position_name})")
         return final
         
     except Exception as e:
@@ -88,7 +168,7 @@ def apply_watermark(img: Image.Image, watermark_path: str = "media/logo-watermar
         return img
 
 
-def optimize_image(image_bytes: bytes, filename: str, size_name: str = "large") -> tuple[bytes, str]:
+def optimize_image(image_bytes: bytes, filename: str, size_name: str = "large", db: Session = None) -> tuple[bytes, str]:
     """
     Redimensiona e otimiza imagem para web com marca d'água automática.
     
@@ -96,6 +176,7 @@ def optimize_image(image_bytes: bytes, filename: str, size_name: str = "large") 
         image_bytes: Bytes da imagem original
         filename: Nome do arquivo original
         size_name: Tamanho desejado (thumbnail, medium, large)
+        db: Sessão da base de dados (para obter settings de watermark)
     
     Returns:
         Tuple com (bytes otimizados, extensão do arquivo)
@@ -119,7 +200,7 @@ def optimize_image(image_bytes: bytes, filename: str, size_name: str = "large") 
     
     # Aplicar marca d'água (exceto em thumbnails muito pequenos)
     if size_name in ["medium", "large"]:
-        img = apply_watermark(img)
+        img = apply_watermark(img, db=db)
     
     # Salvar otimizado em memória
     output = io.BytesIO()
@@ -276,7 +357,7 @@ async def upload_property_images(
             
             saved_urls = []
             for size_name in ["thumbnail", "medium", "large"]:
-                optimized_bytes, ext = optimize_image(content, upload.filename, size_name)
+                optimized_bytes, ext = optimize_image(content, upload.filename, size_name, db=db)
                 
                 # Nome do arquivo: original_thumbnail.webp, original_medium.webp, etc.
                 filename = f"{base_name}_{size_name}{ext}"

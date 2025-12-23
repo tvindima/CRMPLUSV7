@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+// ✅ LIMITE MÁXIMO DE FOTOS POR PROPRIEDADE
+const MAX_PHOTOS = 30;
 
 type Props = {
   existingUrls: string[];
@@ -12,6 +15,8 @@ type Props = {
 
 export function UploadArea({ existingUrls, files, onAddFiles, onRemoveFile, onRemoveExisting }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [limitError, setLimitError] = useState<string | null>(null);
+  
   const previews = useMemo(
     () =>
       files.map((file) => ({
@@ -21,26 +26,90 @@ export function UploadArea({ existingUrls, files, onAddFiles, onRemoveFile, onRe
     [files]
   );
 
+  // Total de fotos (existentes + novas)
+  const totalPhotos = existingUrls.length + files.length;
+  const remainingSlots = MAX_PHOTOS - totalPhotos;
+  const isAtLimit = totalPhotos >= MAX_PHOTOS;
+
   useEffect(() => {
     return () => {
       previews.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
   }, [previews]);
 
+  // Handler com validação de limite
+  const handleAddFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
+    
+    const filesArray = Array.from(fileList);
+    const availableSlots = MAX_PHOTOS - (existingUrls.length + files.length);
+    
+    if (filesArray.length > availableSlots) {
+      if (availableSlots <= 0) {
+        setLimitError(`❌ Limite atingido! Máximo de ${MAX_PHOTOS} fotos por imóvel.`);
+      } else {
+        setLimitError(`⚠️ Só pode adicionar mais ${availableSlots} foto(s). Serão usadas apenas as primeiras ${availableSlots}.`);
+        // Criar novo FileList com apenas os ficheiros permitidos
+        const dt = new DataTransfer();
+        filesArray.slice(0, availableSlots).forEach(f => dt.items.add(f));
+        onAddFiles(dt.files);
+      }
+      setTimeout(() => setLimitError(null), 5000);
+      return;
+    }
+    
+    setLimitError(null);
+    onAddFiles(fileList);
+  };
+
   return (
     <div className="rounded border border-dashed border-[#2A2A2E] bg-[#151518] p-3">
-      <p className="text-sm text-[#C5C5C5]">
-        📸 Adicione fotos profissionais do imóvel (fachada, salas, quartos, cozinha, etc.)
-      </p>
+      {/* Header com contador */}
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-[#C5C5C5]">
+          📸 Adicione fotos profissionais do imóvel
+        </p>
+        <span className={`text-xs font-mono px-2 py-1 rounded ${
+          isAtLimit ? 'bg-red-500/20 text-red-400' : 
+          totalPhotos > MAX_PHOTOS * 0.8 ? 'bg-yellow-500/20 text-yellow-400' :
+          'bg-[#2A2A2E] text-[#888]'
+        }`}>
+          {totalPhotos}/{MAX_PHOTOS}
+        </span>
+      </div>
+      
+      {/* Mensagem de erro de limite */}
+      {limitError && (
+        <div className="mb-3 p-2 rounded border border-red-500/30 bg-red-500/10 text-xs text-red-400">
+          {limitError}
+        </div>
+      )}
+      
+      {/* Área de upload */}
       <div
-        className="mt-2 flex cursor-pointer items-center justify-center rounded border-2 border-dashed border-[#E10600]/40 bg-[#E10600]/5 px-3 py-8 text-sm font-semibold text-[#E10600] hover:border-[#E10600] hover:bg-[#E10600]/10 transition-all"
-        onClick={() => inputRef.current?.click()}
+        className={`mt-2 flex cursor-pointer items-center justify-center rounded border-2 border-dashed px-3 py-8 text-sm font-semibold transition-all ${
+          isAtLimit 
+            ? 'border-[#444] bg-[#1A1A1A] text-[#666] cursor-not-allowed' 
+            : 'border-[#E10600]/40 bg-[#E10600]/5 text-[#E10600] hover:border-[#E10600] hover:bg-[#E10600]/10'
+        }`}
+        onClick={() => !isAtLimit && inputRef.current?.click()}
       >
         <span className="flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Clique para selecionar imagens ou arraste aqui
+          {isAtLimit ? (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Limite de {MAX_PHOTOS} fotos atingido
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Clique para selecionar imagens ({remainingSlots} disponíveis)
+            </>
+          )}
         </span>
         <input
           ref={inputRef}
@@ -48,7 +117,8 @@ export function UploadArea({ existingUrls, files, onAddFiles, onRemoveFile, onRe
           accept="image/*"
           multiple
           className="hidden"
-          onChange={(e) => onAddFiles(e.target.files)}
+          disabled={isAtLimit}
+          onChange={(e) => handleAddFiles(e.target.files)}
         />
       </div>
 

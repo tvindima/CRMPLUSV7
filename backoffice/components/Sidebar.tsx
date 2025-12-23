@@ -21,6 +21,7 @@ const links = [
   { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
   { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
   { href: "/backoffice/config", label: "Configurações", roles: ["admin", "staff"], isManagement: true },
+  { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true, isSubItem: true },
 ];
 
 const iconCircle = (
@@ -96,15 +97,18 @@ export function Sidebar() {
               .filter((l) => l.roles.includes(role) && l.isManagement)
               .map((link) => {
                 const active = pathname?.startsWith(link.href);
+                const isSubItem = (link as any).isSubItem;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm ${
+                      isSubItem ? 'ml-6 text-xs' : ''
+                    } ${
                       active ? "bg-[#111113] text-white" : "text-[#C5C5C5] hover:bg-[#0B0B0D]"
                     }`}
                   >
-                    {iconCircle}
+                    {!isSubItem && iconCircle}
                     <span>{link.label}</span>
                   </Link>
                 );
