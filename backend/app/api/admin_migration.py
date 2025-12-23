@@ -249,3 +249,49 @@ def check_tasks_table(db: Session = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/add-social-columns")
+def add_twitter_tiktok_columns(db: Session = Depends(get_db)):
+    """
+    Adicionar colunas twitter e tiktok à tabela agent_site_preferences
+    """
+    results = []
+    
+    try:
+        # Verificar e adicionar coluna twitter
+        check_twitter = text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name='agent_site_preferences' AND column_name='twitter'
+        """)
+        twitter_exists = db.execute(check_twitter).fetchone() is not None
+        
+        if not twitter_exists:
+            db.execute(text("ALTER TABLE agent_site_preferences ADD COLUMN twitter VARCHAR(255)"))
+            results.append("✅ Coluna 'twitter' adicionada")
+        else:
+            results.append("⚠️ Coluna 'twitter' já existe")
+        
+        # Verificar e adicionar coluna tiktok
+        check_tiktok = text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name='agent_site_preferences' AND column_name='tiktok'
+        """)
+        tiktok_exists = db.execute(check_tiktok).fetchone() is not None
+        
+        if not tiktok_exists:
+            db.execute(text("ALTER TABLE agent_site_preferences ADD COLUMN tiktok VARCHAR(255)"))
+            results.append("✅ Coluna 'tiktok' adicionada")
+        else:
+            results.append("⚠️ Coluna 'tiktok' já existe")
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
