@@ -188,12 +188,17 @@ export async function getAgents(limit = 50): Promise<Agent[]> {
 export async function getAgentById(id: number): Promise<Agent | null> {
   try {
     const data = await fetchJson<Agent>(`/agents/${id}`);
-    console.log(`[getAgentById] Backend returned agent ${id}:`, data.name);
     return data;
   } catch (error) {
     console.error(`[getAgentById] Agent ${id} not found in backend:`, error);
     return null; // ✅ Retornar null - sem fallback
   }
+}
+
+// Helper para obter propriedades de um agente específico
+export async function getAgentProperties(agentId: number, limit = 200): Promise<Property[]> {
+  const all = await getProperties(limit);
+  return all.filter((p) => p.agent_id === agentId);
 }
 
 export { API_BASE };
