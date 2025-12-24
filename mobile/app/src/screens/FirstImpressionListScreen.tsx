@@ -69,8 +69,8 @@ export default function FirstImpressionListScreen() {
   // Apagar documento
   const handleDelete = (id: number, clientName: string) => {
     Alert.alert(
-      'Confirmar',
-      `Apagar pré-angariação de ${clientName}?`,
+      'Apagar pré-angariação',
+      `Esta ação é irreversível. Confirmar apagar a pré-angariação de ${clientName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -78,11 +78,21 @@ export default function FirstImpressionListScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Cancelar/Apagar pré-angariação ligada (apenas o admin remove de vez no backoffice)
+              try {
+                const pre = await preAngariacaoService.getByFirstImpression(id);
+                if (pre?.id) {
+                  await preAngariacaoService.delete(pre.id);
+                }
+              } catch (e) {
+                // se não existir, seguir
+              }
               await firstImpressionService.delete(id);
-              Alert.alert('Sucesso', 'Pré-angariação apagada');
+              Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
               loadImpressions(false);
             } catch (error) {
-              Alert.alert('Erro', 'Não foi possível apagar');
+              console.error('Erro ao apagar:', error);
+              Alert.alert('Erro', 'Não foi possível apagar. Tente novamente.');
             }
           },
         },

@@ -52,6 +52,9 @@ export const preAngariacaoService = {
   update: async (preAngariacaoId: number, payload: UpdatePreAngariacaoPayload) => {
     return apiService.put(`/pre-angariacoes/${preAngariacaoId}`, payload);
   },
+  delete: async (preAngariacaoId: number) => {
+    return apiService.delete(`/pre-angariacoes/${preAngariacaoId}`);
+  },
   addDocumento: async (preAngariacaoId: number, payload: AddDocumentoPayload | AddDocumentoPayload[]) => {
     // Suporta 1 ou vários; se array, envia sequencial para respeitar checklist
     if (Array.isArray(payload)) {
