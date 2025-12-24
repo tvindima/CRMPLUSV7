@@ -20,7 +20,9 @@ import { Linking } from 'react-native';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
   const initialId = route.params?.impressionId ?? null;
+  const initialPreAngId = route.params?.preAngariacaoId ?? null;
   const [impressionId, setImpressionId] = useState<number | null>(initialId);
+  const [preAngariacaoId, setPreAngariacaoId] = useState<number | null>(initialPreAngId);
   const isEditMode = !!impressionId;
 
   // Estados Cliente
@@ -168,7 +170,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         if (created.status) setStatus(created.status as any);
         // Criar pré-angariação ligada a esta 1ª impressão
         try {
-          await preAngariacaoService.createFromFirstImpression(created.id);
+          const pre = await preAngariacaoService.createFromFirstImpression(created.id);
+          if (pre?.id) setPreAngariacaoId(pre.id);
         } catch (e) {
           console.warn('Pré-angariação não criada automaticamente:', e);
         }
@@ -192,7 +195,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
     // Já existe? Navega de imediato
     if (impressionId) {
-      navigation.navigate('CMIForm', { firstImpressionId: impressionId });
+      navigation.navigate('CMIForm', { firstImpressionId: impressionId, preAngariacaoId: preAngariacaoId || undefined });
       return;
     }
 
@@ -204,11 +207,12 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setImpressionId(created.id);
       if (created.status) setStatus(created.status as any);
       try {
-        await preAngariacaoService.createFromFirstImpression(created.id);
+        const pre = await preAngariacaoService.createFromFirstImpression(created.id);
+        if (pre?.id) setPreAngariacaoId(pre.id);
       } catch (e) {
-      console.warn('Pré-angariação não criada automaticamente:', e);
-    }
-    navigation.navigate('CMIForm', { firstImpressionId: created.id });
+        console.warn('Pré-angariação não criada automaticamente:', e);
+      }
+      navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: preAngariacaoId || undefined });
   } catch (error) {
     console.error('[CMI] ❌ Erro ao criar rascunho:', error);
     Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
