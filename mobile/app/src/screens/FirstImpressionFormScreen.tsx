@@ -17,6 +17,7 @@ import { firstImpressionService } from '../services/firstImpressionService';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { preAngariacaoService } from '../services/preAngariacaoService';
 import { Linking } from 'react-native';
+import { cloudinaryService } from '../services/cloudinary';
 
 export default function FirstImpressionFormScreen({ navigation, route }) {
   const initialId = route.params?.impressionId ?? null;
@@ -172,6 +173,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         await firstImpressionService.update(impressionId, payload);
         Alert.alert('Sucesso', 'Documento atualizado com sucesso!');
         setStatus((prev) => prev); // status permanece
+        if (preAngariacaoId) {
+          await syncPreAngFotos(preAngariacaoId);
+        }
       } else {
         const created = await firstImpressionService.create(payload);
         setImpressionId(created.id);
@@ -180,6 +184,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         try {
           const pre = await preAngariacaoService.createFromFirstImpression(created.id);
           if (pre?.id) setPreAngariacaoId(pre.id);
+          if (pre?.id) {
+            await syncPreAngFotos(pre.id);
+          }
         } catch (e) {
           console.warn('Pré-angariação não criada automaticamente:', e);
         }
@@ -252,6 +259,31 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       Alert.alert('Erro', message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Sincronizar fotos com pré-angariação (upload para Cloudinary + update)
+  const syncPreAngFotos = async (targetPreId: number) => {
+    if (!photos || photos.length === 0) return;
+    const uploaded: any[] = [];
+    let order = 0;
+    for (const uri of photos) {
+      try {
+        const name = `preang-foto-${Date.now()}-${order}.jpg`;
+        const url = await cloudinaryService.uploadFile(uri, name, 'image/jpeg');
+        uploaded.push({
+          url,
+          caption: null,
+          room_type: null,
+          order: order++,
+          uploaded_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Falha upload foto', e);
+      }
+    }
+    if (uploaded.length > 0) {
+      await preAngariacaoService.update(targetPreId, { fotos: uploaded });
     }
   };
 

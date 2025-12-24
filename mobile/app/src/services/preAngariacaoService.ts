@@ -32,6 +32,13 @@ export interface UpdatePreAngariacaoPayload {
   estado_conservacao?: string;
   valor_pretendido?: number;
   notas?: string;
+  fotos?: Array<{
+    url: string;
+    caption?: string | null;
+    room_type?: string | null;
+    order?: number;
+    uploaded_at?: string;
+  }>;
 }
 
 export const preAngariacaoService = {

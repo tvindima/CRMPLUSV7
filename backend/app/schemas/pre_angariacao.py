@@ -126,6 +126,9 @@ class PreAngariacaoUpdate(BaseModel):
     
     data_primeira_visita: Optional[datetime] = None
     data_contrato: Optional[datetime] = None
+    
+    # Atualização completa de fotos (substitui lista)
+    fotos: Optional[List[FotoItem]] = None
 
 
 class PreAngariacaoResponse(PreAngariacaoBase):

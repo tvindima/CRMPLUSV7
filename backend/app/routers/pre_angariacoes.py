@@ -372,9 +372,17 @@ def atualizar_pre_angariacao(
     if not item:
         raise HTTPException(status_code=404, detail="Pré-angariação não encontrada")
     
-    # Atualizar campos
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    fotos_payload = payload.pop("fotos", None)
+
+    # Atualizar campos simples
+    for field, value in payload.items():
         setattr(item, field, value)
+
+    # Substituir fotos se enviadas
+    if fotos_payload is not None:
+        item.fotos = fotos_payload
+        flag_modified(item, "fotos")
     
     db.commit()
     db.refresh(item)
