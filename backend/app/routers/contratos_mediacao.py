@@ -557,6 +557,53 @@ def processar_documento_ocr(
             data_out["valor_patrimonial"] = parse_decimal(mvp.group(1))
         return data_out
 
+    def parse_certidao_from_text(text: str):
+        """Extrair alguns campos da certidão permanente."""
+        out = {}
+        mat = re.search(r"MATRIZ\s*n[ºo]\s*[: ]+(\d+)", text, re.IGNORECASE)
+        if mat:
+            out["imovel_matriz_predial"] = mat.group(1)
+        art = re.search(r"ARTIGO\s+MATR[IÍ]CIAL.*?(\d+)", text, re.IGNORECASE)
+        if art:
+            out["imovel_artigo_matricial"] = art.group(1)
+        area_util = re.search(r"[ÁA]REA\s+ÚTIL\s+.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
+        if area_util:
+            out["imovel_area_util"] = parse_decimal(area_util.group(1))
+        area_bruta = re.search(r"[ÁA]REA\s+TOTAL.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
+        if area_bruta:
+            out["imovel_area_bruta"] = parse_decimal(area_bruta.group(1))
+        # Confrontações (simplificado: procurar "NORTE|SUL|NASCENTE|POENTE")
+        confrontos = re.findall(r"(NORTE|SUL|NASCENTE|POENTE)[: ]+([^\n]+)", text, re.IGNORECASE)
+        if confrontos:
+            out["imovel_confrontacoes"] = "; ".join([f"{c[0]}: {c[1]}" for c in confrontos])
+        return out
+
+    def parse_certificado_energetico(text: str):
+        """Extrair morada, CP, freguesia/concelho, artigo e classe energética."""
+        out = {}
+        mor = re.search(r"Morada\s+([^\n]+)", text, re.IGNORECASE)
+        if mor:
+            out["imovel_morada"] = mor.group(1).strip()
+        cp = re.search(r"[Cc][óo]digo\s+Postal\s+([0-9\\-]+)", text, re.IGNORECASE)
+        if cp:
+            out["imovel_codigo_postal"] = cp.group(1)
+        freg = re.search(r"Freguesia\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
+        if freg:
+            out["imovel_freguesia"] = freg.group(1).strip()
+        conc = re.search(r"Concelho\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
+        if conc:
+            out["imovel_concelho"] = conc.group(1).strip()
+        art = re.search(r"Artigo\s+Matricial\s+n?[ºo]?\s*([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if art:
+            out["imovel_artigo_matricial"] = art.group(1)
+        area_util = re.search(r"[ÁA]rea\s+útil.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
+        if area_util:
+            out["imovel_area_util"] = parse_decimal(area_util.group(1))
+        classe = re.search(r"CLASSE\s+ENERG[ÉE]TICA.*?\b([A-F]\+?)\b", text, re.IGNORECASE)
+        if classe:
+            out["imovel_certificado_energetico"] = classe.group(1)
+        return out
+
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
@@ -695,6 +742,31 @@ def processar_documento_ocr(
                 # Usar valor patrimonial como valor pretendido se estiver vazio
                 if not item.valor_pretendido:
                     updates["valor_pretendido"] = parsed_cad["valor_patrimonial"]
+
+    if data.tipo == "certidao_permanente":
+        parsed_cert = parse_certidao_from_text(dados_extraidos.get("raw_text", ""))
+        if parsed_cert:
+            if parsed_cert.get("imovel_artigo_matricial"):
+                updates["imovel_artigo_matricial"] = parsed_cert["imovel_artigo_matricial"]
+            if parsed_cert.get("imovel_area_util") is not None:
+                updates["imovel_area_util"] = parsed_cert["imovel_area_util"]
+            if parsed_cert.get("imovel_area_bruta") is not None:
+                updates["imovel_area_bruta"] = parsed_cert["imovel_area_bruta"]
+            # Confrontações guardadas em notas
+            if parsed_cert.get("imovel_confrontacoes"):
+                if item.notas:
+                    updates["notas"] = f"{item.notas}\nConfrontações: {parsed_cert['imovel_confrontacoes']}"
+                else:
+                    updates["notas"] = f"Confrontações: {parsed_cert['imovel_confrontacoes']}"
+
+    if data.tipo == "certificado_energetico":
+        parsed_ce = parse_certificado_energetico(dados_extraidos.get("raw_text", ""))
+        if parsed_ce:
+            for field in ["imovel_morada", "imovel_codigo_postal", "imovel_freguesia", "imovel_concelho", "imovel_artigo_matricial", "imovel_certificado_energetico"]:
+                if parsed_ce.get(field):
+                    updates[field] = parsed_ce[field]
+            if parsed_ce.get("imovel_area_util") is not None:
+                updates["imovel_area_util"] = parsed_ce["imovel_area_util"]
 
     # Persistir updates no CMI
     if updates:
