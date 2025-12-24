@@ -61,7 +61,7 @@ const TIPOS_CONTRATO = [
 export default function CMIFormScreen({ navigation, route }: Props) {
   const cmiId = route.params?.cmiId;
   const firstImpressionId = route.params?.firstImpressionId;
-  const preAngariacaoId = route.params?.preAngariacaoId;
+  const preAngariacaoIdProp = route.params?.preAngariacaoId;
   const isEditMode = !!cmiId;
 
   // Auth context - para obter nome do agente
@@ -114,6 +114,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   // === ASSINATURAS ===
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
+  const [preAngariacaoId, setPreAngariacaoId] = useState<number | null>(preAngariacaoIdProp ?? null);
 
   // Refs
   const signatureRef = useRef<any>(null);
@@ -121,7 +122,18 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   useEffect(() => {
     loadData();
     loadAgentData();
+    ensurePreAngariacao();
   }, []);
+
+  const ensurePreAngariacao = async () => {
+    if (preAngariacaoId || !firstImpressionId) return;
+    try {
+      const pre = await preAngariacaoService.getByFirstImpression(firstImpressionId);
+      if (pre?.id) setPreAngariacaoId(pre.id);
+    } catch (e) {
+      // ignorar se ainda não existir
+    }
+  };
 
   const loadAgentData = async () => {
     try {
@@ -259,7 +271,19 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   const persistDocumento = async (fileUri: string, fileName: string, mimeType: string) => {
-    if (!preAngariacaoId) return null;
+    let targetPreId = preAngariacaoId;
+    if (!targetPreId && firstImpressionId) {
+      try {
+        const pre = await preAngariacaoService.getByFirstImpression(firstImpressionId);
+        if (pre?.id) {
+          targetPreId = pre.id;
+          setPreAngariacaoId(pre.id);
+        }
+      } catch {
+        // sem pre-angariação ligada
+      }
+    }
+    if (!targetPreId) return null;
     // Upload para Cloudinary e salvar em pré-angariação
     const url = await cloudinaryService.uploadFile(fileUri, fileName, mimeType);
     const tipoDocumento =
@@ -269,7 +293,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       currentDocType === 'certificado_energetico' ? 'certificado_energetico' :
       'documentos_proprietario'; // CC frente/verso => documentos_proprietario
 
-    await preAngariacaoService.addDocumento(preAngariacaoId, {
+    await preAngariacaoService.addDocumento(targetPreId, {
       type: tipoDocumento,
       name: fileName,
       url,
