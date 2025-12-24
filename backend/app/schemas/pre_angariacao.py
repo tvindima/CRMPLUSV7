@@ -129,6 +129,7 @@ class PreAngariacaoUpdate(BaseModel):
     
     # Atualização completa de fotos (substitui lista)
     fotos: Optional[List[FotoItem]] = None
+    status: Optional[str] = None
 
 
 class PreAngariacaoResponse(PreAngariacaoBase):

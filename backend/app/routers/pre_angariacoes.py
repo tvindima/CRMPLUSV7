@@ -50,7 +50,7 @@ def listar_pre_angariacoes(
     query = db.query(PreAngariacao).options(joinedload(PreAngariacao.agent))
 
     if not is_admin:
-        query = query.filter(PreAngariacao.agent_id == current_user.agent_id)
+        query = query.filter(PreAngariacao.agent_id == current_user.agent_id, PreAngariacao.status != PreAngariacaoStatus.CANCELADO)
     elif agent_id:
         query = query.filter(PreAngariacao.agent_id == agent_id)
     

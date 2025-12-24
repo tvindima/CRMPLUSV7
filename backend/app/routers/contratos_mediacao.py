@@ -10,6 +10,8 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import logging
 import re
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 from app.database import get_db
 from app.security import get_current_user
@@ -25,6 +27,9 @@ import base64
 import os
 import re
 from decimal import Decimal
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
 try:
     from google.cloud import vision  # type: ignore
     VISION_AVAILABLE = True
@@ -192,6 +197,79 @@ def criar_cmi(
     
     logger.info(f"CMI criado: {numero} por agent_id={current_user.agent_id}")
     return cmi
+
+
+@router.get("/{cmi_id}/pdf")
+def gerar_pdf(
+    cmi_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Gerar PDF simples do CMI para pré-visualização/assinaturas."""
+    if not current_user.agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    item = db.query(ContratoMediacaoImobiliaria).filter(
+        ContratoMediacaoImobiliaria.id == cmi_id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="CMI não encontrado")
+    
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 30*mm
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(20*mm, y, f"Contrato de Mediação Imobiliária - {item.numero_contrato}")
+    y -= 8*mm
+    c.setFont("Helvetica", 11)
+    c.drawString(20*mm, y, f"Data Início: {item.data_inicio}   Data Fim: {item.data_fim}")
+    y -= 12*mm
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(20*mm, y, "Cliente / Proprietário")
+    y -= 7*mm
+    c.setFont("Helvetica", 10)
+    c.drawString(20*mm, y, f"Nome: {item.cliente_nome or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"NIF: {item.cliente_nif or ''}    CC: {item.cliente_cc or ''}   Validade: {item.cliente_cc_validade or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Telefone: {item.cliente_telefone or ''}   Email: {item.cliente_email or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Morada: {item.cliente_morada or ''}  {item.cliente_codigo_postal or ''} {item.cliente_localidade or ''}")
+    y -= 10*mm
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(20*mm, y, "Imóvel")
+    y -= 7*mm
+    c.setFont("Helvetica", 10)
+    c.drawString(20*mm, y, f"Tipologia: {item.imovel_tipologia or ''}   Tipo: {item.imovel_tipo or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Morada: {item.imovel_morada or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Freguesia: {item.imovel_freguesia or ''}   Concelho: {item.imovel_concelho or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Artigo matricial: {item.imovel_artigo_matricial or ''}   Conservatória: {item.imovel_conservatoria or ''}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Áreas (bruta/útil): {item.imovel_area_bruta or ''} / {item.imovel_area_util or ''}")
+    y -= 10*mm
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(20*mm, y, "Condições do Contrato")
+    y -= 7*mm
+    c.setFont("Helvetica", 10)
+    c.drawString(20*mm, y, f"Tipo: {item.tipo_contrato}   Valor pretendido: {format_money(item.valor_pretendido)}   Valor mínimo: {format_money(item.valor_minimo)}")
+    y -= 6*mm
+    c.drawString(20*mm, y, f"Comissão: {item.comissao_percentagem or ''}%   Prazo (meses): {item.prazo_meses or ''}")
+    y -= 12*mm
+    c.drawString(20*mm, y, "Assinaturas:")
+    y -= 10*mm
+    c.line(20*mm, y, 80*mm, y)
+    c.drawString(22*mm, y-6, "Cliente / Proprietário")
+    c.line(120*mm, y, 180*mm, y)
+    c.drawString(122*mm, y-6, "Mediadora")
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    headers = {"Content-Disposition": f"inline; filename=cmi-{cmi_id}.pdf"}
+    return StreamingResponse(buffer, media_type="application/pdf", headers=headers)
 
 
 @router.post("/from-first-impression", response_model=schemas.CMIResponse, status_code=201)
@@ -504,9 +582,18 @@ def processar_documento_ocr(
             m = re.search(r"\b(\d{8,9})\b", text.replace(" ", ""))
             if m:
                 doc_num = m.group(1)
+        # Capturar validade mesmo que venha com pontos
+        if not validade:
+            mval = re.search(r"\b(\d{2})[.\-](\d{2})[.\-](\d{4})\b", text)
+            if mval:
+                validade = f"{mval.group(1)}/{mval.group(2)}/{mval.group(3)}"
+        # Nome pela MRZ se existir
         name = None
+        mrz_full = mrz_name(text)
         if given or surnames:
             name = " ".join([given or "", surnames or ""]).strip()
+        if mrz_full:
+            name = mrz_full
         return {"nome": name, "numero_documento": doc_num, "validade": validade}
 
     def parse_decimal(text_val: str):
@@ -516,6 +603,25 @@ def processar_documento_ocr(
             return Decimal(cleaned)
         except Exception:
             return None
+    
+    def format_money(val: Optional[Decimal]):
+        if val is None:
+            return ""
+        return f"{val:,.2f}".replace(",", " ").replace(".", ",")
+    
+    def mrz_name(text: str):
+        """
+        Extrair nome/apelido a partir de MRZ (linha com <<).
+        Formato: APELIDO<<NOME
+        """
+        for ln in text.splitlines():
+            if "<<" in ln:
+                parts = ln.strip().split("<<")
+                last = parts[0].replace("<", " ").strip()
+                first = parts[1].replace("<", " ").strip() if len(parts) > 1 else ""
+                full = f"{first} {last}".strip()
+                return full
+        return None
 
     def parse_caderneta_from_text(text: str):
         """Extrair campos chave da caderneta predial."""
@@ -542,6 +648,10 @@ def processar_documento_ocr(
         mrua = re.search(r"AV\.?/Rua/Prac[aà][: ]+([^\n]+)", text, re.IGNORECASE)
         if mrua:
             data_out["morada"] = mrua.group(1).strip()
+        # Localidade se existir em campos de localização
+        mloc = re.search(r"Localiza[cç][aã]o[: ]+([^\n]+)", text, re.IGNORECASE)
+        if mloc and not data_out.get("morada"):
+            data_out["morada"] = mloc.group(1).strip()
         # Tipologia
         mtipo = re.search(r"Tipologia/?Divis[oõ]es[: ]+([0-9]+)", text, re.IGNORECASE)
         if mtipo:
@@ -582,6 +692,13 @@ def processar_documento_ocr(
         mor = re.search(r"SITUAD[OA]\s+EM[: ]+([^\n]+)", text, re.IGNORECASE)
         if mor:
             out["imovel_morada"] = mor.group(1).strip()
+        # Freguesia/Concelho se constarem na linha superior
+        freg = re.search(r"FREGUESIA[: ]+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
+        if freg:
+            out["imovel_freguesia"] = freg.group(1).strip()
+        conc = re.search(r"CONSERVAT[ÓO]RIA.*?\sde\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
+        if conc:
+            out["imovel_concelho"] = conc.group(1).strip()
         # Confrontações (simplificado: procurar "NORTE|SUL|NASCENTE|POENTE")
         confrontos = re.findall(r"(NORTE|SUL|NASCENTE|POENTE)[: ]+([^\n]+)", text, re.IGNORECASE)
         if confrontos:
@@ -623,6 +740,20 @@ def processar_documento_ocr(
         val = re.search(r"V[aá]lid[oa]\s+at[eé]\s*[: ]*(\d{2}[/-]\d{2}[/-]\d{4})", text, re.IGNORECASE)
         if val:
             out["imovel_certificado_validade"] = val.group(1)
+        return out
+
+    def parse_licenca_from_text(text: str):
+        """Extrair nº e data da licença de utilização e município."""
+        out = {}
+        num = re.search(r"licen[cç]a\s+de\s+utiliza[cç][aã]o\s*n?[ºo]?\s*([A-Za-z0-9/\\-]+)", text, re.IGNORECASE)
+        if num:
+            out["imovel_licenca_numero"] = num.group(1)
+        data = re.search(r"emitid[ao]\s+em\s+(\d{2}[/-]\d{2}[/-]\d{4})", text, re.IGNORECASE)
+        if data:
+            out["imovel_licenca_data"] = data.group(1)
+        camara = re.search(r"C[âa]mara\s+Municipal\s+de\s+([A-Za-z ]+)", text, re.IGNORECASE)
+        if camara:
+            out["imovel_licenca_municipio"] = camara.group(1).strip()
         return out
 
     dados_extraidos = {}
@@ -775,6 +906,10 @@ def processar_documento_ocr(
                 updates["imovel_area_bruta"] = parsed_cert["imovel_area_bruta"]
             if parsed_cert.get("imovel_morada"):
                 updates["imovel_morada"] = parsed_cert["imovel_morada"]
+            if parsed_cert.get("imovel_freguesia"):
+                updates["imovel_freguesia"] = parsed_cert["imovel_freguesia"]
+            if parsed_cert.get("imovel_concelho"):
+                updates["imovel_concelho"] = parsed_cert["imovel_concelho"]
             # Confrontações guardadas em notas
             if parsed_cert.get("imovel_confrontacoes"):
                 if item.notas:
@@ -796,6 +931,12 @@ def processar_documento_ocr(
                 updates["imovel_certificado_numero"] = parsed_ce["imovel_certificado_numero"]
             if parsed_ce.get("imovel_certificado_validade"):
                 updates["imovel_certificado_validade"] = parsed_ce["imovel_certificado_validade"]
+    if data.tipo == "licenca_utilizacao":
+        parsed_li = parse_licenca_from_text(dados_extraidos.get("raw_text", ""))
+        if parsed_li:
+            for field in ["imovel_licenca_numero", "imovel_licenca_data", "imovel_licenca_municipio"]:
+                if parsed_li.get(field):
+                    updates[field] = parsed_li[field]
 
     # Persistir updates no CMI
     if updates:

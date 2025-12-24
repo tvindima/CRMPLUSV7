@@ -19,3 +19,4 @@ websockets>=12.0  # FASE 2: WebSocket real-time notifications
 python-json-logger>=2.0.7  # FASE 2: Structured JSON logging
 requests>=2.31.0  # HTTP requests para integrações externas
 google-cloud-vision>=3.7.0  # OCR com Google Vision
+reportlab>=4.1.0  # Geração de PDF

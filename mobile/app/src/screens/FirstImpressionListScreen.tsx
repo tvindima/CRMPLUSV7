@@ -42,8 +42,8 @@ export default function FirstImpressionListScreen() {
       
       const filters = filter !== 'all' ? { status: filter } : undefined;
       const data = await firstImpressionService.list(filters);
-      
-      setImpressions(data);
+      const visible = data.filter((item) => item.status !== 'cancelled');
+      setImpressions(visible);
     } catch (error: any) {
       console.error('Erro ao carregar First Impressions:', error);
       Alert.alert('Erro', 'Não foi possível carregar as pré-angariações');
@@ -66,7 +66,7 @@ export default function FirstImpressionListScreen() {
     loadImpressions(false);
   };
 
-  // Apagar documento
+  // Apagar documento (agente): marcar como cancelado e cancelar pré-angariação, mas sem remover do admin
   const handleDelete = (id: number, clientName: string) => {
     Alert.alert(
       'Apagar pré-angariação',
@@ -78,16 +78,17 @@ export default function FirstImpressionListScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Cancelar/Apagar pré-angariação ligada (apenas o admin remove de vez no backoffice)
+              // Cancelar pré-angariação ligada (sem apagar para admin)
               try {
                 const pre = await preAngariacaoService.getByFirstImpression(id);
                 if (pre?.id) {
-                  await preAngariacaoService.delete(pre.id);
+                    await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
                 }
               } catch (e) {
                 // se não existir, seguir
               }
-              await firstImpressionService.delete(id);
+              // Marcar 1ª impressão como cancelada em vez de apagar
+              await firstImpressionService.update(id, { status: 'cancelled' } as any);
               Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
               loadImpressions(false);
             } catch (error) {
