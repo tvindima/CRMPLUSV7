@@ -208,7 +208,6 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
     // Assinaturas
     setAssinaturaCliente(data.assinatura_cliente || null);
-    setAssinaturaMediador(data.assinatura_mediador || null);
   };
 
   const handleSave = async () => {
