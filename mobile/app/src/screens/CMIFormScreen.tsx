@@ -329,6 +329,24 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         agente_nome: agenteNome || undefined,
       });
 
+      // Sincronizar dados principais para a Pré-Angariação (visível no backoffice)
+      if (preAngariacaoId) {
+        await preAngariacaoService.update(preAngariacaoId, {
+          proprietario_nome: clienteNome || undefined,
+          proprietario_nif: clienteNif || undefined,
+          proprietario_telefone: clienteTelefone || undefined,
+          proprietario_email: clienteEmail || undefined,
+          morada: imovelMorada || undefined,
+          freguesia: imovelFreguesia || undefined,
+          concelho: imovelConcelho || undefined,
+          tipologia: imovelTipologia || undefined,
+          area_bruta: imovelAreaBruta ? parseFloat(imovelAreaBruta) : undefined,
+          area_util: imovelAreaUtil ? parseFloat(imovelAreaUtil) : undefined,
+          estado_conservacao: imovelEstadoConservacao || undefined,
+          valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
+        });
+      }
+
       Alert.alert('Sucesso', 'Contrato guardado com sucesso!');
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao guardar');
