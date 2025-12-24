@@ -24,6 +24,7 @@ from app.schemas import contrato_mediacao as schemas
 import base64
 import os
 import re
+from decimal import Decimal
 try:
     from google.cloud import vision  # type: ignore
     VISION_AVAILABLE = True
@@ -503,6 +504,59 @@ def processar_documento_ocr(
             name = " ".join([given or "", surnames or ""]).strip()
         return {"nome": name, "numero_documento": doc_num, "validade": validade}
 
+    def parse_decimal(text_val: str):
+        """Converter número com vírgula/espacos para Decimal."""
+        try:
+            cleaned = text_val.replace("€", "").replace(" ", "").replace(".", "").replace(",", ".")
+            return Decimal(cleaned)
+        except Exception:
+            return None
+
+    def parse_caderneta_from_text(text: str):
+        """Extrair campos chave da caderneta predial."""
+        data_out = {}
+        # Artigo matricial
+        m = re.search(r"ARTIGO\s+MATR[IÍ]CIAL[: ]+([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if m:
+            data_out["artigo_matricial"] = m.group(1)
+        # Distrito/Concelho/Freguesia
+        md = re.search(r"DISTRITO[: ]+([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if md:
+            data_out["distrito"] = md.group(1)
+        mc = re.search(r"CONCELHO[: ]+([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if mc:
+            data_out["concelho"] = mc.group(1)
+        mf = re.search(r"FREGUESIA[: ]+([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if mf:
+            data_out["freguesia"] = mf.group(1)
+        # Morada / Código postal
+        mcp = re.search(r"C[oó]digo\s+Postal[: ]+([\d\-]+)\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
+        if mcp:
+            data_out["codigo_postal"] = mcp.group(1)
+            data_out["localidade"] = mcp.group(2).strip()
+        mrua = re.search(r"AV\.?/Rua/Prac[aà][: ]+([^\n]+)", text, re.IGNORECASE)
+        if mrua:
+            data_out["morada"] = mrua.group(1).strip()
+        # Tipologia
+        mtipo = re.search(r"Tipologia/?Divis[oõ]es[: ]+([0-9]+)", text, re.IGNORECASE)
+        if mtipo:
+            data_out["tipologia"] = f"T{mtipo.group(1)}"
+        # Áreas
+        mt = re.search(r"[ÁA]rea\s+total\s+do\s+terreno[: ]+([\d\.,]+)", text, re.IGNORECASE)
+        if mt:
+            data_out["area_terreno"] = parse_decimal(mt.group(1))
+        mcns = re.search(r"[ÁA]rea\s+de\s+constru[cç][aã]o[: ]+([\d\.,]+)", text, re.IGNORECASE)
+        if mcns:
+            data_out["area_bruta"] = parse_decimal(mcns.group(1))
+        mup = re.search(r"[ÁA]rea\s+bruta\s+privativa[: ]+([\d\.,]+)", text, re.IGNORECASE)
+        if mup:
+            data_out["area_util"] = parse_decimal(mup.group(1))
+        # Valor patrimonial
+        mvp = re.search(r"Valor\s+patrimonial.*?:\s*€?\s*([\d\.,]+)", text, re.IGNORECASE)
+        if mvp:
+            data_out["valor_patrimonial"] = parse_decimal(mvp.group(1))
+        return data_out
+
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
@@ -615,6 +669,32 @@ def processar_documento_ocr(
         nif_match = re.search(r"\b(\d{9})\b", dados_extraidos.get("raw_text", ""))
         if nif_match:
             updates["cliente_nif"] = nif_match.group(1)
+
+    if data.tipo == "caderneta_predial":
+        parsed_cad = parse_caderneta_from_text(dados_extraidos.get("raw_text", ""))
+        if parsed_cad:
+            if parsed_cad.get("artigo_matricial"):
+                updates["imovel_artigo_matricial"] = parsed_cad["artigo_matricial"]
+            if parsed_cad.get("freguesia"):
+                updates["imovel_freguesia"] = parsed_cad["freguesia"]
+            if parsed_cad.get("concelho"):
+                updates["imovel_concelho"] = parsed_cad["concelho"]
+            if parsed_cad.get("distrito"):
+                updates["imovel_distrito"] = parsed_cad["distrito"]
+            if parsed_cad.get("morada"):
+                updates["imovel_morada"] = parsed_cad["morada"]
+            if parsed_cad.get("codigo_postal"):
+                updates["imovel_codigo_postal"] = parsed_cad["codigo_postal"]
+            if parsed_cad.get("tipologia"):
+                updates["imovel_tipologia"] = parsed_cad["tipologia"]
+            if parsed_cad.get("area_bruta") is not None:
+                updates["imovel_area_bruta"] = parsed_cad["area_bruta"]
+            if parsed_cad.get("area_util") is not None:
+                updates["imovel_area_util"] = parsed_cad["area_util"]
+            if parsed_cad.get("valor_patrimonial") is not None:
+                # Usar valor patrimonial como valor pretendido se estiver vazio
+                if not item.valor_pretendido:
+                    updates["valor_pretendido"] = parsed_cad["valor_patrimonial"]
 
     # Persistir updates no CMI
     if updates:
