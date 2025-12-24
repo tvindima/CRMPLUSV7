@@ -197,9 +197,11 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   };
 
   const ensureCMI = async () => {
-    if (!clientName.trim()) {
-      Alert.alert('Preencha primeiro', 'Introduza pelo menos o nome do cliente para criar o CMI.');
-      return;
+    let workingName = clientName?.trim();
+    if (!workingName) {
+      // Permitir criar rascunho mesmo sem nome explícito
+      workingName = `Cliente-${Date.now()}`;
+      setClientName(workingName);
     }
 
     // Já existe? Navega de imediato
@@ -346,6 +348,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
               style={styles.input}
               value={clientName}
               onChangeText={setClientName}
+              nativeID="client_name"
+              name="client_name"
               placeholder="Ex: João Silva ou Amigo de Maria"
               placeholderTextColor="#666"
             />
@@ -357,6 +361,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
               style={styles.input}
               value={referredBy}
               onChangeText={setReferredBy}
+              nativeID="referred_by"
+              name="referred_by"
               placeholder="Ex: Tiago Menino, Maria Costa"
               placeholderTextColor="#666"
             />
@@ -369,6 +375,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
               style={styles.input}
               value={clientPhone}
               onChangeText={setClientPhone}
+              nativeID="client_phone"
+              name="client_phone"
               placeholder="+351 912 345 678"
               placeholderTextColor="#666"
               keyboardType="phone-pad"
@@ -381,6 +389,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
               style={styles.input}
               value={clientEmail}
               onChangeText={setClientEmail}
+              nativeID="client_email"
+              name="client_email"
               placeholder="cliente@example.com"
               placeholderTextColor="#666"
               keyboardType="email-address"
@@ -426,6 +436,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
               style={[styles.input, styles.textArea]}
               value={location}
               onChangeText={setLocation}
+              nativeID="imovel_morada"
+              name="imovel_morada"
               placeholder="Rua, Cidade, Código Postal"
               placeholderTextColor="#666"
               multiline
