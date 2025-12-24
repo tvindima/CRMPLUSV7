@@ -413,6 +413,7 @@ def eliminar_pre_angariacao(
     
     # Marcar como cancelada em vez de eliminar
     item.status = PreAngariacaoStatus.CANCELADO
+    flag_modified(item, "status")
     db.commit()
     
     return {"message": "Pré-angariação cancelada", "id": pre_angariacao_id}
