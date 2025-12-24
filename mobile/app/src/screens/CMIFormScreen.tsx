@@ -27,6 +27,7 @@ import { apiService } from '../services/api';
 import { cloudinaryService } from '../services/cloudinary';
 import { preAngariacaoService } from '../services/preAngariacaoService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/config';
 
 interface Props {
   navigation: any;
@@ -232,7 +233,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setSaving(true);
     try {
       // Garantir token em memória
-      const storedToken = await AsyncStorage.getItem('access_token');
+      const storedToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
       if (storedToken) {
         apiService.setAccessToken(storedToken);
       }
