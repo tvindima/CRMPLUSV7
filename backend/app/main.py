@@ -84,6 +84,7 @@ DEFAULT_ALLOWED_ORIGINS = [
     "https://crmplusv7-mobile.vercel.app",
     "https://crmplusv7-mobile-picdp19if-toinos-projects.vercel.app",
     "https://crmplusv7-mobile-bapejk48k-toinos-projects.vercel.app",
+    "https://crmplusv7-mobile-fzh70hl4x-toinos-projects.vercel.app",
 ]
 
 if CORS_ORIGINS_ENV == "*":
