@@ -60,6 +60,29 @@ def listar_pre_angariacoes(
     return items
 
 
+@router.get("/by-first-impression/{first_impression_id}", response_model=schemas.PreAngariacaoResponse)
+def obter_por_first_impression(
+    first_impression_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obter pré-angariação associada a uma 1ª impressão (se existir)"""
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    if not is_admin and not current_user.agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    query = db.query(PreAngariacao).options(joinedload(PreAngariacao.agent)).filter(
+        PreAngariacao.first_impression_id == first_impression_id
+    )
+    if not is_admin:
+        query = query.filter(PreAngariacao.agent_id == current_user.agent_id)
+    item = query.first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Pré-angariação não encontrada para esta 1ª impressão")
+    return item
+
+
 @router.get("/stats", response_model=schemas.PreAngariacaoStats)
 def obter_estatisticas(
     current_user: User = Depends(get_current_user),

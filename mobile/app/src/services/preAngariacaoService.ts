@@ -25,6 +25,9 @@ export const preAngariacaoService = {
   list: async (): Promise<PreAngariacaoListItem[]> => {
     return apiService.get('/pre-angariacoes');
   },
+  getByFirstImpression: async (firstImpressionId: number) => {
+    return apiService.get(`/pre-angariacoes/by-first-impression/${firstImpressionId}`);
+  },
   addDocumento: async (preAngariacaoId: number, payload: AddDocumentoPayload) => {
     return apiService.post(`/pre-angariacoes/${preAngariacaoId}/documentos`, payload);
   },

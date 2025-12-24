@@ -90,6 +90,14 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       
       setPhotos(data.photos || []);
       setAttachments(data.attachments || []);
+
+      // Buscar pré-angariação ligada
+      try {
+        const pre = await preAngariacaoService.getByFirstImpression(id);
+        if (pre?.id) setPreAngariacaoId(pre.id);
+      } catch (e) {
+        // silencioso se não existir ainda
+      }
       
       setObservations(data.observations || '');
       setStatus((data.status as any) || 'draft');
