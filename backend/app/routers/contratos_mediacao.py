@@ -23,6 +23,7 @@ from app.schemas import contrato_mediacao as schemas
 # OCR (Google Vision)
 import base64
 import os
+import re
 try:
     from google.cloud import vision  # type: ignore
     VISION_AVAILABLE = True
@@ -475,6 +476,33 @@ def processar_documento_ocr(
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
     
+    def parse_cc_from_text(text: str):
+        """Extrair campos básicos de CC a partir do texto OCR."""
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        surnames = None
+        given = None
+        doc_num = None
+        validade = None
+        # Procurar secções
+        for idx, line in enumerate(lines):
+            upper = line.upper()
+            if "APELIDO" in upper and idx + 1 < len(lines):
+                surnames = lines[idx + 1]
+            if "NOME" in upper and idx + 1 < len(lines):
+                given = lines[idx + 1]
+            # Nº documento (8+ dígitos)
+            if not doc_num:
+                m = re.search(r"\b(\d{8,})\b", line.replace(" ", ""))
+                if m:
+                    doc_num = m.group(1)
+            # Datas dd mm yyyy (última ocorrência como validade)
+            for mdate in re.findall(r"\b(\d{2})\s(\d{2})\s(\d{4})\b", line):
+                validade = f"{mdate[0]}/{mdate[1]}/{mdate[2]}"
+        name = None
+        if given or surnames:
+            name = " ".join([given or "", surnames or ""]).strip()
+        return {"nome": name, "numero_documento": doc_num, "validade": validade}
+
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
@@ -502,7 +530,7 @@ def processar_documento_ocr(
     # Stub (fallback)
     if not use_vision:
         if data.tipo == "cc_frente":
-            dados_extraidos = {
+            dados_extraidos = dados_extraidos or {
                 "nome": "",
                 "apelidos": "",
                 "data_nascimento": "",
@@ -510,8 +538,8 @@ def processar_documento_ocr(
                 "numero_documento": "",
                 "validade": "",
             }
-            mensagem = "Posicione o CC na frente. Campos a extrair: Nome, Nº Documento, Validade"
-            confianca = 0.10
+            mensagem = mensagem or "Posicione o CC na frente. Campos a extrair: Nome, Nº Documento, Validade"
+            confianca = confianca or 0.10
             
         elif data.tipo == "cc_verso":
             dados_extraidos = {
@@ -572,6 +600,30 @@ def processar_documento_ocr(
                 doc["data"] = date.today().isoformat()
                 break
     item.documentos_entregues = docs
+
+    # Aplicar preenchimento automático no CMI se conseguirmos extrair campos
+    updates = {}
+    if data.tipo in ("cc_frente", "cc_verso"):
+        parsed = parse_cc_from_text(dados_extraidos.get("raw_text", "")) if "raw_text" in dados_extraidos else {}
+        if parsed.get("nome"):
+            updates["cliente_nome"] = parsed["nome"]
+        if parsed.get("numero_documento"):
+            updates["cliente_cc"] = parsed["numero_documento"]
+        if parsed.get("validade"):
+            updates["cliente_cc_validade"] = parsed["validade"]
+        # Se o texto contiver um NIF, tentar extrair 9 dígitos
+        nif_match = re.search(r"\b(\d{9})\b", dados_extraidos.get("raw_text", ""))
+        if nif_match:
+            updates["cliente_nif"] = nif_match.group(1)
+
+    # Persistir updates no CMI
+    if updates:
+        for field, value in updates.items():
+            if value:
+                setattr(item, field, value)
+
+    db.commit()
+    db.refresh(item)
     
     db.commit()
     
