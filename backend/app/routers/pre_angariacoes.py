@@ -366,13 +366,15 @@ def eliminar_pre_angariacao(
     """
     Eliminar pré-angariação (ou marcar como cancelada)
     """
-    if not current_user.agent_id:
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    item = db.query(PreAngariacao).filter(
-        PreAngariacao.id == pre_angariacao_id,
-        PreAngariacao.agent_id == current_user.agent_id
-    ).first()
+    item_query = db.query(PreAngariacao).filter(PreAngariacao.id == pre_angariacao_id)
+    if not is_admin:
+        item_query = item_query.filter(PreAngariacao.agent_id == current_user.agent_id)
+    item = item_query.first()
     
     if not item:
         raise HTTPException(status_code=404, detail="Pré-angariação não encontrada")
