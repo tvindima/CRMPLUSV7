@@ -140,8 +140,8 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
   const buildPayload = () => ({
     client_name: clientName,
-    client_phone: clientPhone || null,
-    client_email: clientEmail || null,
+    client_phone: clientPhone && clientPhone.trim().length >= 9 ? clientPhone : null,
+    client_email: clientEmail?.trim() ? clientEmail.trim() : null,
     referred_by: referredBy || null,
     artigo_matricial: artigoMatricial || null,
     tipologia: tipologia || null,
@@ -187,9 +187,10 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       }
 
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Form] ❌ Erro:', error);
-      Alert.alert('Erro', error.message || 'Erro ao salvar documento');
+      const message = error?.detail || error?.message || 'Erro ao salvar documento';
+      Alert.alert('Erro', message);
     } finally {
       setLoading(false);
     }
@@ -233,16 +234,17 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           createdPreId = pre.id;
           setPreAngariacaoId(pre.id);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Pré-angariação não criada automaticamente:', e);
       }
       navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: createdPreId || undefined });
-  } catch (error) {
-    console.error('[CMI] ❌ Erro ao criar rascunho:', error);
-    Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
-  } finally {
-    setLoading(false);
-  }
+    } catch (error: any) {
+      console.error('[CMI] ❌ Erro ao criar rascunho:', error);
+      const message = error?.detail || error?.message || 'Não foi possível abrir o CMI.';
+      Alert.alert('Erro', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStatusChange = async (nextStatus: 'completed' | 'cancelled') => {
