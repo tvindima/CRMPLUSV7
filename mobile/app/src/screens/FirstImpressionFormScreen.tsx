@@ -225,7 +225,10 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     // Criar rascunho rápido e ir para CMI
     setLoading(true);
     try {
-      const payload = buildPayload();
+      const payload = {
+        ...buildPayload(),
+        client_name: workingName, // garantir mínimo 2 chars
+      };
       const created = await firstImpressionService.create(payload);
       setImpressionId(created.id);
       if (created.status) setStatus(created.status as any);
