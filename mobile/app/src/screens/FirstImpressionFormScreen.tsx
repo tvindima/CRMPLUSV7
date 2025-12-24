@@ -214,13 +214,17 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       const created = await firstImpressionService.create(payload);
       setImpressionId(created.id);
       if (created.status) setStatus(created.status as any);
+      let createdPreId: number | null = null;
       try {
         const pre = await preAngariacaoService.createFromFirstImpression(created.id);
-        if (pre?.id) setPreAngariacaoId(pre.id);
+        if (pre?.id) {
+          createdPreId = pre.id;
+          setPreAngariacaoId(pre.id);
+        }
       } catch (e) {
         console.warn('Pré-angariação não criada automaticamente:', e);
       }
-      navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: preAngariacaoId || undefined });
+      navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: createdPreId || preAngariacaoId || undefined });
   } catch (error) {
     console.error('[CMI] ❌ Erro ao criar rascunho:', error);
     Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
@@ -286,18 +290,18 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
             Fotografe os documentos do proprietário para preencher automaticamente o CMI
           </Text>
           
-          <TouchableOpacity
-            style={[styles.cmiMainButton, loading && { opacity: 0.6 }]}
-            onPress={ensureCMI}
-            disabled={loading}
-          >
-            <Ionicons name="camera" size={22} color="#fff" />
-            <View style={styles.cmiButtonContent}>
-              <Text style={styles.cmiMainButtonText}>Preencher CMI com Fotos</Text>
-              <Text style={styles.cmiMainButtonSubtext}>CC, Caderneta Predial, Certidão...</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </TouchableOpacity>
+         <TouchableOpacity
+           style={[styles.cmiMainButton, loading && { opacity: 0.6 }]}
+           onPress={ensureCMI}
+           disabled={loading}
+         >
+           <Ionicons name="camera" size={22} color="#fff" />
+           <View style={styles.cmiButtonContent}>
+             <Text style={styles.cmiMainButtonText}>Preencher CMI com Fotos</Text>
+             <Text style={styles.cmiMainButtonSubtext}>CC, Caderneta Predial, Certidão...</Text>
+           </View>
+           <Ionicons name="chevron-forward" size={20} color="#fff" />
+         </TouchableOpacity>
 
           {/* Assinatura direta */}
           {impressionId && (
