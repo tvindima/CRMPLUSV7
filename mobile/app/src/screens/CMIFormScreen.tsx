@@ -270,7 +270,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setShowCameraModal(true);
   };
 
-  const persistDocumento = async (fileUri: string, fileName: string, mimeType: string) => {
+  const persistDocumento = async (fileUri: string, fileName: string, mimeType: string, base64?: string) => {
     let targetPreId = preAngariacaoId;
     if (!targetPreId && firstImpressionId) {
       try {
@@ -285,7 +285,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     }
     if (!targetPreId) return null;
     // Upload para Cloudinary e salvar em pré-angariação
-    const url = await cloudinaryService.uploadFile(fileUri, fileName, mimeType);
+    const url = await cloudinaryService.uploadFile(fileUri, fileName, mimeType, base64);
     const tipoDocumento =
       currentDocType === 'caderneta_predial' ? 'caderneta_predial' :
       currentDocType === 'certidao_permanente' ? 'certidao_permanente' :
@@ -310,7 +310,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     // Upload e persistir documento
     if (fileMeta) {
       try {
-        await persistDocumento(fileMeta.uri, fileMeta.name, fileMeta.mime);
+        await persistDocumento(fileMeta.uri, fileMeta.name, fileMeta.mime, base64);
       } catch (e: any) {
         console.warn('[Docs] ❌ Erro ao guardar documento:', e?.message || e);
       }

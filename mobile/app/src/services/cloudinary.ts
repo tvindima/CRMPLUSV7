@@ -183,17 +183,22 @@ class CloudinaryService {
   /**
    * Upload genérico (imagem/PDF/etc) para Cloudinary
    */
-  async uploadFile(fileUri: string, fileName: string, mimeType: string): Promise<string> {
+  async uploadFile(fileUri: string, fileName: string, mimeType: string, base64Data?: string): Promise<string> {
     const config = await this.getConfig();
 
     console.log('[Cloudinary] 📤 Uploading file:', fileName, mimeType);
 
     const formData = new FormData();
-    formData.append('file', {
-      uri: fileUri,
-      type: mimeType || 'application/octet-stream',
-      name: fileName,
-    } as any);
+    if (base64Data) {
+      // Enviar como data URI (necessário para blob: URLs no web)
+      formData.append('file', `data:${mimeType || 'application/octet-stream'};base64,${base64Data}`);
+    } else {
+      formData.append('file', {
+        uri: fileUri,
+        type: mimeType || 'application/octet-stream',
+        name: fileName,
+      } as any);
+    }
     formData.append('upload_preset', config.upload_preset);
     formData.append('folder', config.folder);
 
