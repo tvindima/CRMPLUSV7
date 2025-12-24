@@ -28,7 +28,15 @@ export const preAngariacaoService = {
   getByFirstImpression: async (firstImpressionId: number) => {
     return apiService.get(`/pre-angariacoes/by-first-impression/${firstImpressionId}`);
   },
-  addDocumento: async (preAngariacaoId: number, payload: AddDocumentoPayload) => {
+  addDocumento: async (preAngariacaoId: number, payload: AddDocumentoPayload | AddDocumentoPayload[]) => {
+    // Suporta 1 ou vários; se array, envia sequencial para respeitar checklist
+    if (Array.isArray(payload)) {
+      let last;
+      for (const p of payload) {
+        last = await apiService.post(`/pre-angariacoes/${preAngariacaoId}/documentos`, p);
+      }
+      return last;
+    }
     return apiService.post(`/pre-angariacoes/${preAngariacaoId}/documentos`, payload);
   },
 };

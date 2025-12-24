@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import { cloudinaryService } from '../services/cloudinary';
 import { preAngariacaoService } from '../services/preAngariacaoService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Props {
   navigation: any;
@@ -115,6 +116,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   // === ASSINATURAS ===
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
   const [preAngariacaoId, setPreAngariacaoId] = useState<number | null>(preAngariacaoIdProp ?? null);
+  const [pendingDocs, setPendingDocs] = useState<
+    { docType: string; uri: string; mime: string; name: string; base64?: string }[]
+  >([]);
 
   // Refs
   const signatureRef = useRef<any>(null);
@@ -227,6 +231,39 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
     setSaving(true);
     try {
+      // Garantir token em memória
+      const storedToken = await AsyncStorage.getItem('access_token');
+      if (storedToken) {
+        apiService.setAccessToken(storedToken);
+      }
+
+      // Upload e gravação dos documentos pendentes
+      if (pendingDocs.length > 0) {
+        if (!preAngariacaoId && firstImpressionId) {
+          await ensurePreAngariacao();
+        }
+        const targetPreId = preAngariacaoId;
+        if (!targetPreId) {
+          throw new Error('Pré-angariação não encontrada para guardar documentos.');
+        }
+
+        const payloads: any[] = [];
+        for (const doc of pendingDocs) {
+          const tipoDocumento =
+            doc.docType === 'caderneta_predial' ? 'caderneta_predial' :
+            doc.docType === 'certidao_permanente' ? 'certidao_permanente' :
+            doc.docType === 'licenca_utilizacao' ? 'licenca_utilizacao' :
+            doc.docType === 'certificado_energetico' ? 'certificado_energetico' :
+            'documentos_proprietario';
+
+          const url = await cloudinaryService.uploadFile(doc.uri, doc.name, doc.mime, doc.base64);
+          payloads.push({ type: tipoDocumento, name: doc.name, url });
+        }
+
+        await preAngariacaoService.addDocumento(targetPreId, payloads);
+        setPendingDocs([]);
+      }
+
       await cmiService.update(cmi.id, {
         cliente_nome: clienteNome,
         cliente_estado_civil: clienteEstadoCivil || undefined,
@@ -302,18 +339,10 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     return url;
   };
 
-  const processOcrFromBase64 = async (base64: string, fileMeta?: { uri: string; name: string; mime: string }) => {
+  const processOcrFromBase64 = async (base64: string) => {
     if (!cmi) {
       Alert.alert('Erro', 'CMI ainda não foi criado.');
       return;
-    }
-    // Upload e persistir documento
-    if (fileMeta) {
-      try {
-        await persistDocumento(fileMeta.uri, fileMeta.name, fileMeta.mime, base64);
-      } catch (e: any) {
-        console.warn('[Docs] ❌ Erro ao guardar documento:', e?.message || e);
-      }
     }
     // Processar via OCR
     Alert.alert('A Processar', 'A extrair dados do documento...');
@@ -368,11 +397,19 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
       if (!result.canceled && result.assets[0] && cmi) {
         setShowCameraModal(false);
-        await processOcrFromBase64(result.assets[0].base64 || '', {
-          uri: result.assets[0].uri,
-          name: `${currentDocType}-${Date.now()}.jpg`,
-          mime: result.assets[0].mimeType || 'image/jpeg',
-        });
+        setPendingDocs((prev) => [
+          ...prev,
+          {
+            docType: currentDocType,
+            uri: result.assets[0].uri,
+            mime: result.assets[0].mimeType || 'image/jpeg',
+            name: `${currentDocType}-${Date.now()}.jpg`,
+            base64: result.assets[0].base64,
+          },
+        ]);
+        if (result.assets[0].base64) {
+          await processOcrFromBase64(result.assets[0].base64);
+        }
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao capturar documento');
@@ -400,11 +437,19 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       });
 
       if (!result.canceled && result.assets[0]) {
-        await processOcrFromBase64(result.assets[0].base64 || '', {
-          uri: result.assets[0].uri,
-          name: result.assets[0].fileName || `${docType}-${Date.now()}.jpg`,
-          mime: result.assets[0].mimeType || 'image/jpeg',
-        });
+        setPendingDocs((prev) => [
+          ...prev,
+          {
+            docType,
+            uri: result.assets[0].uri,
+            mime: result.assets[0].mimeType || 'image/jpeg',
+            name: result.assets[0].fileName || `${docType}-${Date.now()}.jpg`,
+            base64: result.assets[0].base64,
+          },
+        ]);
+        if (result.assets[0].base64) {
+          await processOcrFromBase64(result.assets[0].base64);
+        }
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao anexar documento da galeria');
