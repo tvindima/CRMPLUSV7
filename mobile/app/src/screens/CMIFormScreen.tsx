@@ -117,6 +117,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   // === ASSINATURAS ===
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
   const [preAngariacaoId, setPreAngariacaoId] = useState<number | null>(preAngariacaoIdProp ?? null);
+  const [savedDocs, setSavedDocs] = useState<any[]>([]);
+  const [savedDocsMap, setSavedDocsMap] = useState<Record<string, number>>({});
   const [pendingDocs, setPendingDocs] = useState<
     { docType: string; uri: string; mime: string; name: string; base64?: string }[]
   >([]);
@@ -130,11 +132,39 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     ensurePreAngariacao();
   }, []);
 
+  const mapDocs = (docs?: any[]) => {
+    const counts: Record<string, number> = {};
+    (docs || []).forEach((d) => {
+      const key = d?.type || 'outro';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    setSavedDocsMap(counts);
+    setSavedDocs(docs || []);
+  };
+
+  const loadPreAngariacaoDocs = async (preId?: number) => {
+    const target = preId || preAngariacaoId;
+    if (!target) return;
+    try {
+      const pre = await preAngariacaoService.getById(target);
+      mapDocs(pre?.documentos);
+    } catch (e) {
+      console.warn('Não foi possível carregar documentos da pré-angariação', e);
+    }
+  };
+
   const ensurePreAngariacao = async () => {
-    if (preAngariacaoId || !firstImpressionId) return;
+    if (preAngariacaoId) {
+      await loadPreAngariacaoDocs(preAngariacaoId);
+      return;
+    }
+    if (!firstImpressionId) return;
     try {
       const pre = await preAngariacaoService.getByFirstImpression(firstImpressionId);
-      if (pre?.id) setPreAngariacaoId(pre.id);
+      if (pre?.id) {
+        setPreAngariacaoId(pre.id);
+        mapDocs(pre.documentos);
+      }
     } catch (e) {
       // ignorar se ainda não existir
     }
@@ -169,6 +199,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           const data = await cmiService.createFromFirstImpression(firstImpressionId);
           setCmi(data);
           populateFields(data);
+          await ensurePreAngariacao();
           Alert.alert('CMI Criado', `Contrato ${data.numero_contrato} criado com sucesso!`);
         } catch (error: any) {
           // Se já existir, buscar e abrir o existente
@@ -176,6 +207,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             const existing = await cmiService.getByFirstImpression(firstImpressionId);
             setCmi(existing);
             populateFields(existing);
+            await ensurePreAngariacao();
             Alert.alert('CMI existente', `Abrindo ${existing.numero_contrato} já criado para esta 1ª impressão.`);
           } else {
             throw error;
@@ -261,7 +293,10 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           payloads.push({ type: tipoDocumento, name: doc.name, url });
         }
 
-        await preAngariacaoService.addDocumento(targetPreId, payloads);
+        const updatedPre = await preAngariacaoService.addDocumento(targetPreId, payloads);
+        if (updatedPre?.documentos) {
+          mapDocs(updatedPre.documentos);
+        }
         setPendingDocs([]);
       }
 
@@ -306,6 +341,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const openDocumentScanner = (docType: string) => {
     setCurrentDocType(docType);
     setShowCameraModal(true);
+  };
+
+  const docTypeToPreKey = (docType: string) => {
+    return docType === 'caderneta_predial' ? 'caderneta_predial'
+      : docType === 'certidao_permanente' ? 'certidao_permanente'
+      : docType === 'licenca_utilizacao' ? 'licenca_utilizacao'
+      : docType === 'certificado_energetico' ? 'certificado_energetico'
+      : 'documentos_proprietario';
   };
 
   const persistDocumento = async (fileUri: string, fileName: string, mimeType: string, base64?: string) => {
@@ -511,6 +554,20 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                 <View style={styles.docInfo}>
                   <Ionicons name={doc.icon as any} size={24} color="#00d9ff" />
                   <Text style={styles.docLabel}>{doc.label}</Text>
+                </View>
+                <View style={styles.docStatusRow}>
+                  {savedDocsMap[docTypeToPreKey(doc.id)] ? (
+                    <Text style={styles.docBadgeSaved}>
+                      ✓ {savedDocsMap[docTypeToPreKey(doc.id)]} carregado(s)
+                    </Text>
+                  ) : (
+                    <Text style={styles.docBadgeEmpty}>Nenhum carregado</Text>
+                  )}
+                  {pendingDocs.filter((d) => d.docType === doc.id).length > 0 && (
+                    <Text style={styles.docBadgePending}>
+                      {pendingDocs.filter((d) => d.docType === doc.id).length} por guardar
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.docActions}>
                   <TouchableOpacity
@@ -1159,6 +1216,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 10,
+  },
+  docStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  docBadgeSaved: {
+    color: '#22c55e',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  docBadgePending: {
+    color: '#fbbf24',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  docBadgeEmpty: {
+    color: '#888',
+    fontSize: 12,
   },
   docLabel: {
     color: '#fff',

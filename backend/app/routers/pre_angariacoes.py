@@ -4,12 +4,13 @@ CRUD completo + gestão de documentos, fotos e checklist
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import desc, func
 from typing import List, Optional
 from datetime import datetime
 import logging
 
-from app.database import get_db
+from app.database import get_db, SQLALCHEMY_DATABASE_URL
 from app.security import get_current_user
 from app.users.models import User
 from app.models.pre_angariacao import PreAngariacao, PreAngariacaoStatus
@@ -445,6 +446,8 @@ def adicionar_documento(
         "notes": doc.notes
     })
     item.documentos = docs
+    # Garantir que o SQLAlchemy detecta a mutação do JSON
+    flag_modified(item, "documentos")
     
     # Atualizar checklist se for documento obrigatório
     checklist_map = {
@@ -473,7 +476,8 @@ def adicionar_documento(
     db.commit()
     db.refresh(item)
     
-    logger.info(f"Documento {doc.type} adicionado a PA {item.referencia_interna}")
+    db_target = SQLALCHEMY_DATABASE_URL.split("@")[-1] if SQLALCHEMY_DATABASE_URL else "sqlite"
+    logger.info(f"Documento {doc.type} adicionado a PA {item.referencia_interna} (docs: {len(item.documentos)}) [db={db_target}]")
     return item
 
 
@@ -545,6 +549,7 @@ def adicionar_foto(
         "uploaded_at": datetime.now().isoformat()
     })
     item.fotos = fotos
+    flag_modified(item, "fotos")
     
     # Atualizar checklist se tiver >= 5 fotos
     if len(fotos) >= 5:
@@ -601,6 +606,7 @@ def atualizar_checklist(
         raise HTTPException(status_code=400, detail=f"Item '{data.item_id}' não encontrado no checklist")
     
     item.atualizar_status()
+    flag_modified(item, "checklist")
     
     db.commit()
     db.refresh(item)
