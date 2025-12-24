@@ -197,11 +197,14 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   };
 
   const ensureCMI = async () => {
-    let workingName = clientName?.trim();
-    if (!workingName) {
-      // Permitir criar rascunho mesmo sem nome explícito
-      workingName = `Cliente-${Date.now()}`;
-      setClientName(workingName);
+    const workingName = clientName?.trim() || '';
+    const nameParts = workingName.split(/\s+/).filter(Boolean);
+    if (nameParts.length < 2) {
+      Alert.alert(
+        'Preencha o nome',
+        'Indique nome e apelido para avançar (ex.: João Silva).'
+      );
+      return;
     }
 
     // Já existe? Navega de imediato
@@ -227,7 +230,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     try {
       const payload = {
         ...buildPayload(),
-        client_name: workingName, // garantir mínimo 2 chars
+        client_name: workingName, // garantir mínimo 2 palavras
       };
       const created = await firstImpressionService.create(payload);
       setImpressionId(created.id);
