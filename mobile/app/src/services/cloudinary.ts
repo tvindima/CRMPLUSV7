@@ -200,7 +200,6 @@ class CloudinaryService {
     const response = await fetch(config.api_base_url, {
       method: 'POST',
       body: formData,
-      headers: { 'Content-Type': 'multipart/form-data' },
     });
 
     if (!response.ok) {
