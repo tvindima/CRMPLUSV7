@@ -9,6 +9,13 @@ export interface PreAngariacaoListItem {
   progresso: number;
 }
 
+export interface AddDocumentoPayload {
+  type: string;
+  name: string;
+  url: string;
+  notes?: string;
+}
+
 export const preAngariacaoService = {
   createFromFirstImpression: async (firstImpressionId: number) => {
     return apiService.post('/pre-angariacoes/from-first-impression', {
@@ -17,5 +24,8 @@ export const preAngariacaoService = {
   },
   list: async (): Promise<PreAngariacaoListItem[]> => {
     return apiService.get('/pre-angariacoes');
+  },
+  addDocumento: async (preAngariacaoId: number, payload: AddDocumentoPayload) => {
+    return apiService.post(`/pre-angariacoes/${preAngariacaoId}/documentos`, payload);
   },
 };

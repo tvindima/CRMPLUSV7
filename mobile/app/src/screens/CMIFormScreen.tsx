@@ -24,6 +24,8 @@ import SignatureScreen from 'react-native-signature-canvas';
 import { cmiService, CMI } from '../services/cmiService';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
+import { cloudinaryService } from '../services/cloudinary';
+import { preAngariacaoService } from '../services/preAngariacaoService';
 
 interface Props {
   navigation: any;
@@ -31,6 +33,7 @@ interface Props {
     params?: {
       cmiId?: number;
       firstImpressionId?: number;
+      preAngariacaoId?: number;
     };
   };
 }
@@ -58,6 +61,7 @@ const TIPOS_CONTRATO = [
 export default function CMIFormScreen({ navigation, route }: Props) {
   const cmiId = route.params?.cmiId;
   const firstImpressionId = route.params?.firstImpressionId;
+  const preAngariacaoId = route.params?.preAngariacaoId;
   const isEditMode = !!cmiId;
 
   // Auth context - para obter nome do agente
@@ -255,10 +259,38 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setShowCameraModal(true);
   };
 
-  const processOcrFromBase64 = async (base64: string) => {
+  const persistDocumento = async (fileUri: string, fileName: string, mimeType: string) => {
+    if (!preAngariacaoId) return null;
+    // Upload para Cloudinary e salvar em pré-angariação
+    const url = await cloudinaryService.uploadFile(fileUri, fileName, mimeType);
+    const tipoDocumento =
+      currentDocType === 'caderneta_predial' ? 'caderneta_predial' :
+      currentDocType === 'certidao_permanente' ? 'certidao_permanente' :
+      currentDocType === 'licenca_utilizacao' ? 'licenca_utilizacao' :
+      currentDocType === 'certificado_energetico' ? 'certificado_energetico' :
+      'documentos_proprietario'; // CC frente/verso => documentos_proprietario
+
+    await preAngariacaoService.addDocumento(preAngariacaoId, {
+      type: tipoDocumento,
+      name: fileName,
+      url,
+    });
+
+    return url;
+  };
+
+  const processOcrFromBase64 = async (base64: string, fileMeta?: { uri: string; name: string; mime: string }) => {
     if (!cmi) {
       Alert.alert('Erro', 'CMI ainda não foi criado.');
       return;
+    }
+    // Upload e persistir documento
+    if (fileMeta) {
+      try {
+        await persistDocumento(fileMeta.uri, fileMeta.name, fileMeta.mime);
+      } catch (e: any) {
+        console.warn('[Docs] ❌ Erro ao guardar documento:', e?.message || e);
+      }
     }
     // Processar via OCR
     Alert.alert('A Processar', 'A extrair dados do documento...');
@@ -311,9 +343,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64 && cmi) {
+      if (!result.canceled && result.assets[0] && cmi) {
         setShowCameraModal(false);
-        await processOcrFromBase64(result.assets[0].base64);
+        await processOcrFromBase64(result.assets[0].base64 || '', {
+          uri: result.assets[0].uri,
+          name: `${currentDocType}-${Date.now()}.jpg`,
+          mime: result.assets[0].mimeType || 'image/jpeg',
+        });
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao capturar documento');
@@ -340,8 +376,12 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64) {
-        await processOcrFromBase64(result.assets[0].base64);
+      if (!result.canceled && result.assets[0]) {
+        await processOcrFromBase64(result.assets[0].base64 || '', {
+          uri: result.assets[0].uri,
+          name: result.assets[0].fileName || `${docType}-${Date.now()}.jpg`,
+          mime: result.assets[0].mimeType || 'image/jpeg',
+        });
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao anexar documento da galeria');
