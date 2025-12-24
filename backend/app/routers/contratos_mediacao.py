@@ -20,6 +20,15 @@ from app.agents.models import Agent
 from app.agencies.models import Agency
 from app.schemas import contrato_mediacao as schemas
 
+# OCR (Google Vision)
+import base64
+import os
+try:
+    from google.cloud import vision  # type: ignore
+    VISION_AVAILABLE = True
+except Exception:
+    VISION_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cmi", tags=["Contratos Mediação (CMI)"])
@@ -466,56 +475,76 @@ def processar_documento_ocr(
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
     
-    # Simular OCR (em produção, usar serviço real)
-    # Por agora, retornar template de dados esperados
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
-    
-    if data.tipo == "cc_frente":
-        dados_extraidos = {
-            "nome": "",
-            "apelidos": "",
-            "data_nascimento": "",
-            "sexo": "",
-            "numero_documento": "",
-            "validade": "",
-        }
-        mensagem = "Posicione o CC na frente. Campos a extrair: Nome, Nº Documento, Validade"
-        confianca = 0.85
-        
-    elif data.tipo == "cc_verso":
-        dados_extraidos = {
-            "nif": "",
-            "nss": "",
-            "nus": "",
-        }
-        mensagem = "Posicione o CC no verso. Campos a extrair: NIF, NSS, NUS"
-        confianca = 0.90
-        
-    elif data.tipo == "caderneta_predial":
-        dados_extraidos = {
-            "artigo_matricial": "",
-            "freguesia": "",
-            "concelho": "",
-            "distrito": "",
-            "tipo_predio": "",
-            "area_bruta": "",
-            "area_terreno": "",
-            "valor_patrimonial": "",
-        }
-        mensagem = "Caderneta Predial. Campos: Artigo, Localização, Áreas, Valor Patrimonial"
-        confianca = 0.80
-        
-    elif data.tipo == "certidao_permanente":
-        dados_extraidos = {
-            "numero_descricao": "",
-            "conservatoria": "",
-            "proprietarios": [],
-            "onus": [],
-        }
-        mensagem = "Certidão Permanente. Campos: Descrição, Conservatória, Proprietários, Ónus"
-        confianca = 0.75
+
+    # Aceita ambas variantes da env: GCP_VISION_ENABLED ou GCP_VISION_ENABLE
+    vision_flag = os.environ.get("GCP_VISION_ENABLED") or os.environ.get("GCP_VISION_ENABLE") or "false"
+    use_vision = vision_flag.lower() == "true" and VISION_AVAILABLE
+
+    if use_vision:
+        try:
+            client = vision.ImageAnnotatorClient()
+            image = vision.Image(content=base64.b64decode(data.imagem_base64))
+            response = client.text_detection(image=image)
+            if response.error.message:
+                raise RuntimeError(response.error.message)
+            full_text = response.full_text_annotation.text if response.full_text_annotation else ""
+            dados_extraidos = {"raw_text": full_text}
+            confianca = 0.9
+            mensagem = "Texto extraído com Google Vision"
+        except Exception as e:
+            logger.error(f"OCR Vision falhou: {e}")
+            mensagem = "OCR Vision indisponível, retornando stub"
+            dados_extraidos = {"raw_text": ""}
+            confianca = 0.0
+    # Stub (fallback)
+    if not use_vision:
+        if data.tipo == "cc_frente":
+            dados_extraidos = {
+                "nome": "",
+                "apelidos": "",
+                "data_nascimento": "",
+                "sexo": "",
+                "numero_documento": "",
+                "validade": "",
+            }
+            mensagem = "Posicione o CC na frente. Campos a extrair: Nome, Nº Documento, Validade"
+            confianca = 0.10
+            
+        elif data.tipo == "cc_verso":
+            dados_extraidos = {
+                "nif": "",
+                "nss": "",
+                "nus": "",
+            }
+            mensagem = "Posicione o CC no verso. Campos a extrair: NIF, NSS, NUS"
+            confianca = 0.10
+            
+        elif data.tipo == "caderneta_predial":
+            dados_extraidos = {
+                "artigo_matricial": "",
+                "freguesia": "",
+                "concelho": "",
+                "distrito": "",
+                "tipo_predio": "",
+                "area_bruta": "",
+                "area_terreno": "",
+                "valor_patrimonial": "",
+            }
+            mensagem = "Caderneta Predial. Campos: Artigo, Localização, Áreas, Valor Patrimonial"
+            confianca = 0.10
+            
+        elif data.tipo == "certidao_permanente":
+            dados_extraidos = {
+                "numero_descricao": "",
+                "conservatoria": "",
+                "proprietarios": [],
+                "onus": [],
+            }
+            mensagem = "Certidão Permanente. Campos: Descrição, Conservatória, Proprietários, Ónus"
+            confianca = 0.10
     
     # Guardar foto do documento
     fotos = item.documentos_fotos or []
