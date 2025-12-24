@@ -203,7 +203,19 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
     // Já existe? Navega de imediato
     if (impressionId) {
-      navigation.navigate('CMIForm', { firstImpressionId: impressionId, preAngariacaoId: preAngariacaoId || undefined });
+      let targetPreId = preAngariacaoId;
+      if (!targetPreId) {
+        try {
+          const pre = await preAngariacaoService.getByFirstImpression(impressionId);
+          if (pre?.id) {
+            targetPreId = pre.id;
+            setPreAngariacaoId(pre.id);
+          }
+        } catch (e) {
+          console.warn('Pré-angariação não encontrada ao abrir CMI:', e);
+        }
+      }
+      navigation.navigate('CMIForm', { firstImpressionId: impressionId, preAngariacaoId: targetPreId || undefined });
       return;
     }
 
@@ -224,7 +236,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       } catch (e) {
         console.warn('Pré-angariação não criada automaticamente:', e);
       }
-      navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: createdPreId || preAngariacaoId || undefined });
+      navigation.navigate('CMIForm', { firstImpressionId: created.id, preAngariacaoId: createdPreId || undefined });
   } catch (error) {
     console.error('[CMI] ❌ Erro ao criar rascunho:', error);
     Alert.alert('Erro', error.message || 'Não foi possível abrir o CMI.');
