@@ -207,7 +207,10 @@ def change_assistant_password(
     """
     from app.users.services import get_password_hash
     
+    logger.info(f"[CHANGE-ASSISTANT-PWD] User {current_user.email} tentando alterar pwd do assistant_id={data.assistant_id}")
+    
     effective_agent_id = get_effective_agent_id(request, db)
+    logger.info(f"[CHANGE-ASSISTANT-PWD] effective_agent_id={effective_agent_id}")
     
     if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
@@ -218,6 +221,8 @@ def change_assistant_password(
         User.works_for_agent_id == effective_agent_id,
         User.role == UserRole.ASSISTANT.value
     ).first()
+    
+    logger.info(f"[CHANGE-ASSISTANT-PWD] assistant found: {assistant is not None}")
     
     if not assistant:
         raise HTTPException(status_code=404, detail="Assistente não encontrado ou não autorizado")
