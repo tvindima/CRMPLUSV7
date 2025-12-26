@@ -1907,9 +1907,22 @@ def processar_documento_ocr(
                 parsed = extrair_cc(full_text)
                 logger.info(f"[OCR CC] Resultado: {parsed}")
                 
+                # IMPORTANTE: Se é CC verso e nome veio da MRZ (pode estar truncado),
+                # só usar se ainda não temos nome do cliente
+                nome_vindo_de_mrz = doc_tipo == "cc_verso" and parsed.get("nome_completo")
+                
                 if parsed.get("nome_completo"):
-                    updates["cliente_nome"] = parsed["nome_completo"]
-                    dados_para_mobile["nome"] = parsed["nome_completo"]
+                    # Só atualizar nome se:
+                    # 1. É CC frente (nome completo e confiável)
+                    # 2. Ou é CC verso MAS ainda não temos nome no CMI
+                    if doc_tipo == "cc_frente" or not item.cliente_nome:
+                        updates["cliente_nome"] = parsed["nome_completo"]
+                        dados_para_mobile["nome"] = parsed["nome_completo"]
+                        print(f"[OCR CC] ✅ Nome atualizado: {parsed['nome_completo']}")
+                    else:
+                        # CC verso com nome MRZ mas já temos nome - não sobrescrever
+                        dados_para_mobile["nome"] = parsed["nome_completo"]  # Retornar mas não salvar
+                        print(f"[OCR CC] ⚠️ Nome CC verso ignorado (já temos nome do CC frente)")
                 if parsed.get("numero_documento"):
                     updates["cliente_cc"] = parsed["numero_documento"]
                     dados_para_mobile["numero_documento"] = parsed["numero_documento"]
@@ -2015,7 +2028,9 @@ def processar_documento_ocr(
                 
                 if parsed.get("descricao_numero"):
                     updates["imovel_descricao_conservatoria"] = parsed["descricao_numero"]
-                    dados_para_mobile["descricao_numero"] = parsed["descricao_numero"]
+                    # Mobile espera 'numero_descricao', não 'descricao_numero'
+                    dados_para_mobile["numero_descricao"] = parsed["descricao_numero"]
+                    print(f"[OCR CERTIDÃO] ✅ Número descrição mapeado: {parsed['descricao_numero']}")
                 if parsed.get("matriz_numero"):
                     updates["imovel_artigo_matricial"] = parsed["matriz_numero"]
                     dados_para_mobile["artigo_matricial"] = parsed["matriz_numero"]
