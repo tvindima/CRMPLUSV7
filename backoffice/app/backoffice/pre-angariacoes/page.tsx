@@ -19,7 +19,11 @@ function PreAngariacoesInner() {
       try {
         setLoading(true);
         const data = await getPreAngariacoes({ status: status || undefined, limit: 100 });
-        setItems(data);
+        // Ocultar cancelados por omissão (a menos que o filtro explicite)
+        const filtered = status
+          ? data
+          : data.filter((item) => item.status !== "cancelado");
+        setItems(filtered);
       } catch (error: any) {
         console.error("Erro ao carregar pré-angariações:", error);
         push("Erro ao carregar pré-angariações", "error");
