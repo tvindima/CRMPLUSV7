@@ -414,6 +414,18 @@ def eliminar_pre_angariacao(
     # Marcar como cancelada em vez de eliminar
     item.status = PreAngariacaoStatus.CANCELADO
     flag_modified(item, "status")
+
+    # Se existir 1ª impressão ligada, marcar como cancelada também (para desaparecer do mobile)
+    try:
+        from app.models.first_impression import FirstImpression
+        if item.first_impression_id:
+            fi = db.query(FirstImpression).filter(FirstImpression.id == item.first_impression_id).first()
+            if fi:
+                fi.status = "cancelled"
+                fi.updated_at = func.now()
+    except Exception as e:
+        logger.warning(f"Não foi possível marcar 1ª impressão como cancelada: {e}")
+
     db.commit()
     
     return {"message": "Pré-angariação cancelada", "id": pre_angariacao_id}
