@@ -114,8 +114,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     {link.label}
                   </Link>
                 ))}
-                <UserMenuWrapper />
+                {/* Botão de login visível só em desktop */}
+                <div className="hidden md:block">
+                  <UserMenuWrapper />
+                </div>
               </nav>
+
+              {/* UserMenuWrapper sempre presente para o modal funcionar em mobile */}
+              <div className="md:hidden">
+                <UserMenuWrapper />
+              </div>
 
               {/* Mobile Menu */}
               <MobileMenu links={navLinks} />
