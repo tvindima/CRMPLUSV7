@@ -486,7 +486,6 @@ def gerar_pdf(
     y -= 5*mm
     c.setFont("Helvetica", 8)
     ag = f"Na preparação e elaboração do presente contrato colaborou {safe(item.agente_nome) or '________________'}, "
-    ag += f"carteira profissional nº {safe(item.agente_carteira_profissional) or '________________'}, "
     ag += "angariador(a) imobiliário(a) da Mediadora."
     y = draw_text(c, ag, margin_left, y, usable_width, 8, 10)
     

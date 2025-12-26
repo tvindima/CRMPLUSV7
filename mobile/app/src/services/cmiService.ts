@@ -60,7 +60,6 @@ export interface CMI {
   mediador_licenca_ami: string;
   mediador_nif: string;
   agente_nome?: string;
-  agente_carteira_profissional?: string;
   
   // Documentos
   documentos_entregues: Array<{
@@ -132,7 +131,6 @@ export interface UpdateCMI {
   
   // Agente responsável
   agente_nome?: string;
-  agente_carteira_profissional?: string;
   
   // Segundo cliente (co-proprietário/cônjuge)
   cliente2_nome?: string;
