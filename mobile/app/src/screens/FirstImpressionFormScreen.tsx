@@ -89,7 +89,11 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setLatitude(data.latitude);
       setLongitude(data.longitude);
       
-      setPhotos(data.photos || []);
+      // Filtrar blob: URLs inválidas (só aceitar http/https)
+      const validPhotos = (data.photos || []).filter((url: string) => 
+        url && (url.startsWith('http://') || url.startsWith('https://'))
+      );
+      setPhotos(validPhotos);
       setAttachments(data.attachments || []);
 
       // Buscar pré-angariação ligada

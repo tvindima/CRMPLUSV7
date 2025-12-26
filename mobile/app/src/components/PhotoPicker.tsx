@@ -265,7 +265,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
         </View>
       )}
 
-      {/* Grid de Fotos */}
+      {/* Grid de Fotos - só mostrar URLs válidas (http/https) */}
       {photos.length > 0 && (
         <ScrollView 
           horizontal 
@@ -273,7 +273,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
           style={styles.photoScroll}
           contentContainerStyle={styles.photoScrollContent}
         >
-          {photos.map((uri, index) => (
+          {photos.filter(uri => uri && (uri.startsWith('http://') || uri.startsWith('https://'))).map((uri, index) => (
             <View key={`${uri}-${index}`} style={styles.photoContainer}>
               <Image source={{ uri }} style={styles.photo} />
               <TouchableOpacity
