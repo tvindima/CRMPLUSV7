@@ -175,6 +175,30 @@ def test_agent_logins():
     return {"logins": logins}
 
 
+@setup_router.post("/add-works-for-column")
+def add_works_for_agent_column(db: Session = Depends(get_db)):
+    """Adicionar coluna works_for_agent_id à tabela users"""
+    try:
+        # Verificar se coluna já existe
+        result = db.execute(text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'works_for_agent_id'
+        """))
+        if result.fetchone():
+            return {"success": True, "message": "Coluna já existe"}
+        
+        # Adicionar coluna
+        db.execute(text("""
+            ALTER TABLE users 
+            ADD COLUMN works_for_agent_id INTEGER REFERENCES agents(id) ON DELETE SET NULL
+        """))
+        db.commit()
+        return {"success": True, "message": "Coluna works_for_agent_id adicionada"}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+
 # =====================================================
 # ENDPOINT TEMPORÁRIO PARA CRIAR USERS SEM AUTH
 # TODO: Remover quando backoffice tiver autenticação
