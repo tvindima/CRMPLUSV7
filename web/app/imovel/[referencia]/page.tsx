@@ -8,6 +8,7 @@ import { AgentContactCard } from "../../../components/AgentContactCard";
 import { PropertyVideo } from "../../../components/PropertyVideo";
 import { FavoriteButton } from "../../../components/FavoriteButton";
 import { LeadContactForm } from "../../../components/LeadContactForm";
+import { PropertyTools } from "../../../components/PropertyTools";
 import { getPropertyGallery, getPropertyCover } from "../../../src/utils/placeholders";
 
 type Props = { params: { referencia: string } };
@@ -281,6 +282,32 @@ export default async function ImovelDetail({ params }: Props) {
                 </span>
               )}
             </div>
+
+            {/* Ferramentas do Cliente */}
+            <PropertyTools 
+              property={{
+                id: property.id,
+                referencia: property.reference || `${property.id}`,
+                titulo: property.title,
+                preco: property.price || 0,
+                tipologia: property.typology,
+                area_util: property.usable_area,
+                area_bruta: property.area,
+                quartos: property.bedrooms,
+                casas_banho: property.bathrooms,
+                localizacao: fullLocation,
+                imagem: images[0],
+                tipo_negocio: property.business_type,
+                tipo_imovel: property.property_type,
+                ano_construcao: property.year_built,
+                certificado_energetico: property.energy_certificate,
+                garagem: property.has_garage,
+                varanda: property.has_balcony,
+                piscina: property.has_pool,
+                jardim: property.has_garden,
+              }}
+              price={property.price || 0}
+            />
           </div>
 
           {/* Description */}

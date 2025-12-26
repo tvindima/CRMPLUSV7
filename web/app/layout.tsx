@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BrandImage } from "../components/BrandImage";
 import UserMenuWrapper from "../components/UserMenuWrapper";
 import MobileMenu from "../components/MobileMenu";
+import { Providers } from "../components/Providers";
 
 export const metadata = {
   metadataBase: new URL('https://imoveismais-site.vercel.app'),
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt" className={poppins.variable}>
       <body className="bg-[#0B0B0D] text-white">
+        <Providers>
         <div className="min-h-screen bg-grid">
           <header className="sticky top-0 z-20 border-b border-[#2A2A2E] bg-[#0B0B0D]/80 backdrop-blur">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
@@ -162,6 +164,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </footer>
         </div>
+        </Providers>
       </body>
     </html>
   );

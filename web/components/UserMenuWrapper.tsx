@@ -131,6 +131,16 @@ export function UserMenuWrapper() {
                 Os meus favoritos
               </Link>
               <Link
+                href="/comparar"
+                className="flex items-center gap-2 rounded px-3 py-2 text-sm text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+                onClick={() => setShowDropdown(false)}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+                Comparar imóveis
+              </Link>
+              <Link
                 href="/pesquisas"
                 className="flex items-center gap-2 rounded px-3 py-2 text-sm text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
                 onClick={() => setShowDropdown(false)}
