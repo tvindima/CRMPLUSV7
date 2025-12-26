@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -70,42 +71,64 @@ export default function FirstImpressionListScreen() {
   };
 
   // Apagar documento (agente): marcar como cancelado e cancelar pré-angariação, mas sem remover do admin
-  const handleDelete = (id: number, clientName: string) => {
+  const handleDelete = async (id: number, clientName: string) => {
     console.log('[handleDelete] Chamado para id:', id, 'cliente:', clientName);
-    Alert.alert(
-      'Apagar pré-angariação',
-      `Esta ação é irreversível. Confirmar apagar a pré-angariação de ${clientName}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Apagar',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('[handleDelete] Confirmado apagar id:', id);
-            try {
-              // Cancelar pré-angariação ligada (sem apagar para admin)
-              try {
-                const pre = await preAngariacaoService.getByFirstImpression(id);
-                if (pre?.id) {
-                  await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
-                }
-              } catch (e) {
-                console.log('[handleDelete] Sem pré-angariação ligada, ignorando');
-              }
-              // Usar endpoint /cancel em vez de update
-              console.log('[handleDelete] Chamando firstImpressionService.cancel...');
-              await firstImpressionService.cancel(id);
-              console.log('[handleDelete] ✅ Cancelado com sucesso!');
-              setImpressions((prev) => prev.filter((it) => it.id !== id));
-              Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
-            } catch (error: any) {
-              console.error('[handleDelete] ❌ Erro:', error);
-              Alert.alert('Erro', error?.response?.data?.detail || 'Não foi possível apagar. Tente novamente.');
-            }
-          },
-        },
-      ]
-    );
+    
+    // Confirmar - usar window.confirm no web, Alert.alert no native
+    const confirmMessage = `Esta ação é irreversível. Confirmar apagar a pré-angariação de ${clientName}?`;
+    
+    let confirmed = false;
+    if (Platform.OS === 'web') {
+      confirmed = window.confirm(confirmMessage);
+    } else {
+      // No native, usar Alert.alert com Promise
+      confirmed = await new Promise((resolve) => {
+        Alert.alert(
+          'Apagar pré-angariação',
+          confirmMessage,
+          [
+            { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Apagar', style: 'destructive', onPress: () => resolve(true) },
+          ]
+        );
+      });
+    }
+    
+    if (!confirmed) {
+      console.log('[handleDelete] Cancelado pelo utilizador');
+      return;
+    }
+    
+    console.log('[handleDelete] Confirmado apagar id:', id);
+    try {
+      // Cancelar pré-angariação ligada (sem apagar para admin)
+      try {
+        const pre = await preAngariacaoService.getByFirstImpression(id);
+        if (pre?.id) {
+          await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
+        }
+      } catch (e) {
+        console.log('[handleDelete] Sem pré-angariação ligada, ignorando');
+      }
+      // Usar endpoint /cancel em vez de update
+      console.log('[handleDelete] Chamando firstImpressionService.cancel...');
+      await firstImpressionService.cancel(id);
+      console.log('[handleDelete] ✅ Cancelado com sucesso!');
+      setImpressions((prev) => prev.filter((it) => it.id !== id));
+      if (Platform.OS === 'web') {
+        window.alert('Pré-angariação removida da sua lista.');
+      } else {
+        Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
+      }
+    } catch (error: any) {
+      console.error('[handleDelete] ❌ Erro:', error);
+      const errorMsg = error?.response?.data?.detail || 'Não foi possível apagar. Tente novamente.';
+      if (Platform.OS === 'web') {
+        window.alert('Erro: ' + errorMsg);
+      } else {
+        Alert.alert('Erro', errorMsg);
+      }
+    }
   };
 
   // Renderizar card
