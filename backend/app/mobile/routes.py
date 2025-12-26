@@ -142,7 +142,7 @@ def change_own_password(
     Alterar a própria password.
     Requer password atual para confirmar identidade.
     """
-    from app.users.services import verify_password, get_password_hash
+    from app.users.services import verify_password, hash_password
     
     # Verificar password atual
     if not verify_password(data.current_password, current_user.hashed_password):
@@ -153,7 +153,7 @@ def change_own_password(
         raise HTTPException(status_code=400, detail="Nova password deve ter pelo menos 6 caracteres")
     
     # Atualizar password
-    current_user.hashed_password = get_password_hash(data.new_password)
+    current_user.hashed_password = hash_password(data.new_password)
     db.commit()
     
     logger.info(f"✅ Password alterada com sucesso para user {current_user.email}")
@@ -205,7 +205,7 @@ def change_assistant_password(
     Alterar password de um assistente.
     Apenas o agente responsável pode alterar a password do seu assistente.
     """
-    from app.users.services import get_password_hash
+    from app.users.services import hash_password
     
     logger.info(f"[CHANGE-ASSISTANT-PWD] User {current_user.email} tentando alterar pwd do assistant_id={data.assistant_id}")
     
@@ -232,7 +232,7 @@ def change_assistant_password(
         raise HTTPException(status_code=400, detail="Nova password deve ter pelo menos 6 caracteres")
     
     # Atualizar password
-    assistant.hashed_password = get_password_hash(data.new_password)
+    assistant.hashed_password = hash_password(data.new_password)
     db.commit()
     
     logger.info(f"✅ Password do assistente {assistant.email} alterada por {current_user.email}")
