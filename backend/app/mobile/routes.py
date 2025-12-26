@@ -901,6 +901,9 @@ def get_mobile_dashboard_stats(
     # Usar agent_id do token (suporta assistentes)
     effective_agent_id = get_effective_agent_id(request, db)
     
+    # DEBUG: Log para verificar o agent_id
+    print(f"[STATS] User: {current_user.email}, Role: {current_user.role}, effective_agent_id: {effective_agent_id}")
+    
     # Valores default
     properties_count = 0
     pre_angariacoes_count = 0
@@ -910,13 +913,16 @@ def get_mobile_dashboard_stats(
     tasks_future = 0
     
     try:
-        # Contar propriedades
+        # Contar propriedades - SEMPRE FILTRAR POR AGENT_ID
         if effective_agent_id:
             properties_count = db.query(Property).filter(
                 Property.agent_id == effective_agent_id
             ).count()
+            print(f"[STATS] Properties count for agent {effective_agent_id}: {properties_count}")
         else:
-            properties_count = db.query(Property).count()
+            # Se não tem agent_id, retornar 0 em vez de todas
+            properties_count = 0
+            print(f"[STATS] No agent_id, returning 0 properties")
     except Exception as e:
         print(f"[STATS] Error counting properties: {e}")
     
