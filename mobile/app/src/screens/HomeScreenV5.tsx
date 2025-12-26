@@ -53,7 +53,8 @@ const ALL_SHORTCUTS: Shortcut[] = [
   { id: 'ai', label: 'Assistente IA', icon: 'sparkles', color: '#f59e0b', route: 'IA', enabled: true },
   { id: 'new-lead', label: 'Novo Lead', icon: 'person-add', color: '#10b981', route: 'NewLead', enabled: true },
   { id: 'site-editor', label: 'Editor Montra', icon: 'globe', color: '#ec4899', route: 'SiteEditor', enabled: true },
-  { id: 'messages', label: 'Mensagens', icon: 'chatbubbles', color: '#06b6d4', route: 'Messages', enabled: false },
+  { id: 'tax-calculator', label: 'Calculadora Impostos', icon: 'calculator', color: '#06b6d4', route: 'TaxCalculator', enabled: true },
+  { id: 'messages', label: 'Mensagens', icon: 'chatbubbles', color: '#3b82f6', route: 'Messages', enabled: false },
   { id: 'reports', label: 'Relatórios', icon: 'stats-chart', color: '#84cc16', route: 'Reports', enabled: false },
   { id: 'first-impression', label: 'Pré-Angariações', icon: 'folder', color: '#8b5cf6', route: 'FirstImpressionList', enabled: true },
   { id: 'documents', label: 'Documentos', icon: 'folder', color: '#f97316', route: 'Documents', enabled: false },
@@ -212,6 +213,9 @@ export default function HomeScreenV5({ navigation }: any) {
     console.log('Shortcut pressed:', shortcut.route);
     if (shortcut.route === 'SiteEditor') {
       setShowSiteEditorModal(true);
+    } else if (shortcut.route === 'TaxCalculator') {
+      // Navegar para calculadora dentro do HomeStack
+      navigation.navigate('TaxCalculator');
     } else {
       // Navigate to the route
       navigation.navigate(shortcut.route as any);

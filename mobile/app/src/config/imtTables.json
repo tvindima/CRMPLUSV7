@@ -1,0 +1,64 @@
+{
+  "version": "2025",
+  "lastUpdate": "2025-01-01",
+  "impostoSelo": {
+    "taxa": 0.008,
+    "descricao": "Imposto de Selo sobre aquisições de imóveis"
+  },
+  "imt": {
+    "habitacao_propria_permanente": {
+      "descricao": "Habitação própria e permanente",
+      "escaloes": [
+        { "limite": 101917, "taxa": 0, "parcela": 0 },
+        { "limite": 139412, "taxa": 0.02, "parcela": 2038.34 },
+        { "limite": 190086, "taxa": 0.05, "parcela": 6220.70 },
+        { "limite": 316772, "taxa": 0.07, "parcela": 10022.42 },
+        { "limite": 633453, "taxa": 0.08, "parcela": 13190.14 },
+        { "limite": 1102920, "taxa": 0.06, "parcela": 0, "nota": "taxa única" },
+        { "limite": null, "taxa": 0.075, "parcela": 0, "nota": "taxa única" }
+      ]
+    },
+    "habitacao_secundaria": {
+      "descricao": "Habitação secundária ou investimento",
+      "escaloes": [
+        { "limite": 101917, "taxa": 0.01, "parcela": 0 },
+        { "limite": 139412, "taxa": 0.02, "parcela": 1019.17 },
+        { "limite": 190086, "taxa": 0.05, "parcela": 5201.53 },
+        { "limite": 316772, "taxa": 0.07, "parcela": 9003.25 },
+        { "limite": 607528, "taxa": 0.08, "parcela": 12170.97 },
+        { "limite": 1102920, "taxa": 0.06, "parcela": 0, "nota": "taxa única" },
+        { "limite": null, "taxa": 0.075, "parcela": 0, "nota": "taxa única" }
+      ]
+    },
+    "comercial_servicos": {
+      "descricao": "Prédios urbanos para comércio, indústria ou serviços",
+      "escaloes": [
+        { "limite": 101917, "taxa": 0.065, "parcela": 0, "nota": "taxa única" },
+        { "limite": null, "taxa": 0.075, "parcela": 0, "nota": "taxa única" }
+      ]
+    },
+    "terreno": {
+      "descricao": "Terrenos para construção",
+      "escaloes": [
+        { "limite": null, "taxa": 0.065, "parcela": 0, "nota": "taxa única" }
+      ]
+    },
+    "arrendamento": {
+      "descricao": "Habitação para arrendamento",
+      "escaloes": [
+        { "limite": 101917, "taxa": 0.01, "parcela": 0 },
+        { "limite": 139412, "taxa": 0.02, "parcela": 1019.17 },
+        { "limite": 190086, "taxa": 0.05, "parcela": 5201.53 },
+        { "limite": 316772, "taxa": 0.07, "parcela": 9003.25 },
+        { "limite": 607528, "taxa": 0.08, "parcela": 12170.97 },
+        { "limite": 1102920, "taxa": 0.06, "parcela": 0, "nota": "taxa única" },
+        { "limite": null, "taxa": 0.075, "parcela": 0, "nota": "taxa única" }
+      ]
+    }
+  },
+  "notas": [
+    "Valores atualizados para 2025 (Portugal Continental)",
+    "Regiões Autónomas podem ter taxas diferentes",
+    "Isenções aplicáveis não são consideradas nesta simulação"
+  ]
+}

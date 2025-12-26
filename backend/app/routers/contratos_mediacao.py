@@ -1907,22 +1907,26 @@ def processar_documento_ocr(
                 parsed = extrair_cc(full_text)
                 logger.info(f"[OCR CC] Resultado: {parsed}")
                 
-                # IMPORTANTE: Se é CC verso e nome veio da MRZ (pode estar truncado),
-                # só usar se ainda não temos nome do cliente
-                nome_vindo_de_mrz = doc_tipo == "cc_verso" and parsed.get("nome_completo")
+                # Verificar se já temos um nome válido (não placeholder)
+                nome_atual = item.cliente_nome or ""
+                nome_atual_eh_placeholder = not nome_atual or nome_atual.lower() in ["a identificar", "cliente", "proprietário", "proprietario"]
                 
                 if parsed.get("nome_completo"):
-                    # Só atualizar nome se:
-                    # 1. É CC frente (nome completo e confiável)
-                    # 2. Ou é CC verso MAS ainda não temos nome no CMI
-                    if doc_tipo == "cc_frente" or not item.cliente_nome:
+                    # REGRA: CC FRENTE sempre atualiza (tem nome completo confiável)
+                    # CC VERSO só atualiza se não temos nome ou é placeholder
+                    if doc_tipo == "cc_frente":
                         updates["cliente_nome"] = parsed["nome_completo"]
                         dados_para_mobile["nome"] = parsed["nome_completo"]
-                        print(f"[OCR CC] ✅ Nome atualizado: {parsed['nome_completo']}")
+                        print(f"[OCR CC FRENTE] ✅ Nome atualizado: {parsed['nome_completo']}")
+                    elif nome_atual_eh_placeholder:
+                        # CC verso e não temos nome - usar (mesmo que truncado é melhor que nada)
+                        updates["cliente_nome"] = parsed["nome_completo"]
+                        dados_para_mobile["nome"] = parsed["nome_completo"]
+                        print(f"[OCR CC VERSO] ✅ Nome usado (era placeholder): {parsed['nome_completo']}")
                     else:
-                        # CC verso com nome MRZ mas já temos nome - não sobrescrever
+                        # CC verso mas já temos nome válido do CC frente - NÃO sobrescrever
                         dados_para_mobile["nome"] = parsed["nome_completo"]  # Retornar mas não salvar
-                        print(f"[OCR CC] ⚠️ Nome CC verso ignorado (já temos nome do CC frente)")
+                        print(f"[OCR CC VERSO] ⚠️ Nome ignorado - já temos '{nome_atual}'")
                 if parsed.get("numero_documento"):
                     updates["cliente_cc"] = parsed["numero_documento"]
                     dados_para_mobile["numero_documento"] = parsed["numero_documento"]
