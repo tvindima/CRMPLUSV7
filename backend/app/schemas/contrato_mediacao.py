@@ -175,6 +175,10 @@ class CMIUpdate(BaseModel):
     pagamento_percentagem_cpcv: Optional[Decimal] = None
     pagamento_percentagem_escritura: Optional[Decimal] = None
     
+    # Agente
+    agente_nome: Optional[str] = None
+    agente_carteira_profissional: Optional[str] = None
+    
     clausulas_especiais: Optional[str] = None
 
 

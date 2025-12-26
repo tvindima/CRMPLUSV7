@@ -398,12 +398,25 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         setPendingDocs([]);
       }
 
+      // Converter data DD/MM/YYYY para ISO (YYYY-MM-DD) para o backend
+      const convertDateToISO = (dateStr: string | undefined): string | undefined => {
+        if (!dateStr) return undefined;
+        // Se já está em formato ISO, retorna
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // Converter DD/MM/YYYY para YYYY-MM-DD
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return undefined;  // Data inválida
+      };
+
       await cmiService.update(cmi.id, {
         cliente_nome: clienteNome,
         cliente_estado_civil: clienteEstadoCivil || undefined,
         cliente_nif: clienteNif || undefined,
         cliente_cc: clienteCc || undefined,
-        cliente_cc_validade: clienteCcValidade || undefined,
+        cliente_cc_validade: convertDateToISO(clienteCcValidade),
         cliente_morada: clienteMorada || undefined,
         cliente_codigo_postal: clienteCodigoPostal || undefined,
         cliente_localidade: clienteLocalidade || undefined,
