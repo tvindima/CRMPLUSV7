@@ -3,8 +3,9 @@
  * Evita chamadas duplicadas a /mobile/dashboard/stats e /agents/{id}
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { apiService } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface AgentProfile {
   id: number;
@@ -33,15 +34,32 @@ interface AgentContextData {
   loading: boolean;
   loadAgentData: () => Promise<void>;
   refreshAgentData: () => Promise<void>;
+  clearAgentData: () => void;
 }
 
 const AgentContext = createContext<AgentContextData>({} as AgentContextData);
 
 export function AgentProvider({ children }: { children: ReactNode }) {
+  const { user, accessToken } = useAuth();
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastFetch, setLastFetch] = useState<number>(0);
+
+  // ✅ LIMPAR DADOS QUANDO USER MUDA (login/logout)
+  useEffect(() => {
+    console.log('[AgentContext] User changed, clearing cache');
+    setAgentProfile(null);
+    setStats(null);
+    setLastFetch(0);
+  }, [user?.id, accessToken]);
+
+  const clearAgentData = useCallback(() => {
+    console.log('[AgentContext] Clearing all agent data');
+    setAgentProfile(null);
+    setStats(null);
+    setLastFetch(0);
+  }, []);
 
   const loadAgentData = useCallback(async () => {
     // Cache por 30 segundos
@@ -57,6 +75,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
 
       // Uma única chamada para stats
       const statsResponse = await apiService.get<DashboardStats>('/mobile/dashboard/stats');
+      console.log('[AgentContext] Stats received:', statsResponse);
       setStats(statsResponse);
 
       // Se tem agent_id, busca perfil
@@ -79,11 +98,13 @@ export function AgentProvider({ children }: { children: ReactNode }) {
 
   const refreshAgentData = useCallback(async () => {
     setLastFetch(0); // Force refresh
+    setStats(null);  // Clear stats to force reload
+    setAgentProfile(null);
     await loadAgentData();
   }, [loadAgentData]);
 
   return (
-    <AgentContext.Provider value={{ agentProfile, stats, loading, loadAgentData, refreshAgentData }}>
+    <AgentContext.Provider value={{ agentProfile, stats, loading, loadAgentData, refreshAgentData, clearAgentData }}>
       {children}
     </AgentContext.Provider>
   );
