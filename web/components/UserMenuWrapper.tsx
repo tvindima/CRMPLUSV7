@@ -173,11 +173,11 @@ export function UserMenuWrapper() {
 
       {showAuthModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
           onClick={() => setShowAuthModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl"
+            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
