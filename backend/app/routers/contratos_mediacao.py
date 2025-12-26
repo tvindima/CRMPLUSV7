@@ -1471,10 +1471,58 @@ def extrair_dados_ocr_standalone(
             mensagem="Google Vision não está configurado"
         )
     
+    # Mapear campos para nomes que o mobile espera
+    dados_para_mobile = {}
+    if doc_tipo in ("cc_frente", "cc_verso"):
+        # CC: mapear nome_completo -> nome, numero_documento -> numero_documento
+        if dados_extraidos.get("nome_completo"):
+            dados_para_mobile["nome"] = dados_extraidos["nome_completo"]
+        if dados_extraidos.get("numero_documento"):
+            dados_para_mobile["numero_documento"] = dados_extraidos["numero_documento"]
+        if dados_extraidos.get("nif"):
+            dados_para_mobile["nif"] = dados_extraidos["nif"]
+        if dados_extraidos.get("data_validade"):
+            dados_para_mobile["validade"] = dados_extraidos["data_validade"]
+        if dados_extraidos.get("data_nascimento"):
+            dados_para_mobile["data_nascimento"] = dados_extraidos["data_nascimento"]
+    elif doc_tipo == "caderneta_predial":
+        # Caderneta: mapear campos do imóvel
+        if dados_extraidos.get("artigo_matricial"):
+            dados_para_mobile["artigo_matricial"] = dados_extraidos["artigo_matricial"]
+        if dados_extraidos.get("distrito"):
+            dados_para_mobile["distrito"] = dados_extraidos["distrito"]
+        if dados_extraidos.get("concelho"):
+            dados_para_mobile["concelho"] = dados_extraidos["concelho"]
+        if dados_extraidos.get("freguesia"):
+            dados_para_mobile["freguesia"] = dados_extraidos["freguesia"]
+        if dados_extraidos.get("morada"):
+            dados_para_mobile["morada"] = dados_extraidos["morada"]
+        if dados_extraidos.get("codigo_postal"):
+            dados_para_mobile["codigo_postal"] = dados_extraidos["codigo_postal"]
+        if dados_extraidos.get("localidade"):
+            dados_para_mobile["localidade"] = dados_extraidos["localidade"]
+        if dados_extraidos.get("area_bruta_privativa"):
+            dados_para_mobile["area_bruta"] = dados_extraidos["area_bruta_privativa"]
+        if dados_extraidos.get("area_bruta_dependente"):
+            dados_para_mobile["area_dependente"] = dados_extraidos["area_bruta_dependente"]
+        if dados_extraidos.get("tipologia"):
+            dados_para_mobile["tipologia"] = dados_extraidos["tipologia"]
+        if dados_extraidos.get("tipo_imovel"):
+            dados_para_mobile["tipo_imovel"] = dados_extraidos["tipo_imovel"]
+        if dados_extraidos.get("titular_nif"):
+            dados_para_mobile["nif_titular"] = dados_extraidos["titular_nif"]
+        if dados_extraidos.get("titular_nome"):
+            dados_para_mobile["nome_titular"] = dados_extraidos["titular_nome"]
+    else:
+        # Outros tipos: passar dados como estão
+        dados_para_mobile = dados_extraidos
+    
+    logger.info(f"[OCR-Standalone] Dados mapeados para mobile: {dados_para_mobile}")
+    
     return schemas.DocumentoOCRResponse(
         sucesso=True,
         tipo=doc_tipo,
-        dados_extraidos=dados_extraidos,
+        dados_extraidos=dados_para_mobile,
         confianca=confianca,
         mensagem=mensagem
     )
