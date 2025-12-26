@@ -763,6 +763,9 @@ def processar_documento_ocr(
     # Aceita ambas variantes da env: GCP_VISION_ENABLED ou GCP_VISION_ENABLE
     vision_flag = os.environ.get("GCP_VISION_ENABLED") or os.environ.get("GCP_VISION_ENABLE") or "false"
     use_vision = vision_flag.lower() == "true" and VISION_AVAILABLE
+    
+    logger.info(f"[OCR] Vision flag: {vision_flag}, VISION_AVAILABLE: {VISION_AVAILABLE}, use_vision: {use_vision}")
+    logger.info(f"[OCR] Tipo documento: {data.tipo}, imagem base64 length: {len(data.imagem_base64)}")
 
     if use_vision:
         try:
@@ -782,6 +785,7 @@ def processar_documento_ocr(
             confianca = 0.0
     # Stub (fallback)
     if not use_vision:
+        logger.warning("[OCR] Google Vision não está ativo - retornando stub. Configure GCP_VISION_ENABLED=true no Railway.")
         if data.tipo == "cc_frente":
             dados_extraidos = dados_extraidos or {
                 "nome": "",
@@ -791,8 +795,8 @@ def processar_documento_ocr(
                 "numero_documento": "",
                 "validade": "",
             }
-            mensagem = mensagem or "Posicione o CC na frente. Campos a extrair: Nome, Nº Documento, Validade"
-            confianca = confianca or 0.10
+            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway para ativar extração automática."
+            confianca = 0.0
             
         elif data.tipo == "cc_verso":
             dados_extraidos = {
@@ -800,8 +804,8 @@ def processar_documento_ocr(
                 "nss": "",
                 "nus": "",
             }
-            mensagem = "Posicione o CC no verso. Campos a extrair: NIF, NSS, NUS"
-            confianca = 0.10
+            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
+            confianca = 0.0
             
         elif data.tipo == "caderneta_predial":
             dados_extraidos = {
@@ -814,8 +818,8 @@ def processar_documento_ocr(
                 "area_terreno": "",
                 "valor_patrimonial": "",
             }
-            mensagem = "Caderneta Predial. Campos: Artigo, Localização, Áreas, Valor Patrimonial"
-            confianca = 0.10
+            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
+            confianca = 0.0
             
         elif data.tipo == "certidao_permanente":
             dados_extraidos = {
@@ -824,8 +828,12 @@ def processar_documento_ocr(
                 "proprietarios": [],
                 "onus": [],
             }
-            mensagem = "Certidão Permanente. Campos: Descrição, Conservatória, Proprietários, Ónus"
-            confianca = 0.10
+            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
+            confianca = 0.0
+        else:
+            # Tipo desconhecido
+            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
+            confianca = 0.0
     
     # Guardar foto do documento
     fotos = item.documentos_fotos or []
