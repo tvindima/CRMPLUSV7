@@ -29,22 +29,53 @@ export async function POST(request: NextRequest) {
     }
 
     // Fazer fetch da página (server-side, sem problemas de CORS)
+    // Usar headers completos para simular um browser real
     const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "pt-PT,pt;q=0.9,en;q=0.8",
-        "Cache-Control": "no-cache",
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "pt-PT,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "max-age=0",
+        "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"macOS"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+        "Referer": "https://www.google.com/",
       },
+      redirect: "follow",
     });
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: `Não foi possível aceder ao site (${response.status})` },
-        { status: 400 }
-      );
+      // Tentar com headers mais simples como fallback
+      const fallbackResponse = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+          "Accept": "text/html",
+        },
+      });
+      
+      if (!fallbackResponse.ok) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: `Site bloqueou o acesso. Por favor, preencha os dados manualmente.`,
+            partial: true 
+          },
+          { status: 200 }
+        );
+      }
+      
+      const fallbackHtml = await fallbackResponse.text();
+      const urlLower = url.toLowerCase();
+      let data = extractGeneric(fallbackHtml, url);
+      return NextResponse.json({ success: true, data, partial: true });
     }
 
     const html = await response.text();
