@@ -266,3 +266,95 @@ def create_user_no_auth(data: CreateUserRequest, db: Session = Depends(get_db)):
         "message": "User criado com sucesso"
     }
 
+
+@setup_router.get("/list-users")
+def list_all_users(db: Session = Depends(get_db)):
+    """Listar todos os users - TEMPORÁRIO para debug"""
+    users = db.query(User).all()
+    return {
+        "total": len(users),
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "role": u.role,
+                "agent_id": u.agent_id,
+                "works_for_agent_id": u.works_for_agent_id,
+                "is_active": u.is_active
+            }
+            for u in users
+        ]
+    }
+
+
+@setup_router.get("/list-staff")
+def list_staff_users(db: Session = Depends(get_db)):
+    """Listar staff (não-agentes) - assistants, coordinators, etc"""
+    staff = db.query(User).filter(User.role != "agent", User.role != "admin").all()
+    result = []
+    for u in staff:
+        agent_name = None
+        if u.works_for_agent_id:
+            agent = db.query(Agent).filter(Agent.id == u.works_for_agent_id).first()
+            if agent:
+                agent_name = agent.name
+        result.append({
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "phone": u.phone,
+            "role": u.role,
+            "works_for_agent_id": u.works_for_agent_id,
+            "works_for_agent_name": agent_name,
+            "is_active": u.is_active
+        })
+    return {"total": len(result), "staff": result}
+
+
+class UpdateUserRequest(BaseModel):
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+    works_for_agent_id: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+@setup_router.put("/update-user/{user_id}")
+def update_user_no_auth(user_id: int, data: UpdateUserRequest, db: Session = Depends(get_db)):
+    """Atualizar user - TEMPORÁRIO"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User não encontrado")
+    
+    if data.email:
+        user.email = data.email.lower()
+    if data.full_name:
+        user.full_name = data.full_name
+    if data.phone is not None:
+        user.phone = data.phone
+    if data.password:
+        user.hashed_password = hash_password(data.password)
+    if data.role:
+        user.role = data.role
+    if data.works_for_agent_id is not None:
+        user.works_for_agent_id = data.works_for_agent_id
+    if data.is_active is not None:
+        user.is_active = data.is_active
+    
+    db.commit()
+    return {"success": True, "message": "User atualizado"}
+
+
+@setup_router.delete("/delete-user/{user_id}")
+def delete_user_no_auth(user_id: int, db: Session = Depends(get_db)):
+    """Eliminar user - TEMPORÁRIO"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User não encontrado")
+    
+    db.delete(user)
+    db.commit()
+    return {"success": True, "message": f"User {user_id} eliminado"}
