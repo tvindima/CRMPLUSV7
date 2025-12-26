@@ -37,11 +37,18 @@ export function UserMenuWrapper() {
       }
     };
 
+    // Listener para abrir modal de autenticação (disparado pelo MobileMenu)
+    const handleOpenAuthModal = () => {
+      setShowAuthModal(true);
+    };
+
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("authChange", handleStorageChange);
+    window.addEventListener("openAuthModal", handleOpenAuthModal);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("authChange", handleStorageChange);
+      window.removeEventListener("openAuthModal", handleOpenAuthModal);
     };
   }, []);
 

@@ -102,9 +102,12 @@ export default function MobileMenu({ links }: MobileMenuProps) {
 
         {/* Login Button */}
         <div className="absolute bottom-0 left-0 right-0 border-t border-[#2A2A2E] p-3">
-          <Link
-            href="/dashboard"
-            onClick={() => setIsOpen(false)}
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              // Dispara evento para abrir modal de autenticação
+              window.dispatchEvent(new Event('openAuthModal'));
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E10600] bg-[#E10600] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#E10600]/90"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +119,7 @@ export default function MobileMenu({ links }: MobileMenuProps) {
               />
             </svg>
             Entrar
-          </Link>
+          </button>
         </div>
       </div>
     </>
