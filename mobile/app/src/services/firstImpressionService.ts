@@ -166,7 +166,21 @@ export const firstImpressionService = {
   },
 
   /**
-   * Apagar First Impression
+   * Cancelar First Impression (soft delete)
+   */
+  cancel: async (id: number): Promise<{ message: string; id: number }> => {
+    try {
+      const response = await apiService.post<{ message: string; id: number }>(`/mobile/first-impressions/${id}/cancel`, {});
+      console.log('[FirstImpression] ✅ Cancelado:', id);
+      return response;
+    } catch (error: any) {
+      console.error('[FirstImpression] ❌ Erro ao cancelar:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Apagar First Impression (hard delete)
    */
   delete: async (id: number): Promise<void> => {
     try {

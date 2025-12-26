@@ -140,6 +140,10 @@ async def list_first_impressions(
             FirstImpression.agent_id == current_agent.id
         )
         
+        # Excluir cancelled por defeito (a não ser que explicitamente pedido)
+        if status_filter != 'cancelled':
+            query = query.filter(FirstImpression.status != 'cancelled')
+        
         # Filtro status
         if status_filter:
             if status_filter not in ['draft', 'signed', 'completed', 'cancelled']:
@@ -388,7 +392,62 @@ async def add_signature(
 
 
 # ====================================================================
-# 6. DELETE - Apagar First Impression
+# 6. CANCEL - Cancelar First Impression (soft delete)
+# ====================================================================
+
+@router.post("/{impression_id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_first_impression(
+    impression_id: int,
+    db: Session = Depends(get_db),
+    current_agent = Depends(get_current_agent),
+):
+    """
+    Cancelar First Impression (soft delete).
+    
+    - Marca status como 'cancelled'
+    - Não apaga da base de dados
+    - Pode cancelar mesmo se já assinada
+    """
+    try:
+        # Buscar impression (do agente autenticado)
+        impression = db.query(FirstImpression).filter(
+            FirstImpression.id == impression_id,
+            FirstImpression.agent_id == current_agent.id
+        ).first()
+        
+        if not impression:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"First Impression {impression_id} não encontrada"
+            )
+        
+        # Já cancelada?
+        if impression.status == 'cancelled':
+            return {"message": "Já estava cancelada", "id": impression_id}
+        
+        # Marcar como cancelled
+        impression.status = 'cancelled'
+        impression.updated_at = datetime.now(timezone.utc)
+        
+        db.commit()
+        
+        print(f"[POST /first-impressions/{impression_id}/cancel] ✅ Cancelado com sucesso")
+        
+        return {"message": "Cancelado com sucesso", "id": impression_id}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"[POST /first-impressions/{impression_id}/cancel] ❌ Erro: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao cancelar First Impression: {str(e)}"
+        )
+
+
+# ====================================================================
+# 7. DELETE - Apagar First Impression
 # ====================================================================
 
 @router.delete("/{impression_id}", status_code=status.HTTP_204_NO_CONTENT)

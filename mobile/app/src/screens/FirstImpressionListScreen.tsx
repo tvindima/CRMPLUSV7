@@ -90,13 +90,13 @@ export default function FirstImpressionListScreen() {
               } catch (e) {
                 // se não existir, seguir
               }
-              // Marcar 1ª impressão como cancelada em vez de apagar
-              await firstImpressionService.update(id, { status: 'cancelled' } as any);
+              // Usar endpoint /cancel em vez de update
+              await firstImpressionService.cancel(id);
               setImpressions((prev) => prev.filter((it) => it.id !== id));
               Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
-            } catch (error) {
+            } catch (error: any) {
               console.error('Erro ao apagar:', error);
-              Alert.alert('Erro', 'Não foi possível apagar. Tente novamente.');
+              Alert.alert('Erro', error?.response?.data?.detail || 'Não foi possível apagar. Tente novamente.');
             }
           },
         },
