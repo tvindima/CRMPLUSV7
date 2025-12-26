@@ -522,8 +522,405 @@ def adicionar_assinatura_mediador(
 
 
 # =====================================================
-# OCR - Processar Documentos
+# OCR - Processar Documentos (Metodologia Âncoras)
 # =====================================================
+
+# ========== CLASSIFICADORES DE DOCUMENTO ==========
+
+def classificar_documento(text: str) -> str:
+    """
+    PASSO ZERO: Classificar tipo de documento por âncoras determinísticas.
+    Nunca misturar lógica entre tipos.
+    """
+    text_upper = text.upper()
+    
+    # Cartão de Cidadão - âncoras obrigatórias
+    if "CARTÃO DE CIDADÃO" in text_upper or "CITIZEN CARD" in text_upper:
+        # Distinguir frente vs verso
+        if "FILIAÇÃO" in text_upper or "PARENTS" in text_upper:
+            return "cc_verso"
+        if "APELIDO" in text_upper or "SURNAME" in text_upper:
+            return "cc_frente"
+        # Fallback: verificar MRZ
+        if "<<" in text:
+            return "cc_verso"  # MRZ está no verso
+        return "cc_frente"
+    
+    # Caderneta Predial - âncoras: AT + CADERNETA
+    if ("CADERNETA PREDIAL" in text_upper or "AUTORIDADE TRIBUTÁRIA" in text_upper or 
+        ("AT" in text_upper and "ARTIGO MATRICIAL" in text_upper)):
+        return "caderneta_predial"
+    
+    # Certidão Permanente / Registo Predial
+    if ("REGISTO PREDIAL" in text_upper or "INFORMAÇÃO PREDIAL" in text_upper or
+        "CONSERVATÓRIA" in text_upper or "SUJEITO" in text_upper):
+        return "certidao_permanente"
+    
+    # Certificado Energético - ADENE
+    if ("CERTIFICADO ENERG" in text_upper or "ADENE" in text_upper or 
+        "CLASSE ENERG" in text_upper or ("SCE" in text_upper and "A+" in text_upper)):
+        return "certificado_energetico"
+    
+    # Licença de Utilização
+    if "LICENÇA DE UTILIZAÇÃO" in text_upper or "CÂMARA MUNICIPAL" in text_upper:
+        return "licenca_utilizacao"
+    
+    # Default
+    return "desconhecido"
+
+
+# ========== EXTRATOR: CARTÃO DE CIDADÃO ==========
+
+def extrair_cc(text: str) -> dict:
+    """
+    Extrator dedicado para Cartão de Cidadão.
+    REGRA MÃE: Nome legal vem SEMPRE da MRZ, não do texto "bonito".
+    NUNCA extrair NIF do CC - vem da AT.
+    """
+    logger.info("[OCR CC] Iniciando extração por âncoras")
+    
+    result = {
+        "nome_completo": None,
+        "numero_documento": None,
+        "data_nascimento": None,
+        "data_validade": None,
+        "nacionalidade": None,
+        "sexo": None,
+        # NIF NÃO extraído do CC - fonte é AT
+    }
+    
+    lines = text.splitlines()
+    
+    # ===== 1. NOME VIA MRZ (ÚNICA FONTE VÁLIDA) =====
+    # Formato MRZ: APELIDO<<NOME<PROPRIO<
+    # Linha com múltiplos < e << é MRZ de nome
+    for line in lines:
+        line = line.strip()
+        # MRZ de nome: tem << e só letras/< (sem números no início)
+        if "<<" in line and not line[0].isdigit():
+            # Verificar se é linha de nome (não de dados)
+            if re.match(r'^[A-Z<]+$', line.replace(' ', '')):
+                parts = line.split("<<")
+                if len(parts) >= 2:
+                    # APELIDO<<NOME
+                    apelidos = parts[0].replace("<", " ").strip()
+                    nomes = parts[1].replace("<", " ").strip()
+                    if apelidos and nomes:
+                        result["nome_completo"] = f"{nomes} {apelidos}".title()
+                        logger.info(f"[OCR CC] ✅ Nome MRZ: {result['nome_completo']}")
+                        break
+    
+    # ===== 2. DADOS DA MRZ (linha numérica) =====
+    # Formato: 6104243F3011249PRT<<<<<<<<<<<6
+    # Posições: AAMMDD S VALIDADE NAC
+    for line in lines:
+        line = line.strip().replace(" ", "")
+        # Linha MRZ de dados: começa com 6 dígitos (data nascimento)
+        if re.match(r'^\d{6}[MF]', line):
+            # Data nascimento: posições 0-5 (AAMMDD)
+            try:
+                ano = line[0:2]
+                mes = line[2:4]
+                dia = line[4:6]
+                # Converter ano 2 dígitos
+                ano_full = f"19{ano}" if int(ano) > 30 else f"20{ano}"
+                result["data_nascimento"] = f"{dia}/{mes}/{ano_full}"
+                logger.info(f"[OCR CC] Data nascimento MRZ: {result['data_nascimento']}")
+            except:
+                pass
+            
+            # Sexo: posição 6
+            result["sexo"] = line[6] if len(line) > 6 else None
+            
+            # Data validade: posições 7-12 (AAMMDD)
+            if len(line) >= 13:
+                try:
+                    ano_v = line[7:9]
+                    mes_v = line[9:11]
+                    dia_v = line[11:13]
+                    ano_v_full = f"20{ano_v}"
+                    result["data_validade"] = f"{dia_v}/{mes_v}/{ano_v_full}"
+                    logger.info(f"[OCR CC] Validade MRZ: {result['data_validade']}")
+                except:
+                    pass
+            
+            # Nacionalidade: após validade
+            nac_match = re.search(r'PRT|[A-Z]{3}', line[13:])
+            if nac_match:
+                result["nacionalidade"] = nac_match.group(0)
+            break
+    
+    # ===== 3. NÚMERO DO DOCUMENTO =====
+    # Formato: 09220796 0 ZX1 (8 dígitos + check + sufixo)
+    # Procurar na área "N DOCUMENTO" ou "DOCUMENT No"
+    doc_match = re.search(r'(\d{8})\s*\d?\s*([A-Z]{2}\d)', text)
+    if doc_match:
+        result["numero_documento"] = f"{doc_match.group(1)} {doc_match.group(2)}"
+        logger.info(f"[OCR CC] Nº documento: {result['numero_documento']}")
+    
+    # ===== 4. FALLBACK: Datas do texto (se MRZ falhou) =====
+    if not result["data_validade"]:
+        dates = re.findall(r'\b(\d{2})[/\-.\s](\d{2})[/\-.\s](\d{4})\b', text)
+        if dates:
+            # Última data é geralmente validade
+            d = dates[-1]
+            result["data_validade"] = f"{d[0]}/{d[1]}/{d[2]}"
+            if len(dates) >= 2:
+                d0 = dates[0]
+                result["data_nascimento"] = f"{d0[0]}/{d0[1]}/{d0[2]}"
+    
+    return result
+
+
+# ========== EXTRATOR: CADERNETA PREDIAL (AT) ==========
+
+def extrair_caderneta(text: str) -> dict:
+    """
+    Extrator dedicado para Caderneta Predial Urbana/Rústica.
+    FONTE FISCAL do imóvel e NIF do titular.
+    """
+    logger.info("[OCR CADERNETA] Iniciando extração por âncoras")
+    
+    result = {
+        # Dados do imóvel
+        "artigo_matricial": None,
+        "natureza": None,  # URBANO/RÚSTICO
+        "distrito": None,
+        "concelho": None,
+        "freguesia": None,
+        "morada": None,
+        "codigo_postal": None,
+        "localidade": None,
+        "area_total_terreno": None,
+        "area_bruta_privativa": None,
+        "area_bruta_construcao": None,
+        "area_bruta_dependente": None,
+        "tipologia": None,
+        "afetacao": None,
+        "valor_patrimonial": None,
+        "ano_inscricao": None,
+        # Titular (FONTE DO NIF!)
+        "titular_nome": None,
+        "titular_nif": None,
+        "titular_morada": None,
+        "titular_parte": None,
+    }
+    
+    text_upper = text.upper()
+    
+    # ===== BLOCO: IDENTIFICAÇÃO DO PRÉDIO =====
+    
+    # Artigo matricial
+    m = re.search(r'ARTIGO\s+MATR[IÍ]CIAL[:\s]+(\d+)', text, re.IGNORECASE)
+    if m:
+        result["artigo_matricial"] = m.group(1)
+        logger.info(f"[OCR CADERNETA] Artigo: {result['artigo_matricial']}")
+    
+    # Natureza: URBANO ou RÚSTICO
+    if "URBANO" in text_upper:
+        result["natureza"] = "URBANO"
+    elif "RÚSTICO" in text_upper:
+        result["natureza"] = "RÚSTICO"
+    
+    # Localização: DISTRITO, CONCELHO, FREGUESIA
+    # Formato: "DISTRITO: 10 - LEIRIA" ou "DISTRITO: LEIRIA"
+    for campo, key in [("DISTRITO", "distrito"), ("CONCELHO", "concelho"), ("FREGUESIA", "freguesia")]:
+        m = re.search(rf'{campo}[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s+(?:CONCELHO|FREGUESIA|ARTIGO|$))', text, re.IGNORECASE)
+        if m:
+            result[key] = m.group(1).strip().title()
+    
+    # Morada/Rua
+    m = re.search(r'(?:Av\./Rua/Praça|Rua|Estrada)[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)', text, re.IGNORECASE)
+    if m:
+        result["morada"] = m.group(1).strip()
+    
+    # Código Postal
+    m = re.search(r'C[óo]digo\s+Postal[:\s]+([\d]{4}-[\d]{3})\s+([A-ZÀ-Ú\s]+)', text, re.IGNORECASE)
+    if m:
+        result["codigo_postal"] = m.group(1)
+        result["localidade"] = m.group(2).strip().title()
+    
+    # ===== BLOCO: ÁREAS =====
+    
+    areas_map = [
+        (r'[ÁA]rea\s+total\s+do\s+terreno[:\s]+([\d\.,]+)', "area_total_terreno"),
+        (r'[ÁA]rea\s+bruta\s+privativa[:\s]+([\d\.,]+)', "area_bruta_privativa"),
+        (r'[ÁA]rea\s+bruta\s+de\s+constru[çc][ãa]o[:\s]+([\d\.,]+)', "area_bruta_construcao"),
+        (r'[ÁA]rea\s+bruta\s+dependente[:\s]+([\d\.,]+)', "area_bruta_dependente"),
+    ]
+    for pattern, key in areas_map:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            val = m.group(1).replace(".", "").replace(",", ".")
+            try:
+                result[key] = float(val)
+                logger.info(f"[OCR CADERNETA] {key}: {result[key]}")
+            except:
+                pass
+    
+    # Tipologia
+    m = re.search(r'Tipologia/?Divis[õo]es[:\s]+(\d+)', text, re.IGNORECASE)
+    if m:
+        result["tipologia"] = f"T{m.group(1)}"
+    
+    # Afetação
+    m = re.search(r'Afec?ta[çc][ãa]o[:\s]+([A-Za-zÀ-ÿ]+)', text, re.IGNORECASE)
+    if m:
+        result["afetacao"] = m.group(1).title()
+    
+    # Valor patrimonial
+    m = re.search(r'Valor\s+patrimonial\s+(?:actual|atual)[^€]*€?\s*([\d\.,]+)', text, re.IGNORECASE)
+    if m:
+        val = m.group(1).replace(".", "").replace(",", ".")
+        try:
+            result["valor_patrimonial"] = float(val)
+            logger.info(f"[OCR CADERNETA] Valor patrimonial: {result['valor_patrimonial']}")
+        except:
+            pass
+    
+    # ===== BLOCO: TITULARES (FONTE DO NIF!) =====
+    
+    # NIF do titular - ÂNCORA: "Identificação fiscal:"
+    m = re.search(r'Identifica[çc][ãa]o\s+fiscal[:\s]+(\d{9})', text, re.IGNORECASE)
+    if m:
+        result["titular_nif"] = m.group(1)
+        logger.info(f"[OCR CADERNETA] ✅ NIF titular: {result['titular_nif']}")
+    
+    # Nome do titular
+    m = re.search(r'Nome[:\s]+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s+Morada|$)', text, re.IGNORECASE)
+    if m:
+        nome = m.group(1).strip()
+        if len(nome) > 5:  # Evitar falsos positivos
+            result["titular_nome"] = nome.title()
+    
+    # Morada do titular
+    m = re.search(r'Morada[:\s]+(.+?)(?:\s+Tipo\s+de|$)', text, re.IGNORECASE)
+    if m:
+        result["titular_morada"] = m.group(1).strip()
+    
+    # Parte (quota)
+    m = re.search(r'Parte[:\s]+(\d+/\d+)', text, re.IGNORECASE)
+    if m:
+        result["titular_parte"] = m.group(1)
+    
+    return result
+
+
+# ========== EXTRATOR: CERTIDÃO PERMANENTE ==========
+
+def extrair_certidao(text: str) -> dict:
+    """
+    Extrator dedicado para Certidão Permanente / Registo Predial.
+    DOCUMENTO JURÍDICO - prevalece sobre AT.
+    REGRA: Só quem está em SUJEITO(S) ATIVO(S) é proprietário legal.
+    """
+    logger.info("[OCR CERTIDÃO] Iniciando extração por âncoras")
+    
+    result = {
+        "conservatoria": None,
+        "descricao_numero": None,
+        "freguesia": None,
+        "matriz_numero": None,
+        "area_total": None,
+        "proprietarios_legais": [],
+        "onus": [],
+    }
+    
+    # Conservatória
+    m = re.search(r'Conservat[óo]ria[^:]*[:\s]+([A-Za-zÀ-ÿ\s]+?)(?:\s+Freguesia|$)', text, re.IGNORECASE)
+    if m:
+        result["conservatoria"] = m.group(1).strip()
+    
+    # Número descrição
+    m = re.search(r'Descri[çc][ãa]o[^:]*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+    if m:
+        result["descricao_numero"] = m.group(1)
+    
+    # Matriz
+    m = re.search(r'MATRIZ\s*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+    if m:
+        result["matriz_numero"] = m.group(1)
+    
+    # Área total
+    m = re.search(r'[ÁA]REA\s+TOTAL[:\s]+([\d\.,]+)', text, re.IGNORECASE)
+    if m:
+        val = m.group(1).replace(".", "").replace(",", ".")
+        try:
+            result["area_total"] = float(val)
+        except:
+            pass
+    
+    # ===== BLOCO CRÍTICO: SUJEITO(S) ATIVO(S) =====
+    # Só quem está aqui é proprietário legal!
+    sujeito_match = re.search(r'SUJEITO\(?S?\)?\s+ATIVO\(?S?\)?[:\s]+(.+?)(?:SUJEITO\(?S?\)?\s+PASSIVO|INSCRI[ÇC][ÃA]O|$)', text, re.IGNORECASE | re.DOTALL)
+    if sujeito_match:
+        bloco = sujeito_match.group(1)
+        # Extrair nomes e NIFs
+        nomes = re.findall(r'([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s+NIF|\s+,|$)', bloco)
+        nifs = re.findall(r'\b(\d{9})\b', bloco)
+        for i, nome in enumerate(nomes[:5]):  # Max 5 proprietários
+            prop = {"nome": nome.strip().title()}
+            if i < len(nifs):
+                prop["nif"] = nifs[i]
+            result["proprietarios_legais"].append(prop)
+            logger.info(f"[OCR CERTIDÃO] ✅ Proprietário legal: {prop}")
+    
+    return result
+
+
+# ========== EXTRATOR: CERTIFICADO ENERGÉTICO ==========
+
+def extrair_certificado_energetico(text: str) -> dict:
+    """
+    Extrator dedicado para Certificado Energético (ADENE).
+    Apenas para: classe energética, área útil, validade.
+    NUNCA usar para proprietários ou artigos matriciais principais.
+    """
+    logger.info("[OCR CE] Iniciando extração por âncoras")
+    
+    result = {
+        "numero_certificado": None,
+        "classe_energetica": None,
+        "area_util": None,
+        "validade": None,
+        "morada": None,
+    }
+    
+    # Número certificado (SCE...)
+    m = re.search(r'SCE\s*(\d+)', text, re.IGNORECASE)
+    if m:
+        result["numero_certificado"] = f"SCE{m.group(1)}"
+    
+    # Classe energética (A+, A, B, B-, C, D, E, F)
+    m = re.search(r'CLASSE\s+ENERG[ÉE]TICA[:\s]*([A-F][+\-]?)', text, re.IGNORECASE)
+    if m:
+        result["classe_energetica"] = m.group(1).upper()
+        logger.info(f"[OCR CE] Classe: {result['classe_energetica']}")
+    
+    # Fallback: procurar A+, A, B, etc isolados perto de "classe" ou "energia"
+    if not result["classe_energetica"]:
+        m = re.search(r'\b([A-F][+\-]?)\b', text)
+        if m:
+            result["classe_energetica"] = m.group(1).upper()
+    
+    # Área útil
+    m = re.search(r'[ÁA]rea\s+[úu]til[:\s]+([\d\.,]+)', text, re.IGNORECASE)
+    if m:
+        val = m.group(1).replace(".", "").replace(",", ".")
+        try:
+            result["area_util"] = float(val)
+        except:
+            pass
+    
+    # Validade
+    m = re.search(r'V[áa]lid[oa]\s+at[ée][:\s]*(\d{2}[/\-]\d{2}[/\-]\d{4})', text, re.IGNORECASE)
+    if m:
+        result["validade"] = m.group(1).replace("-", "/")
+    
+    return result
+
+
+# ========== ENDPOINT OCR PRINCIPAL ==========
 
 @router.post("/{cmi_id}/ocr", response_model=schemas.DocumentoOCRResponse)
 def processar_documento_ocr(
@@ -533,16 +930,17 @@ def processar_documento_ocr(
     db: Session = Depends(get_db)
 ):
     """
-    Processar imagem de documento via OCR
-    Extrai dados automaticamente de:
-    - Cartão Cidadão (nome, NIF, data nascimento, validade)
-    - Caderneta Predial (artigo, área, localização)
-    - Certidão Permanente (descrição, ónus)
+    Processar imagem de documento via OCR (Google Vision).
     
-    NOTA: OCR simplificado - em produção usar serviço como:
-    - Google Cloud Vision
-    - Azure Computer Vision
-    - Tesseract OCR
+    Pipeline:
+    1. Classificação automática do documento
+    2. Extração por âncoras semânticas
+    3. Validação por regras
+    4. Mapeamento para o contrato
+    
+    Prioridade de fontes:
+    - Proprietários: Registo Predial > AT > CC
+    - Imóvel: Registo Predial > AT > Certificado Energético
     """
     if not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
@@ -555,115 +953,6 @@ def processar_documento_ocr(
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
     
-    def parse_cc_from_text(text: str):
-        """Extrair campos do Cartão de Cidadão português a partir do texto OCR."""
-        logger.info(f"[OCR CC] Parsing texto com {len(text)} caracteres")
-        
-        result = {
-            "nome": None,
-            "numero_documento": None,
-            "validade": None,
-            "nif": None,
-            "data_nascimento": None
-        }
-        
-        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-        
-        # 1. Extrair nome via MRZ (mais fiável)
-        # Formato: SOARES<VINDIMA<FERREIRA<<ROSA<
-        for ln in text.splitlines():
-            if ln.count('<') >= 3 and "<<" in ln:
-                # Linha MRZ com nome
-                # Remove prefixo se existir (ex: "6104243F3011249PRT<<<<<<<<<<<6")
-                if ln.startswith(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')):
-                    continue  # Linha de dados, não de nome
-                parts = ln.strip().split("<<")
-                if len(parts) >= 2:
-                    # APELIDO<<NOME
-                    apelidos = parts[0].replace("<", " ").strip()
-                    nomes = parts[1].replace("<", " ").strip()
-                    # Limpar caracteres estranhos
-                    apelidos = re.sub(r'[^A-Za-zÀ-ÿ\s]', '', apelidos).strip()
-                    nomes = re.sub(r'[^A-Za-zÀ-ÿ\s]', '', nomes).strip()
-                    if apelidos and nomes:
-                        result["nome"] = f"{nomes} {apelidos}"
-                        logger.info(f"[OCR CC] Nome via MRZ: {result['nome']}")
-                        break
-        
-        # 2. Fallback: procurar após "NOME" e "APELIDO"
-        if not result["nome"]:
-            given = None
-            surnames = None
-            for idx, line in enumerate(lines):
-                upper = line.upper()
-                if ("APELIDO" in upper or "SURNAME" in upper) and idx + 1 < len(lines):
-                    candidate = lines[idx + 1]
-                    if not any(x in candidate.upper() for x in ["NOME", "NAME", "SEXO", "SEX"]):
-                        surnames = re.sub(r'[^A-Za-zÀ-ÿ\s]', '', candidate).strip()
-                if ("NOME" in upper and "APELIDO" not in upper) and idx + 1 < len(lines):
-                    candidate = lines[idx + 1]
-                    if not any(x in candidate.upper() for x in ["APELIDO", "SURNAME", "SEXO", "SEX"]):
-                        given = re.sub(r'[^A-Za-zÀ-ÿ\s]', '', candidate).strip()
-            if given or surnames:
-                result["nome"] = f"{given or ''} {surnames or ''}".strip()
-                logger.info(f"[OCR CC] Nome via labels: {result['nome']}")
-        
-        # 3. Número do documento (8 dígitos + sufixo alfanumérico)
-        # Formato: 09220796 0 ZX1 ou 092207960ZX1
-        doc_patterns = [
-            r"N[°º.]?\s*DOCUMENTO.*?(\d{8,9})\s*\d?\s*([A-Z]{2}\d)",  # "N DOCUMENTO ... 09220796 0 ZX1"
-            r"DOCUMENT\s*N[°ºo].*?(\d{8,9})\s*\d?\s*([A-Z]{2}\d)",
-            r"(\d{8})\s+\d\s+([A-Z]{2}\d)",  # "09220796 0 ZX1"
-        ]
-        for pattern in doc_patterns:
-            m = re.search(pattern, text, re.IGNORECASE)
-            if m:
-                result["numero_documento"] = f"{m.group(1)} {m.group(2)}"
-                logger.info(f"[OCR CC] Nº documento: {result['numero_documento']}")
-                break
-        
-        # Fallback: procurar 8 dígitos seguidos de ZX/ZY/etc
-        if not result["numero_documento"]:
-            m = re.search(r"(\d{8,9})\s*\d?\s*([A-Z]{2}\d)", text)
-            if m:
-                result["numero_documento"] = f"{m.group(1)} {m.group(2)}"
-                logger.info(f"[OCR CC] Nº documento fallback: {result['numero_documento']}")
-        
-        # 4. NIF (9 dígitos após "FISCAL" ou "NIF")
-        nif_patterns = [
-            r"(?:NIF|FISCAL|TAX\s*N[°ºo]?)[:\s]*(\d{9})",
-            r"(\d{9})\s*(?:NIF|FISCAL)",
-        ]
-        for pattern in nif_patterns:
-            m = re.search(pattern, text, re.IGNORECASE)
-            if m:
-                result["nif"] = m.group(1)
-                logger.info(f"[OCR CC] NIF: {result['nif']}")
-                break
-        
-        # Fallback: primeiro bloco de 9 dígitos que não seja o nº documento
-        if not result["nif"]:
-            for m in re.finditer(r"\b(\d{9})\b", text):
-                candidate = m.group(1)
-                if result["numero_documento"] and candidate in result["numero_documento"]:
-                    continue
-                result["nif"] = candidate
-                logger.info(f"[OCR CC] NIF fallback: {result['nif']}")
-                break
-        
-        # 5. Data de validade (última data encontrada é geralmente a validade)
-        # Formato: dd mm yyyy ou dd/mm/yyyy ou dd-mm-yyyy ou dd.mm.yyyy
-        dates_found = []
-        for m in re.finditer(r"\b(\d{2})[/\-.\s](\d{2})[/\-.\s](\d{4})\b", text):
-            dates_found.append(f"{m.group(1)}/{m.group(2)}/{m.group(3)}")
-        if dates_found:
-            result["validade"] = dates_found[-1]  # Última data é a validade
-            if len(dates_found) >= 2:
-                result["data_nascimento"] = dates_found[0]  # Primeira é nascimento
-            logger.info(f"[OCR CC] Validade: {result['validade']}, Nascimento: {result.get('data_nascimento')}")
-        
-        return result
-
     def parse_decimal(text_val: str):
         """Converter número com vírgula/espacos para Decimal."""
         try:
@@ -671,260 +960,11 @@ def processar_documento_ocr(
             return Decimal(cleaned)
         except Exception:
             return None
-    
-    def format_money(val: Optional[Decimal]):
-        if val is None:
-            return ""
-        return f"{val:,.2f}".replace(",", " ").replace(".", ",")
-    
-    def mrz_name(text: str):
-        """
-        Extrair nome/apelido a partir de MRZ (linha com <<).
-        Formato: APELIDO<<NOME
-        """
-        for ln in text.splitlines():
-            if "<<" in ln:
-                parts = ln.strip().split("<<")
-                last = parts[0].replace("<", " ").strip()
-                first = parts[1].replace("<", " ").strip() if len(parts) > 1 else ""
-                full = f"{first} {last}".strip()
-                return full
-        return None
-
-    def parse_caderneta_from_text(text: str):
-        """Extrair campos chave da caderneta predial urbana/rústica."""
-        logger.info(f"[OCR CADERNETA] Parsing texto com {len(text)} caracteres")
-        data_out = {}
-        
-        # Artigo matricial - vários formatos
-        patterns_artigo = [
-            r"ARTIGO\s+MATR[IÍ]CIAL[:\s]+(\d+)",
-            r"Artigo[:\s]+(\d+)",
-        ]
-        for p in patterns_artigo:
-            m = re.search(p, text, re.IGNORECASE)
-            if m:
-                data_out["artigo_matricial"] = m.group(1)
-                logger.info(f"[OCR CADERNETA] Artigo: {data_out['artigo_matricial']}")
-                break
-        
-        # Distrito/Concelho/Freguesia - formato "10 - LEIRIA" ou "LEIRIA"
-        md = re.search(r"DISTRITO[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú]+)", text, re.IGNORECASE)
-        if md:
-            data_out["distrito"] = md.group(1).title()
-        
-        mc = re.search(r"CONCELHO[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú]+)", text, re.IGNORECASE)
-        if mc:
-            data_out["concelho"] = mc.group(1).title()
-            
-        mf = re.search(r"FREGUESIA[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú]+)", text, re.IGNORECASE)
-        if mf:
-            data_out["freguesia"] = mf.group(1).title()
-        
-        # Código postal - formato "2440-001 BATALHA"
-        mcp = re.search(r"C[oó]digo\s+Postal[:\s]+([\d]{4}-[\d]{3})\s+([A-ZÀ-Ú\s]+)", text, re.IGNORECASE)
-        if mcp:
-            data_out["codigo_postal"] = mcp.group(1)
-            data_out["localidade"] = mcp.group(2).strip().title()
-            logger.info(f"[OCR CADERNETA] CP: {data_out['codigo_postal']} {data_out['localidade']}")
-        
-        # Morada/Rua - vários formatos
-        patterns_morada = [
-            r"Av\./Rua/Pra[cç]a[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)",
-            r"Rua[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)",
-            r"Estrada[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)",
-        ]
-        for p in patterns_morada:
-            m = re.search(p, text, re.IGNORECASE)
-            if m:
-                data_out["morada"] = m.group(1).strip()
-                logger.info(f"[OCR CADERNETA] Morada: {data_out['morada']}")
-                break
-        
-        # Lugar
-        m_lugar = re.search(r"Lugar[:\s]+([A-Za-zÀ-ÿ\s]+?)(?:\s+Código|\s+Av|$)", text, re.IGNORECASE)
-        if m_lugar and not data_out.get("morada"):
-            data_out["morada"] = m_lugar.group(1).strip()
-        
-        # Tipologia - "Tipologia/Divisões: 5"
-        mtipo = re.search(r"Tipologia/?Divis[oõ]es[:\s]+(\d+)", text, re.IGNORECASE)
-        if mtipo:
-            data_out["tipologia"] = f"T{mtipo.group(1)}"
-            logger.info(f"[OCR CADERNETA] Tipologia: {data_out['tipologia']}")
-        
-        # Número de pisos
-        mpisos = re.search(r"N[°º]?\s*de\s*pisos[:\s]+(\d+)", text, re.IGNORECASE)
-        if mpisos:
-            data_out["pisos"] = mpisos.group(1)
-        
-        # Áreas - formatos "3.480,0000 m²" ou "3480.0000"
-        areas_patterns = [
-            (r"[ÁA]rea\s+total\s+do\s+terreno[:\s]+([\d\.,]+)", "area_terreno"),
-            (r"[ÁA]rea\s+de\s+implanta[cç][aã]o[:\s]+([\d\.,]+)", "area_implantacao"),
-            (r"[ÁA]rea\s+bruta\s+de\s+constru[cç][aã]o[:\s]+([\d\.,]+)", "area_bruta"),
-            (r"[ÁA]rea\s+bruta\s+privativa[:\s]+([\d\.,]+)", "area_util"),
-            (r"[ÁA]rea\s+bruta\s+dependente[:\s]+([\d\.,]+)", "area_dependente"),
-        ]
-        for pattern, field in areas_patterns:
-            m = re.search(pattern, text, re.IGNORECASE)
-            if m:
-                val = parse_decimal(m.group(1))
-                if val:
-                    data_out[field] = val
-                    logger.info(f"[OCR CADERNETA] {field}: {val}")
-        
-        # Valor patrimonial - "€119.678,65"
-        mvp = re.search(r"Valor\s+patrimonial\s+(?:actual|atual)[^:]*[:\s]*€?\s*([\d\.,]+)", text, re.IGNORECASE)
-        if mvp:
-            data_out["valor_patrimonial"] = parse_decimal(mvp.group(1))
-            logger.info(f"[OCR CADERNETA] Valor patrimonial: {data_out['valor_patrimonial']}")
-        
-        # Afectação/Tipo
-        mafec = re.search(r"Afec?ta[cç][aã]o[:\s]+([A-Za-zÀ-ÿ]+)", text, re.IGNORECASE)
-        if mafec:
-            data_out["afectacao"] = mafec.group(1).title()
-        
-        # Titular/Proprietário
-        mtit = re.search(r"Nome[:\s]+([A-ZÀ-Ú\s]+?)(?:\s+Morada|$)", text, re.IGNORECASE)
-        if mtit:
-            nome = mtit.group(1).strip()
-            if len(nome) > 5:  # Evitar falsos positivos
-                data_out["titular"] = nome.title()
-                logger.info(f"[OCR CADERNETA] Titular: {data_out['titular']}")
-        
-        # NIF do titular
-        mnif = re.search(r"Identifica[cç][aã]o\s+fiscal[:\s]+(\d{9})", text, re.IGNORECASE)
-        if mnif:
-            data_out["titular_nif"] = mnif.group(1)
-        
-        return data_out
-
-    def parse_certidao_from_text(text: str):
-        """Extrair alguns campos da certidão permanente."""
-        out = {}
-        mat = re.search(r"MATRIZ\s*n[ºo]\s*[: ]+(\d+)", text, re.IGNORECASE)
-        if mat:
-            out["imovel_matriz_predial"] = mat.group(1)
-        art = re.search(r"ARTIGO\s+MATR[IÍ]CIAL.*?(\d+)", text, re.IGNORECASE)
-        if art:
-            out["imovel_artigo_matricial"] = art.group(1)
-        area_util = re.search(r"[ÁA]REA\s+ÚTIL\s+.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
-        if area_util:
-            out["imovel_area_util"] = parse_decimal(area_util.group(1))
-        area_bruta = re.search(r"[ÁA]REA\s+TOTAL.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
-        if area_bruta:
-            out["imovel_area_bruta"] = parse_decimal(area_bruta.group(1))
-        # Morada/Situado em
-        mor = re.search(r"SITUAD[OA]\s+EM[: ]+([^\n]+)", text, re.IGNORECASE)
-        if mor:
-            out["imovel_morada"] = mor.group(1).strip()
-        # Freguesia/Concelho se constarem na linha superior
-        freg = re.search(r"FREGUESIA[: ]+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
-        if freg:
-            out["imovel_freguesia"] = freg.group(1).strip()
-        conc = re.search(r"CONSERVAT[ÓO]RIA.*?\sde\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
-        if conc:
-            out["imovel_concelho"] = conc.group(1).strip()
-        # Confrontações (simplificado: procurar "NORTE|SUL|NASCENTE|POENTE")
-        confrontos = re.findall(r"(NORTE|SUL|NASCENTE|POENTE)[: ]+([^\n]+)", text, re.IGNORECASE)
-        if confrontos:
-            out["imovel_confrontacoes"] = "; ".join([f"{c[0]}: {c[1]}" for c in confrontos])
-        # Descrição conservatória
-        desc = re.search(r"descri[cç][aã]o.*?n[ºo]\s*([0-9]+)", text, re.IGNORECASE)
-        if desc:
-            out["imovel_descricao_conservatoria"] = desc.group(1)
-        return out
-
-    def parse_certificado_energetico(text: str):
-        """Extrair morada, CP, freguesia/concelho, artigo e classe energética."""
-        out = {}
-        mor = re.search(r"Morada\s+([^\n]+)", text, re.IGNORECASE)
-        if mor:
-            out["imovel_morada"] = mor.group(1).strip()
-        cp = re.search(r"[Cc][óo]digo\s+Postal\s+([0-9\\-]+)", text, re.IGNORECASE)
-        if cp:
-            out["imovel_codigo_postal"] = cp.group(1)
-        freg = re.search(r"Freguesia\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
-        if freg:
-            out["imovel_freguesia"] = freg.group(1).strip()
-        conc = re.search(r"Concelho\s+([A-Za-z0-9 ]+)", text, re.IGNORECASE)
-        if conc:
-            out["imovel_concelho"] = conc.group(1).strip()
-        art = re.search(r"Artigo\s+Matricial\s+n?[ºo]?\s*([A-Za-z0-9]+)", text, re.IGNORECASE)
-        if art:
-            out["imovel_artigo_matricial"] = art.group(1)
-        area_util = re.search(r"[ÁA]rea\s+útil.*?([\d\.,]+)\s*m", text, re.IGNORECASE)
-        if area_util:
-            out["imovel_area_util"] = parse_decimal(area_util.group(1))
-        classe = re.search(r"CLASSE\s+ENERG[ÉE]TICA.*?\b([A-F]\+?)\b", text, re.IGNORECASE)
-        if classe:
-            out["imovel_certificado_energetico"] = classe.group(1)
-        # Nº certificado e validade
-        num_cert = re.search(r"SCE\s*([0-9]{6,})", text, re.IGNORECASE)
-        if num_cert:
-            out["imovel_certificado_numero"] = num_cert.group(1)
-        val = re.search(r"V[aá]lid[oa]\s+at[eé]\s*[: ]*(\d{2}[/-]\d{2}[/-]\d{4})", text, re.IGNORECASE)
-        if val:
-            out["imovel_certificado_validade"] = val.group(1)
-        return out
-
-    def parse_licenca_from_text(text: str):
-        """Extrair nº e data da licença de utilização e município."""
-        out = {}
-        num = re.search(r"licen[cç]a\s+de\s+utiliza[cç][aã]o\s*n?[ºo]?\s*([A-Za-z0-9/\\-]+)", text, re.IGNORECASE)
-        if num:
-            out["imovel_licenca_numero"] = num.group(1)
-        data = re.search(r"emitid[ao]\s+em\s+(\d{2}[/-]\d{2}[/-]\d{4})", text, re.IGNORECASE)
-        if data:
-            out["imovel_licenca_data"] = data.group(1)
-        camara = re.search(r"C[âa]mara\s+Municipal\s+de\s+([A-Za-z ]+)", text, re.IGNORECASE)
-        if camara:
-            out["imovel_licenca_municipio"] = camara.group(1).strip()
-        return out
-
-    def detect_document_type(text: str) -> str:
-        """Detectar automaticamente o tipo de documento pelo conteúdo."""
-        text_upper = text.upper()
-        
-        # Cartão de Cidadão
-        if "CARTÃO DE CIDADÃO" in text_upper or "CITIZEN CARD" in text_upper:
-            # Frente tem APELIDO, NOME, DATA NASCIMENTO
-            if "APELIDO" in text_upper or "SURNAME" in text_upper:
-                return "cc_frente"
-            # Verso tem NIF, FILIAÇÃO
-            if "FILIAÇÃO" in text_upper or "PARENTS" in text_upper or "FISCAL" in text_upper:
-                return "cc_verso"
-            return "cc_frente"  # Default
-        
-        # Caderneta Predial
-        if "CADERNETA PREDIAL" in text_upper or "ARTIGO MATRICIAL" in text_upper:
-            return "caderneta_predial"
-        
-        # Certidão Permanente
-        if "CERTIDÃO" in text_upper or "CONSERVATÓRIA" in text_upper:
-            return "certidao_permanente"
-        
-        # Certificado Energético
-        if "CERTIFICADO ENERG" in text_upper or "CLASSE ENERG" in text_upper or "SCE" in text_upper:
-            return "certificado_energetico"
-        
-        # Licença de Utilização
-        if "LICENÇA DE UTILIZAÇÃO" in text_upper or "CÂMARA MUNICIPAL" in text_upper:
-            return "licenca_utilizacao"
-        
-        # Se tiver NIF mas não for CC, pode ser verso do CC
-        if re.search(r"\b\d{9}\b", text) and "<<" in text:
-            return "cc_verso"
-        
-        # Default: tentar CC frente
-        return "cc_frente"
 
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
-    
-    # Tipo de documento (pode ser detectado automaticamente)
-    doc_tipo = doc_tipo
+    doc_tipo = data.tipo_documento
 
     # Aceita ambas variantes da env: GCP_VISION_ENABLED ou GCP_VISION_ENABLE
     vision_flag = os.environ.get("GCP_VISION_ENABLED") or os.environ.get("GCP_VISION_ENABLE") or "false"
@@ -933,6 +973,8 @@ def processar_documento_ocr(
     logger.info(f"[OCR] Vision flag: {vision_flag}, VISION_AVAILABLE: {VISION_AVAILABLE}, use_vision: {use_vision}")
     logger.info(f"[OCR] Tipo documento recebido: '{doc_tipo}', imagem base64 length: {len(data.imagem_base64)}")
 
+    full_text = ""
+    
     if use_vision:
         try:
             client = vision.ImageAnnotatorClient()
@@ -941,78 +983,29 @@ def processar_documento_ocr(
             if response.error.message:
                 raise RuntimeError(response.error.message)
             full_text = response.full_text_annotation.text if response.full_text_annotation else ""
-            dados_extraidos = {"raw_text": full_text}
             confianca = 0.9
             mensagem = "Texto extraído com Google Vision"
+            logger.info(f"[OCR] Texto extraído ({len(full_text)} chars)")
             
-            # Se tipo vazio, detectar automaticamente
+            # PASSO ZERO: Classificar documento por âncoras
             if not doc_tipo:
-                doc_tipo = detect_document_type(full_text)
+                doc_tipo = classificar_documento(full_text)
                 logger.info(f"[OCR] Tipo detectado automaticamente: {doc_tipo}")
                 
         except Exception as e:
             logger.error(f"OCR Vision falhou: {e}")
-            mensagem = "OCR Vision indisponível, retornando stub"
-            dados_extraidos = {"raw_text": ""}
+            mensagem = "OCR Vision indisponível"
             confianca = 0.0
-    # Stub (fallback)
-    if not use_vision:
-        logger.warning("[OCR] Google Vision não está ativo - retornando stub. Configure GCP_VISION_ENABLED=true no Railway.")
-        if doc_tipo == "cc_frente":
-            dados_extraidos = dados_extraidos or {
-                "nome": "",
-                "apelidos": "",
-                "data_nascimento": "",
-                "sexo": "",
-                "numero_documento": "",
-                "validade": "",
-            }
-            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway para ativar extração automática."
-            confianca = 0.0
-            
-        elif doc_tipo == "cc_verso":
-            dados_extraidos = {
-                "nif": "",
-                "nss": "",
-                "nus": "",
-            }
-            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
-            confianca = 0.0
-            
-        elif doc_tipo == "caderneta_predial":
-            dados_extraidos = {
-                "artigo_matricial": "",
-                "freguesia": "",
-                "concelho": "",
-                "distrito": "",
-                "tipo_predio": "",
-                "area_bruta": "",
-                "area_terreno": "",
-                "valor_patrimonial": "",
-            }
-            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
-            confianca = 0.0
-            
-        elif doc_tipo == "certidao_permanente":
-            dados_extraidos = {
-                "numero_descricao": "",
-                "conservatoria": "",
-                "proprietarios": [],
-                "onus": [],
-            }
-            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
-            confianca = 0.0
-        else:
-            # Tipo desconhecido
-            mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLED=true no Railway."
-            confianca = 0.0
+    else:
+        logger.warning("[OCR] Google Vision não configurado. Configure GCP_VISION_ENABLE=true")
+        mensagem = "⚠️ OCR automático não disponível. Configure GCP_VISION_ENABLE=true no Railway."
+        confianca = 0.0
     
     # Guardar foto do documento
     fotos = item.documentos_fotos or []
     fotos.append({
-        "tipo": doc_tipo,  # Usar tipo detectado/recebido
+        "tipo": doc_tipo,
         "url": f"data:image/jpeg;base64,{data.imagem_base64[:50]}...",  # Truncar para não guardar tudo
-        "dados_extraidos": dados_extraidos,
         "uploaded_at": datetime.now().isoformat()
     })
     item.documentos_fotos = fotos
@@ -1024,6 +1017,7 @@ def processar_documento_ocr(
         "cc_verso": "cc_proprietario",
         "caderneta_predial": "caderneta_predial",
         "certidao_permanente": "certidao_permanente",
+        "certificado_energetico": "certificado_energetico",
     }
     doc_tipo_mapped = tipo_map.get(doc_tipo)
     if doc_tipo_mapped:
@@ -1034,177 +1028,163 @@ def processar_documento_ocr(
                 break
     item.documentos_entregues = docs
 
-    # Aplicar preenchimento automático no CMI se conseguirmos extrair campos
+    # ========================================
+    # EXTRAÇÃO POR TIPO DE DOCUMENTO
+    # ========================================
     updates = {}
-    if doc_tipo in ("cc_frente", "cc_verso"):
-        parsed = parse_cc_from_text(dados_extraidos.get("raw_text", "")) if "raw_text" in dados_extraidos else {}
-        if parsed.get("nome"):
-            updates["cliente_nome"] = parsed["nome"]
-        if parsed.get("numero_documento"):
-            updates["cliente_cc"] = parsed["numero_documento"]
-        if parsed.get("validade"):
-            updates["cliente_cc_validade"] = parsed["validade"]
-        # Usar NIF do parsing (mais preciso)
-        if parsed.get("nif"):
-            updates["cliente_nif"] = parsed["nif"]
-
-    if doc_tipo == "caderneta_predial":
-        parsed_cad = parse_caderneta_from_text(dados_extraidos.get("raw_text", ""))
-        if parsed_cad:
-            if parsed_cad.get("artigo_matricial"):
-                updates["imovel_artigo_matricial"] = parsed_cad["artigo_matricial"]
-            if parsed_cad.get("freguesia"):
-                updates["imovel_freguesia"] = parsed_cad["freguesia"]
-            if parsed_cad.get("concelho"):
-                updates["imovel_concelho"] = parsed_cad["concelho"]
-            if parsed_cad.get("distrito"):
-                updates["imovel_distrito"] = parsed_cad["distrito"]
-            if parsed_cad.get("morada"):
-                updates["imovel_morada"] = parsed_cad["morada"]
-            if parsed_cad.get("codigo_postal"):
-                updates["imovel_codigo_postal"] = parsed_cad["codigo_postal"]
-            if parsed_cad.get("tipologia"):
-                updates["imovel_tipologia"] = parsed_cad["tipologia"]
-            if parsed_cad.get("area_bruta") is not None:
-                updates["imovel_area_bruta"] = parsed_cad["area_bruta"]
-            if parsed_cad.get("area_util") is not None:
-                updates["imovel_area_util"] = parsed_cad["area_util"]
-            if parsed_cad.get("valor_patrimonial") is not None:
-                # Usar valor patrimonial como valor pretendido se estiver vazio
+    dados_para_mobile = {"raw_text": full_text} if full_text else {}
+    
+    if full_text:  # Só extrair se tivermos texto
+        logger.info(f"[OCR] Extraindo dados do documento tipo: {doc_tipo}")
+        
+        # CARTÃO DE CIDADÃO
+        if doc_tipo in ("cc_frente", "cc_verso"):
+            parsed = extrair_cc(full_text)
+            logger.info(f"[OCR CC] Resultado: {parsed}")
+            
+            if parsed.get("nome_completo"):
+                updates["cliente_nome"] = parsed["nome_completo"]
+                dados_para_mobile["nome"] = parsed["nome_completo"]
+            if parsed.get("numero_documento"):
+                updates["cliente_cc"] = parsed["numero_documento"]
+                dados_para_mobile["numero_documento"] = parsed["numero_documento"]
+            if parsed.get("data_validade"):
+                updates["cliente_cc_validade"] = parsed["data_validade"]
+                dados_para_mobile["validade"] = parsed["data_validade"]
+            if parsed.get("data_nascimento"):
+                dados_para_mobile["data_nascimento"] = parsed["data_nascimento"]
+            # REGRA: NIF NUNCA do CC - só da Caderneta!
+            # if parsed.get("nif"):  <- REMOVIDO propositalmente
+            #     updates["cliente_nif"] = parsed["nif"]
+        
+        # CADERNETA PREDIAL (FONTE DO NIF!)
+        elif doc_tipo == "caderneta_predial":
+            parsed = extrair_caderneta(full_text)
+            logger.info(f"[OCR CADERNETA] Resultado: {parsed}")
+            
+            # Dados do imóvel
+            if parsed.get("artigo_matricial"):
+                updates["imovel_artigo_matricial"] = parsed["artigo_matricial"]
+                dados_para_mobile["artigo_matricial"] = parsed["artigo_matricial"]
+            if parsed.get("distrito"):
+                updates["imovel_distrito"] = parsed["distrito"]
+                dados_para_mobile["distrito"] = parsed["distrito"]
+            if parsed.get("concelho"):
+                updates["imovel_concelho"] = parsed["concelho"]
+                dados_para_mobile["concelho"] = parsed["concelho"]
+            if parsed.get("freguesia"):
+                updates["imovel_freguesia"] = parsed["freguesia"]
+                dados_para_mobile["freguesia"] = parsed["freguesia"]
+            if parsed.get("morada"):
+                updates["imovel_morada"] = parsed["morada"]
+                dados_para_mobile["morada"] = parsed["morada"]
+            if parsed.get("codigo_postal"):
+                updates["imovel_codigo_postal"] = parsed["codigo_postal"]
+                dados_para_mobile["codigo_postal"] = parsed["codigo_postal"]
+            if parsed.get("localidade"):
+                dados_para_mobile["localidade"] = parsed["localidade"]
+            if parsed.get("tipologia"):
+                updates["imovel_tipologia"] = parsed["tipologia"]
+                dados_para_mobile["tipologia"] = parsed["tipologia"]
+            if parsed.get("afetacao"):
+                dados_para_mobile["afetacao"] = parsed["afetacao"]
+            
+            # Áreas
+            if parsed.get("area_bruta_privativa"):
+                updates["imovel_area_util"] = Decimal(str(parsed["area_bruta_privativa"]))
+                dados_para_mobile["area_util"] = str(parsed["area_bruta_privativa"])
+            if parsed.get("area_bruta_construcao"):
+                updates["imovel_area_bruta"] = Decimal(str(parsed["area_bruta_construcao"]))
+                dados_para_mobile["area_bruta"] = str(parsed["area_bruta_construcao"])
+            if parsed.get("area_total_terreno"):
+                dados_para_mobile["area_terreno"] = str(parsed["area_total_terreno"])
+            
+            # Valor patrimonial
+            if parsed.get("valor_patrimonial"):
+                dados_para_mobile["valor_patrimonial"] = str(parsed["valor_patrimonial"])
                 if not item.valor_pretendido:
-                    updates["valor_pretendido"] = parsed_cad["valor_patrimonial"]
-
-    if doc_tipo == "certidao_permanente":
-        parsed_cert = parse_certidao_from_text(dados_extraidos.get("raw_text", ""))
-        if parsed_cert:
-            if parsed_cert.get("imovel_artigo_matricial"):
-                updates["imovel_artigo_matricial"] = parsed_cert["imovel_artigo_matricial"]
-            if parsed_cert.get("imovel_area_util") is not None:
-                updates["imovel_area_util"] = parsed_cert["imovel_area_util"]
-            if parsed_cert.get("imovel_area_bruta") is not None:
-                updates["imovel_area_bruta"] = parsed_cert["imovel_area_bruta"]
-            if parsed_cert.get("imovel_morada"):
-                updates["imovel_morada"] = parsed_cert["imovel_morada"]
-            if parsed_cert.get("imovel_freguesia"):
-                updates["imovel_freguesia"] = parsed_cert["imovel_freguesia"]
-            if parsed_cert.get("imovel_concelho"):
-                updates["imovel_concelho"] = parsed_cert["imovel_concelho"]
-            # Confrontações guardadas em notas
-            if parsed_cert.get("imovel_confrontacoes"):
-                if item.notas:
-                    updates["notas"] = f"{item.notas}\nConfrontações: {parsed_cert['imovel_confrontacoes']}"
-                else:
-                    updates["notas"] = f"Confrontações: {parsed_cert['imovel_confrontacoes']}"
-            if parsed_cert.get("imovel_descricao_conservatoria"):
-                updates["imovel_descricao_conservatoria"] = parsed_cert["imovel_descricao_conservatoria"]
-
-    if doc_tipo == "certificado_energetico":
-        parsed_ce = parse_certificado_energetico(dados_extraidos.get("raw_text", ""))
-        if parsed_ce:
-            for field in ["imovel_morada", "imovel_codigo_postal", "imovel_freguesia", "imovel_concelho", "imovel_artigo_matricial", "imovel_certificado_energetico"]:
-                if parsed_ce.get(field):
-                    updates[field] = parsed_ce[field]
-            if parsed_ce.get("imovel_area_util") is not None:
-                updates["imovel_area_util"] = parsed_ce["imovel_area_util"]
-            if parsed_ce.get("imovel_certificado_numero"):
-                updates["imovel_certificado_numero"] = parsed_ce["imovel_certificado_numero"]
-            if parsed_ce.get("imovel_certificado_validade"):
-                updates["imovel_certificado_validade"] = parsed_ce["imovel_certificado_validade"]
-    if doc_tipo == "licenca_utilizacao":
-        parsed_li = parse_licenca_from_text(dados_extraidos.get("raw_text", ""))
-        if parsed_li:
-            for field in ["imovel_licenca_numero", "imovel_licenca_data", "imovel_licenca_municipio"]:
-                if parsed_li.get(field):
-                    updates[field] = parsed_li[field]
+                    updates["valor_pretendido"] = Decimal(str(parsed["valor_patrimonial"]))
+            
+            # TITULAR E NIF (FONTE PRIMÁRIA!)
+            if parsed.get("titular_nif"):
+                updates["cliente_nif"] = parsed["titular_nif"]
+                dados_para_mobile["nif"] = parsed["titular_nif"]
+                logger.info(f"[OCR] ✅ NIF extraído da Caderneta: {parsed['titular_nif']}")
+            if parsed.get("titular_nome"):
+                # Só usar se não tiver nome do CC (CC é mais fiável para nome)
+                if not item.cliente_nome:
+                    updates["cliente_nome"] = parsed["titular_nome"]
+                dados_para_mobile["titular_nome"] = parsed["titular_nome"]
+        
+        # CERTIDÃO PERMANENTE (PREVALECE SOBRE AT!)
+        elif doc_tipo == "certidao_permanente":
+            parsed = extrair_certidao(full_text)
+            logger.info(f"[OCR CERTIDÃO] Resultado: {parsed}")
+            
+            if parsed.get("descricao_numero"):
+                updates["imovel_descricao_conservatoria"] = parsed["descricao_numero"]
+                dados_para_mobile["descricao_numero"] = parsed["descricao_numero"]
+            if parsed.get("matriz_numero"):
+                updates["imovel_artigo_matricial"] = parsed["matriz_numero"]
+                dados_para_mobile["artigo_matricial"] = parsed["matriz_numero"]
+            if parsed.get("area_total"):
+                updates["imovel_area_bruta"] = Decimal(str(parsed["area_total"]))
+                dados_para_mobile["area_bruta"] = str(parsed["area_total"])
+            if parsed.get("conservatoria"):
+                dados_para_mobile["conservatoria"] = parsed["conservatoria"]
+            
+            # Proprietários legais (PREVALECE!)
+            if parsed.get("proprietarios_legais"):
+                props = parsed["proprietarios_legais"]
+                dados_para_mobile["proprietarios"] = props
+                # Usar primeiro proprietário como cliente se não houver
+                if props and not item.cliente_nome:
+                    updates["cliente_nome"] = props[0].get("nome")
+                    if props[0].get("nif"):
+                        updates["cliente_nif"] = props[0].get("nif")
+        
+        # CERTIFICADO ENERGÉTICO
+        elif doc_tipo == "certificado_energetico":
+            parsed = extrair_certificado_energetico(full_text)
+            logger.info(f"[OCR CE] Resultado: {parsed}")
+            
+            if parsed.get("classe_energetica"):
+                updates["imovel_certificado_energetico"] = parsed["classe_energetica"]
+                dados_para_mobile["classe_energetica"] = parsed["classe_energetica"]
+            if parsed.get("numero_certificado"):
+                updates["imovel_certificado_numero"] = parsed["numero_certificado"]
+                dados_para_mobile["numero_certificado"] = parsed["numero_certificado"]
+            if parsed.get("area_util"):
+                # Só usar se não tivermos da Caderneta
+                if not item.imovel_area_util:
+                    updates["imovel_area_util"] = Decimal(str(parsed["area_util"]))
+                dados_para_mobile["area_util"] = str(parsed["area_util"])
+            if parsed.get("validade"):
+                updates["imovel_certificado_validade"] = parsed["validade"]
+                dados_para_mobile["validade_ce"] = parsed["validade"]
 
     # Persistir updates no CMI
+    logger.info(f"[OCR] Aplicando {len(updates)} updates ao CMI")
     if updates:
         for field, value in updates.items():
             if value:
                 setattr(item, field, value)
+                logger.info(f"[OCR] Set {field} = {value}")
 
     db.commit()
     db.refresh(item)
     
-    # Mapear os campos extraídos para o formato esperado pelo mobile
-    # O mobile espera: nome, nif, numero_documento, artigo_matricial, area_bruta, etc.
-    dados_para_mobile = {}
-    
-    if doc_tipo in ("cc_frente", "cc_verso"):
-        if updates.get("cliente_nome"):
-            dados_para_mobile["nome"] = updates["cliente_nome"]
-        if updates.get("cliente_nif"):
-            dados_para_mobile["nif"] = updates["cliente_nif"]
-        if updates.get("cliente_cc"):
-            dados_para_mobile["numero_documento"] = updates["cliente_cc"]
-        if updates.get("cliente_cc_validade"):
-            dados_para_mobile["validade"] = updates["cliente_cc_validade"]
-    
-    elif doc_tipo == "caderneta_predial":
-        if updates.get("imovel_artigo_matricial"):
-            dados_para_mobile["artigo_matricial"] = updates["imovel_artigo_matricial"]
-        if updates.get("imovel_area_bruta"):
-            dados_para_mobile["area_bruta"] = str(updates["imovel_area_bruta"])
-        if updates.get("imovel_area_util"):
-            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
-        if updates.get("imovel_freguesia"):
-            dados_para_mobile["freguesia"] = updates["imovel_freguesia"]
-        if updates.get("imovel_concelho"):
-            dados_para_mobile["concelho"] = updates["imovel_concelho"]
-        if updates.get("imovel_distrito"):
-            dados_para_mobile["distrito"] = updates["imovel_distrito"]
-        if updates.get("imovel_morada"):
-            dados_para_mobile["morada"] = updates["imovel_morada"]
-        if updates.get("imovel_codigo_postal"):
-            dados_para_mobile["codigo_postal"] = updates["imovel_codigo_postal"]
-        if updates.get("valor_pretendido"):
-            dados_para_mobile["valor_patrimonial"] = str(updates["valor_pretendido"])
-    
-    elif doc_tipo == "certidao_permanente":
-        if updates.get("imovel_artigo_matricial"):
-            dados_para_mobile["artigo_matricial"] = updates["imovel_artigo_matricial"]
-        if updates.get("imovel_area_bruta"):
-            dados_para_mobile["area_bruta"] = str(updates["imovel_area_bruta"])
-        if updates.get("imovel_area_util"):
-            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
-        if updates.get("imovel_morada"):
-            dados_para_mobile["morada"] = updates["imovel_morada"]
-        if updates.get("imovel_freguesia"):
-            dados_para_mobile["freguesia"] = updates["imovel_freguesia"]
-        if updates.get("imovel_concelho"):
-            dados_para_mobile["concelho"] = updates["imovel_concelho"]
-    
-    elif doc_tipo == "certificado_energetico":
-        if updates.get("imovel_certificado_energetico"):
-            dados_para_mobile["classe_energetica"] = updates["imovel_certificado_energetico"]
-        if updates.get("imovel_morada"):
-            dados_para_mobile["morada"] = updates["imovel_morada"]
-        if updates.get("imovel_codigo_postal"):
-            dados_para_mobile["codigo_postal"] = updates["imovel_codigo_postal"]
-        if updates.get("imovel_area_util"):
-            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
-    
-    elif doc_tipo == "licenca_utilizacao":
-        if updates.get("imovel_licenca_numero"):
-            dados_para_mobile["licenca_numero"] = updates["imovel_licenca_numero"]
-        if updates.get("imovel_licenca_data"):
-            dados_para_mobile["licenca_data"] = updates["imovel_licenca_data"]
-    
-    # Se não extraiu nada, usar os dados originais (stub ou raw_text)
-    if not dados_para_mobile:
-        dados_para_mobile = dados_extraidos
-    else:
-        # Incluir raw_text também para debug se existir
-        if dados_extraidos.get("raw_text"):
-            dados_para_mobile["raw_text"] = dados_extraidos["raw_text"]
-    
     # Ajustar confiança se extraímos dados reais
-    if updates and confianca < 0.5:
-        confianca = 0.7  # Confiança média se extraímos alguma coisa
+    if updates and confianca > 0:
+        confianca = 0.9  # Confiança alta se extraímos e mapeamos campos
+    elif dados_para_mobile and confianca > 0:
+        confianca = 0.7  # Confiança média se só extraímos sem mapear
+    
+    logger.info(f"[OCR] Resposta final: tipo={doc_tipo}, campos={len(dados_para_mobile)}, confianca={confianca}")
     
     return schemas.DocumentoOCRResponse(
         sucesso=True,
-        tipo=doc_tipo,
+        tipo=doc_tipo or "desconhecido",
         dados_extraidos=dados_para_mobile,
         confianca=confianca,
         mensagem=mensagem if mensagem else f"Extraídos {len(dados_para_mobile)} campos"
