@@ -523,8 +523,39 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       const blob = await cmiService.getPdf(cmi.id);
       if (Platform.OS === 'web') {
         const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        
+        // Detectar se é iOS (iPhone/iPad)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isIOS) {
+          // No iOS Safari, criar um link <a> e clicar programaticamente
+          // Isso funciona melhor que window.open para blobs
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `cmi-${cmi.numero_contrato || cmi.id}.pdf`;
+          link.target = '_blank';
+          
+          // Adicionar ao DOM, clicar e remover
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Alternativa: abrir diretamente no mesmo tab se o download não funcionar
+          // Alguns browsers iOS abrem o PDF inline
+          setTimeout(() => {
+            if (document.hasFocus()) {
+              // Se ainda temos focus, o download pode não ter funcionado
+              // Tentar abrir numa nova janela como fallback
+              window.location.href = url;
+            }
+          }, 1000);
+          
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } else {
+          // Desktop browsers - window.open funciona bem
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
       } else {
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
