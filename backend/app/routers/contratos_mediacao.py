@@ -219,7 +219,7 @@ def gerar_pdf(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Gerar PDF oficial do CMI seguindo o modelo legal português."""
+    """Gerar PDF oficial do CMI seguindo o modelo legal português - 4 páginas."""
     if not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
@@ -232,23 +232,18 @@ def gerar_pdf(
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    margin_left = 20*mm
-    margin_right = width - 20*mm
-    line_height = 4.5*mm
+    margin_left = 18*mm
+    margin_right = width - 18*mm
+    usable_width = margin_right - margin_left
     
     def safe(val):
-        """Retorna valor ou string vazia se None"""
         return str(val) if val else ""
     
-    def draw_paragraph(canvas_obj, text, x, y, max_width, font_size=9, leading=12):
-        """Desenha parágrafo com quebra de linha automática"""
+    def draw_text(canvas_obj, text, x, y, max_width, font_size=9, leading=11):
+        """Desenha texto com quebra de linha"""
         from reportlab.lib.utils import simpleSplit
         lines = simpleSplit(text, canvas_obj._fontname, font_size, max_width)
         for line in lines:
-            if y < 25*mm:  # Nova página se necessário
-                canvas_obj.showPage()
-                canvas_obj.setFont("Helvetica", font_size)
-                y = height - 25*mm
             canvas_obj.drawString(x, y, line)
             y -= leading
         return y
@@ -256,402 +251,265 @@ def gerar_pdf(
     # =====================================================
     # PÁGINA 1 - CABEÇALHO + PARTES + CLÁUSULAS 1-4
     # =====================================================
-    y = height - 20*mm
+    y = height - 18*mm
     
     # Cabeçalho
     c.setFont("Helvetica-Bold", 10)
     c.drawRightString(margin_right, y, f"Contrato n.º {item.numero_contrato}")
-    y -= 12*mm
+    y -= 10*mm
     
     # Título
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 13)
     c.drawCentredString(width/2, y, "CONTRATO DE MEDIAÇÃO IMOBILIÁRIA")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    c.drawCentredString(width/2, y, "(Nos termos da Lei n.º 15/2013, de 08 de Fevereiro)")
     y -= 5*mm
-    c.setFont("Helvetica-Bold", 11)
+    c.setFont("Helvetica", 8)
+    c.drawCentredString(width/2, y, "(Nos termos da Lei n.º 15/2013, de 08 de Fevereiro)")
+    y -= 4*mm
+    c.setFont("Helvetica-Bold", 10)
     tipo_neg = "VENDA" if item.tipo_negocio == "venda" else "ARRENDAMENTO" if item.tipo_negocio == "arrendamento" else "COMPRA/OUTROS"
     c.drawCentredString(width/2, y, tipo_neg)
-    y -= 10*mm
+    y -= 8*mm
     
-    # Entre:
+    # Entre - Mediadora
     c.setFont("Helvetica-Bold", 9)
     c.drawString(margin_left, y, "Entre:")
-    y -= 5*mm
+    y -= 4*mm
+    c.setFont("Helvetica", 8)
+    med = f"{safe(item.mediador_nome)}, sede na {safe(item.mediador_morada)}, {safe(item.mediador_codigo_postal)}, "
+    med += f"Licença AMI n.º {safe(item.mediador_licenca_ami)}, NIPC n.º {safe(item.mediador_nif)}, adiante "
+    c.setFont("Helvetica-Bold", 8)
+    y = draw_text(c, med + "Mediadora.", margin_left, y, usable_width, 8, 10)
+    y -= 4*mm
     
-    # MEDIADORA
-    c.setFont("Helvetica-Bold", 9)
-    mediador_texto = f"{safe(item.mediador_nome)}, com sede social na {safe(item.mediador_morada)}, "
-    mediador_texto += f"{safe(item.mediador_codigo_postal)}, detentora da Licença AMI n.º {safe(item.mediador_licenca_ami)}, "
-    mediador_texto += f"com o NIPC n.º {safe(item.mediador_nif)}, adiante designada como "
-    c.setFont("Helvetica", 9)
-    y = draw_paragraph(c, mediador_texto, margin_left, y, margin_right - margin_left)
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margin_left, y, "Mediadora.")
-    y -= 8*mm
-    
-    # E (Cliente/Segundo Contratante)
+    # E - Cliente
     c.setFont("Helvetica-Bold", 9)
     c.drawString(margin_left, y, "E")
-    y -= 5*mm
-    c.setFont("Helvetica", 9)
-    
-    cliente_texto = f"(nome do cliente) {safe(item.cliente_nome)}, (estado civil) {safe(item.cliente_estado_civil)}, "
-    cliente_texto += f"residente(s) em {safe(item.cliente_morada)}, código postal: {safe(item.cliente_codigo_postal)}, "
-    cliente_texto += f"portador(es) do(s) B.I./CC nº(s) {safe(item.cliente_cc)}, válidos até {safe(item.cliente_cc_validade)}, "
-    cliente_texto += f"e contribuinte(s) fiscal(is) n.º(s) {safe(item.cliente_nif)}, "
-    cliente_texto += f"com telemóvel nº {safe(item.cliente_telefone)} e email {safe(item.cliente_email)}, "
-    cliente_texto += "adiante designado(s) como "
-    y = draw_paragraph(c, cliente_texto, margin_left, y, margin_right - margin_left)
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margin_left, y, "Segundo(s) Contratante(s)")
-    c.setFont("Helvetica", 9)
-    c.drawString(margin_left + 43*mm, y, " na qualidade de Proprietário, é celebrado o presente ")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margin_left + 120*mm, y, "Contrato de Mediação")
-    y -= line_height
-    c.drawString(margin_left, y, "Imobiliária ")
-    c.setFont("Helvetica", 9)
-    c.drawString(margin_left + 20*mm, y, "que se rege pelas seguintes cláusulas:")
-    y -= 10*mm
-    
-    # CLÁUSULA 1.ª - Identificação do Imóvel
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 1.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Identificação do Imóvel)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    imovel_texto = f"O Segundo Contratante é proprietário e legítimo possuidor da fracção autónoma /prédio(rústico/urbano)/ "
-    imovel_texto += f"estabelecimento comercial, destinado (a) a {safe(item.imovel_tipo) or 'Habitação'}, sendo constituído por "
-    imovel_texto += f"{safe(item.imovel_tipologia)} divisões assoalhadas, com uma área total de {safe(item.imovel_area_bruta)} m², "
-    imovel_texto += f"sito na {safe(item.imovel_morada)}, {safe(item.imovel_freguesia)}, concelho de {safe(item.imovel_concelho)}, "
-    imovel_texto += f"código postal {safe(item.imovel_codigo_postal)}, descrito na Conservatória do Registo Predial de "
-    imovel_texto += f"{safe(item.imovel_conservatoria)}, sob a descrição n.º {safe(item.imovel_numero_descricao)}, "
-    imovel_texto += f"inscrito na matriz predial (urbana/rústica) com o artigo n.º {safe(item.imovel_artigo_matricial)} "
-    imovel_texto += f"da freguesia de {safe(item.imovel_freguesia)}, "
-    imovel_texto += f"e certificado energético nº {safe(item.imovel_certificado_energetico) or '___________'}."
-    y = draw_paragraph(c, imovel_texto, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 2.ª - Identificação do Negócio
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 2.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Identificação do Negócio)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    tipo_checkbox = "■ Compra   □ Arrendamento   □ Trespasse" if item.tipo_negocio == "venda" else "□ Compra   ■ Arrendamento   □ Trespasse"
-    neg_texto = f"1 – A Mediadora obriga-se a diligenciar no sentido de conseguir interessado na   {tipo_checkbox}   "
-    neg_texto += f"pelo preço de {format_money(item.valor_pretendido)} ({format_money(item.valor_pretendido)} Euros), "
-    neg_texto += "desenvolvendo para o efeito, ações de promoção e recolha de informações sobre os negócios pretendidos "
-    neg_texto += "e características dos respetivos imóveis."
-    y = draw_paragraph(c, neg_texto, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    neg_texto2 = "2 – Qualquer alteração ao preço fixado no número anterior deverá ser comunicada de imediato e por escrito à Mediadora."
-    y = draw_paragraph(c, neg_texto2, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 3.ª - Ónus e Encargos
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 3.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Ónus e Encargos)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    c.drawString(margin_left, y, "■ O imóvel encontra-se livre de quaisquer ónus ou encargos.")
-    y -= line_height
-    c.drawString(margin_left, y, "□ O Segundo Contratante declara que sobre o imóvel descrito no número anterior recaem os seguintes ónus e")
-    y -= line_height
-    c.drawString(margin_left, y, "   encargos (hipotecas e penhoras) _________________, pelo valor de _________________ Euros.")
-    y -= 8*mm
-    
-    # CLÁUSULA 4.ª - Regime de Contratação
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 4.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Regime de Contratação)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    exclusivo = "■" if item.tipo_contrato == TipoContrato.EXCLUSIVO else "□"
-    c.drawString(margin_left, y, f"1 – Os Segundos Contratantes contratam a Mediadora em regime de {'Exclusividade' if item.tipo_contrato == TipoContrato.EXCLUSIVO else 'Não Exclusividade'}.")
-    y -= line_height * 1.5
-    reg_texto = "2 – Nos termos da legislação aplicável, quando o contrato é celebrado em regime de exclusividade só a Mediadora "
-    reg_texto += "contratada tem o direito de promover o negócio objeto do contrato de mediação durante o respetivo período de "
-    reg_texto += "vigência, ficando a segunda Contratante obrigada a pagar a comissão acordada caso viole a obrigação de exclusividade."
-    y = draw_paragraph(c, reg_texto, margin_left, y, margin_right - margin_left)
-    
-    c.showPage()
-    
-    # =====================================================
-    # PÁGINA 2 - CLÁUSULAS 5-11
-    # =====================================================
-    y = height - 20*mm
-    
-    # CLÁUSULA 5.ª - Remuneração
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 5.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Remuneração)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    rem_texto = "1- A remuneração só será devida se a Mediadora conseguir interessado que concretize o negócio visado pelo "
-    rem_texto += "presente contrato, nos termos e com as exceções previstas no artigo 19º da lei 15/2013 de 8 de Fevereiro."
-    y = draw_paragraph(c, rem_texto, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    
-    rem_texto2 = "2- O segundo contratante obriga-se a pagar à Mediadora a título de remuneração e sobre o preço pelo qual o "
-    rem_texto2 += "negócio é efetivamente concretizado:"
-    y = draw_paragraph(c, rem_texto2, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    
-    comissao_pct = safe(item.comissao_percentagem) or "5"
-    c.drawString(margin_left, y, f"■ a quantia de {comissao_pct}% acrescida de IVA à taxa legal em vigor, sempre que o negócio se concretize acima do valor de")
-    y -= line_height
-    c.drawString(margin_left, y, "   €100.000 (cem mil euros), ou,")
-    y -= line_height
-    comissao_fixa = safe(item.comissao_valor_fixo) or "4.000"
-    c.drawString(margin_left, y, f"   a quantia de {comissao_fixa} Euros (quatro mil euros)")
-    y -= line_height
-    c.drawString(margin_left, y, "   acrescida do IVA à taxa legal em vigor, sempre que o negócio se concretize no valor inferior a €100.000(cem mil euros)")
-    y -= 5*mm
-    
-    c.drawString(margin_left, y, "3- O pagamento da remuneração apenas será efetuado nas seguintes condições:")
-    y -= line_height
-    c.drawString(margin_left, y, "□ o total da remuneração aquando da celebração da escritura ou conclusão do negócio visado.")
-    y -= line_height
-    c.drawString(margin_left, y, "□ ________% após a celebração do contrato-promessa e o remanescente de ________ % na celebração da escritura")
-    y -= line_height
-    c.drawString(margin_left, y, "   ou conclusão do negócio, quando na assinatura do CPCV é recebido um sinal igual ou superior a 10% do valor de")
-    y -= line_height
-    c.drawString(margin_left, y, "   venda do imóvel.")
-    y -= line_height
-    c.drawString(margin_left, y, "■ o total da remuneração aquando da celebração do contrato-promessa.")
-    y -= 5*mm
-    
-    rem_texto3 = "4. – O direito da empresa à remuneração não é afastado pelo exercício de direito legal ou contratual de preferência sobre o imóvel."
-    y = draw_paragraph(c, rem_texto3, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    
-    rem_texto4 = "5. – No caso do imóvel referenciado na cláusula 1ª, ser vendido por outra agência ou pelo seu proprietário, no "
-    rem_texto4 += "período de vigência do presente contrato, a remuneração é paga na totalidade à primeira outorgante."
-    y = draw_paragraph(c, rem_texto4, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    
-    rem_texto5 = "6. – Se durante o período de vigência do contrato, um interessado indicado pela primeira outorgante, visitar o "
-    rem_texto5 += "imóvel referenciado na cláusula 1ª e faça a sua aquisição, no período de 6 meses, posterior à data da vigência do "
-    rem_texto5 += "presente contrato, a remuneração também é devida na totalidade à primeira outorgante."
-    y = draw_paragraph(c, rem_texto5, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 6.ª - Garantias
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 6.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Garantias da Atividade de Mediação)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    gar_texto = "Para garantia da responsabilidade emergente da sua actividade profissional, a Mediadora celebrou um contrato de "
-    gar_texto += "seguro obrigatório de responsabilidade civil no valor de 150.000,00 Euros, apólice n.º 008365277, através da "
-    gar_texto += "seguradora \"ZURICH\"."
-    y = draw_paragraph(c, gar_texto, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 7.ª - Prazo
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 7.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Prazo de Duração do Contrato)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    prazo = safe(item.prazo_meses) or "6"
-    prazo_texto = f"O presente contrato tem uma validade de {prazo} meses contados a partir da data da sua celebração, renovando-se "
-    prazo_texto += "automaticamente por iguais e sucessivos períodos de tempo, caso não seja denunciado por qualquer das partes "
-    prazo_texto += "contratantes através de carta registada com aviso de recepção ou outro meio equivalente, com a antecedência "
-    prazo_texto += "mínima de 10 dias em relação ao seu termo."
-    y = draw_paragraph(c, prazo_texto, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 8.ª - Dever de Colaboração
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 8.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Dever de Colaboração)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    colab_texto = "1- O Segundo Contratante colaborará com a Mediadora na entrega de todos os elementos julgados necessários e "
-    colab_texto += "úteis no prazo de 10 (dias), a contar da data de assinatura do presente contrato."
-    y = draw_paragraph(c, colab_texto, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    colab_texto2 = "2- O Segundo Contratante tem o dever de facilitar as visitas ao angariador imobiliário, salvo situações que se "
-    colab_texto2 += "comprovem razão absoluta de impossibilidade."
-    y = draw_paragraph(c, colab_texto2, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 9.ª - Angariador Imobiliário
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 9.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Angariador Imobiliário)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    agente_texto = f"O {safe(item.agente_nome) or '____________________________'}, contribuinte fiscal nº "
-    agente_texto += f"{safe(item.agente_carteira_profissional) or '____________________________'}, angariador "
-    agente_texto += "imobiliário da Mediadora, colaborou na preparação do presente contrato."
-    y = draw_paragraph(c, agente_texto, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 10.ª - Foro Competente
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 10.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Foro Competente)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    foro_texto = "Para dirimirem quaisquer litígios emergentes da execução do presente contrato, as partes acordam entre si, "
-    foro_texto += "estabelecer como competente o foro da Comarca de Leiria, com expressa renúncia a qualquer outro. (Esta cláusula "
-    foro_texto += "é facultativa e só deverá ser preenchida se as partes assim o pretenderem e acordarem)"
-    y = draw_paragraph(c, foro_texto, margin_left, y, margin_right - margin_left)
-    y -= 8*mm
-    
-    # CLÁUSULA 11.ª - Competência para litígios
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 11.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Competência para dirimir litígios de consumo)")
-    y -= 6*mm
-    c.setFont("Helvetica", 9)
-    
-    lit_texto = "1- Em caso de litígio de consumo, definido nos termos do disposto na Lei nº 144/2015, de 8 de Setembro, o "
-    lit_texto += "consumidor pode recorrer à entidade de resolução alternativa de litígios de consumo competente."
-    y = draw_paragraph(c, lit_texto, margin_left, y, margin_right - margin_left)
-    
-    c.showPage()
-    
-    # =====================================================
-    # PÁGINA 3 - CLÁUSULAS 11 (cont.) e 12 (RGPD)
-    # =====================================================
-    y = height - 20*mm
-    
-    c.setFont("Helvetica", 9)
-    lit_texto2 = "2- Sem prejuízo do disposto na legislação, nos estatutos e nos regulamentos a que as entidades de resolução "
-    lit_texto2 += "alternativa de litígios de consumo se encontram vinculadas, considera-se competente para dirimir o litígio "
-    lit_texto2 += "de consumo, a entidade de resolução alternativa de litígios de consumo do local da celebração do contrato de compra "
-    lit_texto2 += "e venda do bem ou da prestação de serviços ou em alternativa a entidade de resolução alternativa de competência "
-    lit_texto2 += "especializada, caso exista para o sector em questão."
-    y = draw_paragraph(c, lit_texto2, margin_left, y, margin_right - margin_left)
-    y -= 3*mm
-    
-    lit_texto3 = "3- Caso não exista entidade de resolução alternativa de litígios com competência no local da celebração do contrato "
-    lit_texto3 += "ou a(s) existente(s) não se considere(m) competente(s) em resolução do valor deste, o consumidor pode recorrer "
-    lit_texto3 += "ao Centro Nacional de Informação e Arbitragem de Conflitos de Consumo, sito em Lisboa, com o endereço "
-    lit_texto3 += "eletrónico cniacc@uni.pt e disponível na página www.arbitragemdeconsumo.org."
-    y = draw_paragraph(c, lit_texto3, margin_left, y, margin_right - margin_left)
-    y -= 10*mm
-    
-    # CLÁUSULA 12.ª - Tratamento de dados (RGPD)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(width/2, y, "Cláusula 12.ª")
-    y -= line_height
-    c.drawCentredString(width/2, y, "(Tratamento de dados)")
-    y -= 6*mm
+    y -= 4*mm
     c.setFont("Helvetica", 8)
+    cli = f"{safe(item.cliente_nome)}, {safe(item.cliente_estado_civil) or '(estado civil)'}, residente em {safe(item.cliente_morada)}, "
+    cli += f"CP: {safe(item.cliente_codigo_postal)}, CC nº {safe(item.cliente_cc)}, válido até {safe(item.cliente_cc_validade)}, "
+    cli += f"NIF {safe(item.cliente_nif)}, Tel. {safe(item.cliente_telefone)}, email {safe(item.cliente_email)}, adiante "
+    y = draw_text(c, cli, margin_left, y, usable_width, 8, 10)
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(margin_left, y, "Segundo(s) Contratante(s)")
+    c.setFont("Helvetica", 8)
+    c.drawString(margin_left + 38*mm, y, " na qualidade de Proprietário, celebram o presente Contrato de Mediação Imobiliária:")
+    y -= 8*mm
     
-    rgpd_items = [
-        f"1. Em geral, os dados pessoais recolhidos por parte da {safe(item.mediador_nome)}, têm como fundamento e destinam-se à gestão da relação contratual, ao fornecimento dos bens e à prestação dos serviços contratados.",
-        "2. São solicitados dados como nome, estado civil, regime de casamento, NIF, morada, identificação de cartão de cidadão, naturalidade, contacto telefónico, endereço de e-mail assim como a identificação do imóvel objecto do negócio, mormente através de caderneta, certidão predial, certificado energético, ficha electrotécnica, licença de utilização e/ou de obras, fotografias do imóvel e eventualmente plantas dos imóveis.",
-        f"3. Todos os dados são indispensáveis à execução do contrato e, em caso de falta ou insuficiência dos mesmos, a {safe(item.mediador_nome)}, não poderá disponibilizar o serviço em causa.",
-        f"4. No âmbito da sua actividade, a {safe(item.mediador_nome)}, poderá recorrer a terceiros para a prestação de determinados serviços, como é o caso da empresa encarregue da contabilidade, consultadoria, serviços jurídicos para elaboração de contratos, e a de assistência técnica/informática. Todas as empresas subcontratadas por parte da {safe(item.mediador_nome)}, já deram garantias suficientes de execução de medidas técnicas e organizativas adequadas ao cumprimento do RGPD.",
-        f"5. Compromete-se a {safe(item.mediador_nome)}, no caso de haver necessidade de serem efectuadas transferências internacionais, a efectuá-las para países da União Europeia ou países terceiros com nível adequado de protecção de dados ou com decisão de adequação. Qualquer transferência para países sem decisão de adequação só poderá ser efectuada mediante expresso consentimento do titular dos dados.",
-        "6. Os dados pessoais recolhidos podem ser tratados informaticamente mas não de forma automatizada, e, em situação alguma, os dados recolhidos serão utilizados para outra finalidade que não seja aquela para a qual foram recolhidos ou dado o consentimento por parte do titular dos dados.",
-        "7. O período de tempo durante o qual os dados pessoais são armazenados e conservados varia de acordo com a finalidade para a qual a informação é tratada. Sempre que não exista uma exigência legal específica, os dados serão armazenados e conservados apenas pelo período mínimo necessário para a prossecução das finalidades que motivaram a sua recolha ou o seu posterior tratamento, nos termos definidos na lei.",
-        f"8. Enquanto titulares dos dados pessoais, é garantido aos Clientes, a qualquer momento, o direito de acesso, rectificação, actualização, limitação e apagamento dos seus dados pessoais, o direito de oposição à utilização dos mesmos para fins comerciais pela {safe(item.mediador_nome)}, e à retirada do consentimento, sem que tal comprometa a licitude do tratamento efectuado ao abrigo desse consentimento, bem como o direito à portabilidade dos dados.",
-        f"9. O titular dos dados pessoais poderá exercer os referidos direitos directamente através de correio electrónico para {safe(item.mediador_email)} ou mediante pedido por escrito, dirigido à {safe(item.mediador_nome)}, sita na {safe(item.mediador_morada)}, {safe(item.mediador_codigo_postal)}.",
-        f"10. Sem prejuízo de poder apresentar reclamações directamente à {safe(item.mediador_nome)}, o Cliente pode reclamar directamente a uma Autoridade de Controlo, utilizando os contactos disponibilizados por esta entidade para o efeito.",
+    # CLÁUSULA 1 - Imóvel
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 1.ª - Identificação do Imóvel")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    im = f"O Segundo Contratante é proprietário do imóvel destinado a {safe(item.imovel_tipo) or 'Habitação'}, "
+    im += f"com {safe(item.imovel_tipologia)} divisões, área {safe(item.imovel_area_bruta)} m², sito em {safe(item.imovel_morada)}, "
+    im += f"{safe(item.imovel_freguesia)}, {safe(item.imovel_concelho)}, CP {safe(item.imovel_codigo_postal)}, "
+    im += f"Conservatória {safe(item.imovel_conservatoria)}, descrição nº {safe(item.imovel_numero_descricao)}, "
+    im += f"artigo matricial {safe(item.imovel_artigo_matricial)}, CE {safe(item.imovel_certificado_energetico) or '____'}."
+    y = draw_text(c, im, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 2 - Negócio
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 2.ª - Identificação do Negócio")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    neg = f"1 – A Mediadora obriga-se a diligenciar interessado na ■ Compra □ Arrendamento □ Trespasse "
+    neg += f"pelo preço de {format_money(item.valor_pretendido)}, desenvolvendo ações de promoção."
+    y = draw_text(c, neg, margin_left, y, usable_width, 8, 10)
+    c.drawString(margin_left, y, "2 – Qualquer alteração ao preço deverá ser comunicada de imediato e por escrito à Mediadora.")
+    y -= 6*mm
+    
+    # CLÁUSULA 3 - Ónus
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 3.ª - Ónus e Encargos")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    c.drawString(margin_left, y, "■ O imóvel encontra-se livre de quaisquer ónus ou encargos.")
+    y -= 3*mm
+    c.drawString(margin_left, y, "□ O imóvel tem os seguintes ónus/encargos: _________________, valor: _________ Euros.")
+    y -= 6*mm
+    
+    # CLÁUSULA 4 - Regime
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 4.ª - Regime de Contratação")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    excl = "Exclusividade" if item.tipo_contrato == TipoContrato.EXCLUSIVO else "Não Exclusividade"
+    c.drawString(margin_left, y, f"1 – Os Segundos Contratantes contratam a Mediadora em regime de {excl}.")
+    y -= 3*mm
+    reg = "2 – Em regime de exclusividade, só a Mediadora contratada pode promover o negócio, ficando o Contratante "
+    reg += "obrigado a pagar a comissão acordada caso viole esta obrigação."
+    y = draw_text(c, reg, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 5 - Remuneração
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 5.ª - Remuneração")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    rem = "1- A remuneração só é devida se a Mediadora conseguir interessado que concretize o negócio (art. 19º Lei 15/2013)."
+    y = draw_text(c, rem, margin_left, y, usable_width, 8, 10)
+    c.drawString(margin_left, y, "2- O segundo contratante paga à Mediadora, sobre o preço do negócio:")
+    y -= 3*mm
+    comissao = safe(item.comissao_percentagem) or "5"
+    c.drawString(margin_left, y, f"■ {comissao}% + IVA (negócios >€100.000) ou €4.000 + IVA (negócios <€100.000)")
+    y -= 3*mm
+    c.drawString(margin_left, y, "3- Pagamento: ■ Total aquando do contrato-promessa □ Na escritura □ Faseado ____%/____% ")
+    y -= 3*mm
+    c.drawString(margin_left, y, "4- O direito à remuneração não é afastado pelo exercício de preferência sobre o imóvel.")
+    y -= 3*mm
+    rem5 = "5/6- Se vendido por terceiros ou se interessado indicado comprar até 6 meses após término, comissão é devida."
+    y = draw_text(c, rem5, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 6 - Garantias
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 6.ª - Garantias da Atividade de Mediação")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    gar = "A Mediadora tem seguro de responsabilidade civil de €150.000, apólice nº 008365277, seguradora ZURICH."
+    y = draw_text(c, gar, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 7 - Prazo
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 7.ª - Prazo de Duração do Contrato")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    prazo = safe(item.prazo_meses) or "6"
+    praz = f"Validade de {prazo} meses, renovável automaticamente, denunciável com 10 dias de antecedência por carta registada."
+    y = draw_text(c, praz, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 8 - Colaboração
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 8.ª - Dever de Colaboração")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    c.drawString(margin_left, y, "1- O Contratante entregará documentos necessários em 10 dias. 2- Facilitará visitas ao imóvel.")
+    y -= 6*mm
+    
+    # CLÁUSULA 9 - Angariador
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 9.ª - Angariador Imobiliário")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    ag = f"O {safe(item.agente_nome) or '________________'}, NIF {safe(item.agente_carteira_profissional) or '________________'}, "
+    ag += "angariador da Mediadora, colaborou na preparação deste contrato."
+    y = draw_text(c, ag, margin_left, y, usable_width, 8, 10)
+    
+    c.showPage()
+    
+    # =====================================================
+    # PÁGINA 2 - CLÁUSULAS 10-12 (RGPD)
+    # =====================================================
+    y = height - 18*mm
+    
+    # CLÁUSULA 10 - Foro
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 10.ª - Foro Competente")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    foro = "Para litígios, as partes acordam o foro da Comarca de Leiria. (Cláusula facultativa)"
+    y = draw_text(c, foro, margin_left, y, usable_width, 8, 10)
+    y -= 6*mm
+    
+    # CLÁUSULA 11 - Litígios Consumo
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 11.ª - Competência para dirimir litígios de consumo")
+    y -= 5*mm
+    c.setFont("Helvetica", 8)
+    lit = "1- Em litígio de consumo (Lei 144/2015), o consumidor pode recorrer à entidade de resolução alternativa competente. "
+    lit += "2- Considera-se competente a entidade do local de celebração do contrato. "
+    lit += "3- Caso não exista, recorrer ao CNIACC (cniacc@uni.pt, www.arbitragemdeconsumo.org)."
+    y = draw_text(c, lit, margin_left, y, usable_width, 8, 10)
+    y -= 8*mm
+    
+    # CLÁUSULA 12 - RGPD
+    c.setFont("Helvetica-Bold", 9)
+    c.drawCentredString(width/2, y, "Cláusula 12.ª - Tratamento de dados (RGPD)")
+    y -= 5*mm
+    c.setFont("Helvetica", 7)
+    
+    med_nome = safe(item.mediador_nome) or "a Mediadora"
+    rgpd = [
+        f"1. Os dados recolhidos por {med_nome} destinam-se à gestão da relação contratual e prestação de serviços.",
+        "2. São solicitados: nome, estado civil, NIF, morada, CC, contactos, e documentos do imóvel (caderneta, certidão, CE, etc.).",
+        f"3. Todos os dados são indispensáveis à execução do contrato.",
+        f"4. {med_nome} pode recorrer a terceiros (contabilidade, jurídico, informática) com garantias RGPD.",
+        f"5. Transferências internacionais só para países com adequação ou mediante consentimento.",
+        "6. Os dados não serão usados para outras finalidades sem consentimento.",
+        "7. Dados conservados pelo período legal mínimo necessário.",
+        f"8. Garantido direito de acesso, rectificação, apagamento, oposição e portabilidade dos dados.",
+        f"9. Exercer direitos via {safe(item.mediador_email)} ou por escrito para {safe(item.mediador_morada)}.",
+        f"10. Reclamações podem ser apresentadas à {med_nome} ou à Autoridade de Controlo (CNPD).",
     ]
     
-    for item_rgpd in rgpd_items:
-        y = draw_paragraph(c, item_rgpd, margin_left, y, margin_right - margin_left, font_size=8, leading=10)
-        y -= 2*mm
-        if y < 30*mm:
-            c.showPage()
-            y = height - 20*mm
-            c.setFont("Helvetica", 8)
+    for r in rgpd:
+        y = draw_text(c, r, margin_left, y, usable_width, 7, 9)
+        y -= 1*mm
     
-    c.showPage()
+    y -= 10*mm
     
-    # =====================================================
-    # PÁGINA 4 - ASSINATURAS
-    # =====================================================
-    y = height - 30*mm
-    
-    c.setFont("Helvetica", 10)
-    c.drawString(margin_left, y, "Depois de lido e ratificado, as partes comprometem-se a cumprir este contrato segundo os ditames da boa-fé e vão")
-    y -= line_height
-    c.drawString(margin_left, y, "assinar.")
-    y -= 12*mm
-    
+    # TEXTO FINAL E ASSINATURAS
+    c.setFont("Helvetica", 9)
+    c.drawString(margin_left, y, "Depois de lido e ratificado, as partes comprometem-se a cumprir este contrato segundo os ditames da boa-fé.")
+    y -= 8*mm
     c.drawString(margin_left, y, "Feito em duplicado, destinando-se um exemplar a cada uma das partes intervenientes.")
-    y -= 12*mm
+    y -= 10*mm
     
     # Data e local
     from datetime import datetime
-    data_str = item.data_inicio.strftime("%d de %B de %Y") if item.data_inicio else datetime.now().strftime("%d de %B de %Y")
-    # Traduzir mês para português
-    meses_pt = {"January": "Janeiro", "February": "Fevereiro", "March": "Março", "April": "Abril", 
-                "May": "Maio", "June": "Junho", "July": "Julho", "August": "Agosto",
-                "September": "Setembro", "October": "Outubro", "November": "Novembro", "December": "Dezembro"}
-    for en, pt in meses_pt.items():
-        data_str = data_str.replace(en, pt)
+    if item.data_inicio:
+        dia = item.data_inicio.day
+        mes = item.data_inicio.month
+        ano = item.data_inicio.year
+        meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+                 "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+        data_str = f"{dia} de {meses[mes]} de {ano}"
+    else:
+        now = datetime.now()
+        meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+                 "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+        data_str = f"{now.day} de {meses[now.month]} de {now.year}"
     
     local = safe(item.local_assinatura) or "Leiria"
     c.drawString(margin_left, y, f"{local}, {data_str}.")
-    y -= 30*mm
+    y -= 25*mm
     
     # Assinaturas
     c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(60*mm, y, "A MEDIADORA")
-    c.drawCentredString(150*mm, y, "O SEGUNDO CONTRATANTE")
-    y -= 25*mm
+    c.drawCentredString(55*mm, y, "A MEDIADORA")
+    c.drawCentredString(155*mm, y, "O SEGUNDO CONTRATANTE")
+    y -= 20*mm
     
-    # Linhas para assinatura
-    c.line(25*mm, y, 95*mm, y)
-    c.line(115*mm, y, 185*mm, y)
+    # Linhas
+    c.line(20*mm, y, 90*mm, y)
+    c.line(120*mm, y, 190*mm, y)
     
-    # Se houver assinaturas digitais, desenhar
+    # Assinaturas digitais se existirem
     if item.assinatura_mediador:
         try:
             from reportlab.lib.utils import ImageReader
-            import base64
             img_data = base64.b64decode(item.assinatura_mediador.split(',')[1] if ',' in item.assinatura_mediador else item.assinatura_mediador)
             img = ImageReader(BytesIO(img_data))
-            c.drawImage(img, 35*mm, y+5*mm, width=50*mm, height=20*mm, preserveAspectRatio=True, mask='auto')
+            c.drawImage(img, 30*mm, y+3*mm, width=50*mm, height=18*mm, preserveAspectRatio=True, mask='auto')
         except:
             pass
     
     if item.assinatura_cliente:
         try:
             from reportlab.lib.utils import ImageReader
-            import base64
             img_data = base64.b64decode(item.assinatura_cliente.split(',')[1] if ',' in item.assinatura_cliente else item.assinatura_cliente)
             img = ImageReader(BytesIO(img_data))
-            c.drawImage(img, 125*mm, y+5*mm, width=50*mm, height=20*mm, preserveAspectRatio=True, mask='auto')
+            c.drawImage(img, 130*mm, y+3*mm, width=50*mm, height=18*mm, preserveAspectRatio=True, mask='auto')
         except:
             pass
     
     c.save()
     buffer.seek(0)
-    headers = {"Content-Disposition": f"inline; filename=cmi-{cmi_id}.pdf"}
+    headers = {"Content-Disposition": f"inline; filename=cmi-{item.numero_contrato}.pdf"}
     return StreamingResponse(buffer, media_type="application/pdf", headers=headers)
 
 
