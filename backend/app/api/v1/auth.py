@@ -44,7 +44,11 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         if not user:
             raise HTTPException(status_code=401, detail="Credenciais inválidas")
         
-        token = _create_token(user.id, user.email, user.role, user.agent_id)  # ✅ Passar agent_id
+        # ✅ Para assistentes, usar works_for_agent_id como agent_id efetivo
+        effective_agent_id = user.works_for_agent_id if user.works_for_agent_id else user.agent_id
+        print(f"[AUTH LOGIN] User: {user.email}, Role: {user.role}, agent_id: {user.agent_id}, works_for: {user.works_for_agent_id}, effective: {effective_agent_id}")
+        
+        token = _create_token(user.id, user.email, user.role, effective_agent_id)
     except Exception as e:
         import traceback
         error_details = {
