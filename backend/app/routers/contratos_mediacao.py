@@ -964,7 +964,7 @@ def processar_documento_ocr(
     dados_extraidos = {}
     confianca = 0.0
     mensagem = ""
-    doc_tipo = data.tipo_documento
+    doc_tipo = data.tipo  # Campo do schema é 'tipo', não 'tipo_documento'
 
     # Aceita ambas variantes da env: GCP_VISION_ENABLED ou GCP_VISION_ENABLE
     vision_flag = os.environ.get("GCP_VISION_ENABLED") or os.environ.get("GCP_VISION_ENABLE") or "false"
