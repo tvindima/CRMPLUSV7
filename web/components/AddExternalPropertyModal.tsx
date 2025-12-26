@@ -22,250 +22,6 @@ interface ExtractedData {
   fonte?: string;
 }
 
-// Função para extrair dados de diferentes portais
-async function extractPropertyData(url: string): Promise<ExtractedData | null> {
-  try {
-    // Detectar o portal pelo URL
-    const urlLower = url.toLowerCase();
-    
-    // Tentar fazer fetch via proxy para evitar CORS
-    // Em produção, isto deveria ser um endpoint do backend
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    
-    const response = await fetch(proxyUrl, {
-      headers: {
-        'Accept': 'text/html',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error('Não foi possível aceder ao site');
-    }
-    
-    const html = await response.text();
-    
-    // Extrair dados baseado no portal
-    if (urlLower.includes('idealista.pt') || urlLower.includes('idealista.com')) {
-      return extractFromIdealista(html, url);
-    } else if (urlLower.includes('imovirtual.com')) {
-      return extractFromImovirtual(html, url);
-    } else if (urlLower.includes('casasapo.pt') || urlLower.includes('casa.sapo.pt')) {
-      return extractFromCasaSapo(html, url);
-    } else if (urlLower.includes('supercasa.pt')) {
-      return extractFromSupercasa(html, url);
-    } else if (urlLower.includes('remax.pt')) {
-      return extractFromRemax(html, url);
-    } else if (urlLower.includes('era.pt')) {
-      return extractFromEra(html, url);
-    } else {
-      // Tentar extração genérica com meta tags
-      return extractGeneric(html, url);
-    }
-  } catch (error) {
-    console.error('Erro ao extrair dados:', error);
-    return null;
-  }
-}
-
-// Extração do Idealista
-function extractFromIdealista(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'Idealista' };
-  
-  // Título
-  const titleMatch = html.match(/<h1[^>]*class="[^"]*main-info__title[^"]*"[^>]*>([^<]+)/i) ||
-                     html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim().replace(/ - Idealista.*$/i, '');
-  
-  // Preço
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  // Tipologia
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  // Área
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  // Quartos
-  const roomsMatch = html.match(/(\d+)\s*quarto/i);
-  if (roomsMatch) data.quartos = parseInt(roomsMatch[1]);
-  
-  // WCs
-  const bathMatch = html.match(/(\d+)\s*(?:casa[s]?\s*de\s*banho|wc)/i);
-  if (bathMatch) data.casas_banho = parseInt(bathMatch[1]);
-  
-  // Localização
-  const locMatch = html.match(/data-location="([^"]+)"/i) ||
-                   html.match(/<span[^>]*class="[^"]*main-info__title-minor[^"]*"[^>]*>([^<]+)/i);
-  if (locMatch) data.localizacao = locMatch[1].trim();
-  
-  // Tipo de negócio
-  if (url.includes('/arrendar/') || url.includes('/alugar/') || html.includes('arrendamento')) {
-    data.tipo_negocio = 'Arrendamento';
-  } else {
-    data.tipo_negocio = 'Venda';
-  }
-  
-  // Tipo de imóvel
-  if (html.match(/moradia|vivenda|casa/i)) data.tipo_imovel = 'Moradia';
-  else if (html.match(/apartamento|andar/i)) data.tipo_imovel = 'Apartamento';
-  else if (html.match(/terreno/i)) data.tipo_imovel = 'Terreno';
-  else if (html.match(/loja|comercial/i)) data.tipo_imovel = 'Loja';
-  
-  return data;
-}
-
-// Extração do Imovirtual
-function extractFromImovirtual(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'Imovirtual' };
-  
-  const titleMatch = html.match(/<h1[^>]*>([^<]+)/i) || html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim().replace(/ \| Imovirtual.*$/i, '');
-  
-  const priceMatch = html.match(/(\d{1,3}(?:\s?\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/\s/g, ''));
-  
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  const roomsMatch = html.match(/(\d+)\s*quarto/i);
-  if (roomsMatch) data.quartos = parseInt(roomsMatch[1]);
-  
-  const bathMatch = html.match(/(\d+)\s*(?:casa[s]?\s*de\s*banho|wc)/i);
-  if (bathMatch) data.casas_banho = parseInt(bathMatch[1]);
-  
-  data.tipo_negocio = url.includes('/arrendar') ? 'Arrendamento' : 'Venda';
-  
-  return data;
-}
-
-// Extração do Casa Sapo
-function extractFromCasaSapo(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'Casa Sapo' };
-  
-  const titleMatch = html.match(/<h1[^>]*>([^<]+)/i) || html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim();
-  
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  data.tipo_negocio = url.includes('/alugar') || url.includes('/arrendar') ? 'Arrendamento' : 'Venda';
-  
-  return data;
-}
-
-// Extração do Supercasa
-function extractFromSupercasa(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'Supercasa' };
-  
-  const titleMatch = html.match(/<h1[^>]*>([^<]+)/i) || html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim();
-  
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  data.tipo_negocio = url.includes('/arrendar') ? 'Arrendamento' : 'Venda';
-  
-  return data;
-}
-
-// Extração do Remax
-function extractFromRemax(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'RE/MAX' };
-  
-  const titleMatch = html.match(/<h1[^>]*>([^<]+)/i) || html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim();
-  
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  return data;
-}
-
-// Extração da ERA
-function extractFromEra(html: string, url: string): ExtractedData {
-  const data: ExtractedData = { fonte: 'ERA' };
-  
-  const titleMatch = html.match(/<h1[^>]*>([^<]+)/i) || html.match(/<title>([^<]+)/i);
-  if (titleMatch) data.titulo = titleMatch[1].trim();
-  
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  return data;
-}
-
-// Extração genérica usando meta tags e Open Graph
-function extractGeneric(html: string, url: string): ExtractedData {
-  const data: ExtractedData = {};
-  
-  // Open Graph title
-  const ogTitleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i) ||
-                       html.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:title"/i);
-  if (ogTitleMatch) data.titulo = ogTitleMatch[1].trim();
-  else {
-    const titleMatch = html.match(/<title>([^<]+)/i);
-    if (titleMatch) data.titulo = titleMatch[1].trim();
-  }
-  
-  // Tentar extrair preço
-  const priceMatch = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*€/);
-  if (priceMatch) data.preco = parseInt(priceMatch[1].replace(/[.,]/g, ''));
-  
-  // Tipologia
-  const typoMatch = html.match(/\b(T\d+)\b/i);
-  if (typoMatch) data.tipologia = typoMatch[1].toUpperCase();
-  
-  // Área
-  const areaMatch = html.match(/(\d+)\s*m²/);
-  if (areaMatch) data.area_util = parseInt(areaMatch[1]);
-  
-  // Quartos
-  const roomsMatch = html.match(/(\d+)\s*quarto/i);
-  if (roomsMatch) data.quartos = parseInt(roomsMatch[1]);
-  
-  // Localização via Open Graph
-  const locMatch = html.match(/<meta[^>]*property="og:locality"[^>]*content="([^"]+)"/i);
-  if (locMatch) data.localizacao = locMatch[1].trim();
-  
-  // Detectar fonte pelo domínio
-  try {
-    const domain = new URL(url).hostname.replace('www.', '');
-    data.fonte = domain.charAt(0).toUpperCase() + domain.slice(1).split('.')[0];
-  } catch {}
-  
-  return data;
-}
-
 export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropertyModalProps) {
   const { addToCompare, canAddMore } = useCompare();
   const [url, setUrl] = useState("");
@@ -312,9 +68,23 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
     setError("");
 
     try {
-      const data = await extractPropertyData(url);
-      
-      if (data) {
+      // Usar a API server-side para fazer o scraping (evita CORS)
+      const response = await fetch("/api/scrape-property", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao analisar o link");
+      }
+
+      if (result.success && result.data) {
+        const data: ExtractedData = result.data;
         setFormData({
           titulo: data.titulo || "",
           preco: data.preco?.toString() || "",
@@ -332,8 +102,10 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
         setError("Não foi possível extrair os dados automaticamente. Preencha manualmente.");
         setExtracted(true);
       }
-    } catch (err) {
-      setError("Erro ao analisar o link. Preencha os dados manualmente.");
+    } catch (err: unknown) {
+      console.error("Erro ao extrair dados:", err);
+      const message = err instanceof Error ? err.message : "Erro ao analisar o link";
+      setError(`${message}. Preencha os dados manualmente.`);
       setExtracted(true);
     } finally {
       setExtracting(false);
@@ -462,6 +234,8 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
           <span className="rounded bg-[#2A2A2E] px-2 py-0.5">Supercasa</span>
           <span className="rounded bg-[#2A2A2E] px-2 py-0.5">RE/MAX</span>
           <span className="rounded bg-[#2A2A2E] px-2 py-0.5">ERA</span>
+          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">C21</span>
+          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">KW</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
