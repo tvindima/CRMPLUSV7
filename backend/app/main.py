@@ -85,10 +85,12 @@ DEFAULT_ALLOWED_ORIGINS = [
     "https://crmplusv7-mobile-picdp19if-toinos-projects.vercel.app",
     "https://crmplusv7-mobile-bapejk48k-toinos-projects.vercel.app",
     "https://crmplusv7-mobile-fzh70hl4x-toinos-projects.vercel.app",
+    # Backoffice / futuros domínios
+    "https://crmplusv7.vercel.app",
 ]
 
 if CORS_ORIGINS_ENV == "*":
-    # Permitir todas origens (só usar em desenvolvimento)
+    # Permitir todas origens (para evitar bloqueios de CORS em produção; tokens são Bearer)
     ALLOWED_ORIGINS = ["*"]
     ALLOW_CREDENTIALS = False  # Obrigatório com "*"
 elif CORS_ORIGINS_ENV:
@@ -101,7 +103,7 @@ else:
     ALLOW_CREDENTIALS = True
 
 # Regex para aceitar todos deployments Vercel (previews + produção) ou override via env
-ALLOW_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+ALLOW_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app|https://.*")
 
 app.add_middleware(
     CORSMiddleware,

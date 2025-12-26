@@ -267,10 +267,43 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     if (!photos || photos.length === 0) return;
     const uploaded: any[] = [];
     let order = 0;
+
+    const toBase64IfNeeded = async (uri: string) => {
+      // Já é URL do Cloudinary ou http -> não precisamos de base64
+      if (uri.startsWith('http')) {
+        return { base64: null, mime: 'image/jpeg' };
+      }
+      // data URI
+      if (uri.startsWith('data:')) {
+        const [meta, b64] = uri.split(';base64,');
+        const mime = meta.replace('data:', '') || 'image/jpeg';
+        return { base64: b64, mime };
+      }
+
+      // blob:/file: - converter para base64
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const mime = blob.type || 'image/jpeg';
+
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          const clean = res.substring(res.indexOf(',') + 1);
+          resolve(clean);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      return { base64, mime };
+    };
+
     for (const uri of photos) {
       try {
         const name = `preang-foto-${Date.now()}-${order}.jpg`;
-        const url = await cloudinaryService.uploadFile(uri, name, 'image/jpeg');
+        const { base64, mime } = await toBase64IfNeeded(uri);
+        const url = await cloudinaryService.uploadFile(uri, name, mime, base64 || undefined);
         uploaded.push({
           url,
           caption: null,

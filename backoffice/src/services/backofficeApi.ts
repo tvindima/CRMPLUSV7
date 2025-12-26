@@ -123,6 +123,11 @@ export async function getPreAngariacao(id: number): Promise<PreAngariacaoDetail>
   return request(`/pre-angariacoes/${id}`, undefined, true);
 }
 
+export async function cancelPreAngariacao(id: number): Promise<{ message: string }> {
+  // Usa DELETE que marca como cancelado no backend
+  return request(`/pre-angariacoes/${id}`, { method: 'DELETE' }, true);
+}
+
 export async function getBackofficeProperty(id: number): Promise<BackofficeProperty> {
   return request(`/properties/${id}`);
 }

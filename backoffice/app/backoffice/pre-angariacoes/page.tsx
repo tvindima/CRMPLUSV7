@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "../../../backoffice/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
-import { getPreAngariacoes, type PreAngariacaoListItem } from "../../../src/services/backofficeApi";
+import { getPreAngariacoes, cancelPreAngariacao, type PreAngariacaoListItem } from "../../../src/services/backofficeApi";
+import { XCircleIcon } from "@heroicons/react/24/outline";
 
 function PreAngariacoesInner() {
   const { push } = useToast();
@@ -71,43 +72,65 @@ function PreAngariacoesInner() {
         ) : items.length === 0 ? (
           <div className="p-6 text-sm text-[#C5C5C5]">Nenhuma pré-angariação encontrada.</div>
         ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              role="button"
-              onClick={() => router.push(`/backoffice/pre-angariacoes/${item.id}`)}
-              className="grid cursor-pointer grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.8fr] gap-3 border-b border-[#1F1F22] px-4 py-3 text-sm text-white transition hover:bg-[#151518] md:grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.7fr_0.8fr]"
-            >
-              <div>
-                <div className="font-semibold">{item.proprietario_nome}</div>
-                <div className="text-xs text-[#C5C5C5]">{item.referencia_interna || `PA-${item.id}`}</div>
-              </div>
-              <div className="text-xs text-[#C5C5C5] md:text-sm">
-                {item.agent_name || `Agente #${item.agent_id}`}
-              </div>
-              <div className="text-[#C5C5C5] text-xs md:text-sm" title={item.morada || undefined}>
-                {item.morada || '—'}
-              </div>
-              <div className="text-xs font-semibold uppercase text-[#E10600]">
-                {item.status}
-              </div>
-              <div className="hidden text-xs text-[#C5C5C5] md:block">
-                {new Date(item.created_at).toLocaleDateString('pt-PT')}
-              </div>
-              <div className="text-xs text-[#C5C5C5]">
-                <div className="h-2 w-full rounded-full bg-[#1F1F22]">
-                  <div
-                    className="h-2 rounded-full bg-[#E10600]"
-                    style={{ width: `${item.progresso}%` }}
-                  />
+          items.map((item) => {
+            const handleCancel = async (e: React.MouseEvent) => {
+              e.stopPropagation();
+              try {
+                await cancelPreAngariacao(item.id);
+                setItems((prev) => prev.filter((p) => p.id !== item.id));
+                push("Pré-angariação cancelada.", "success");
+              } catch (error: any) {
+                console.error("Erro ao cancelar:", error);
+                push("Erro ao cancelar pré-angariação", "error");
+              }
+            };
+
+            return (
+              <div
+                key={item.id}
+                role="button"
+                onClick={() => router.push(`/backoffice/pre-angariacoes/${item.id}`)}
+                className="relative grid cursor-pointer grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.8fr] gap-3 border-b border-[#1F1F22] px-4 py-3 text-sm text-white transition hover:bg-[#151518] md:grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.7fr_0.8fr]"
+              >
+                <div>
+                  <div className="font-semibold">{item.proprietario_nome}</div>
+                  <div className="text-xs text-[#C5C5C5]">{item.referencia_interna || `PA-${item.id}`}</div>
                 </div>
-                <span className="text-[11px]">{item.progresso}%</span>
+                <div className="text-xs text-[#C5C5C5] md:text-sm">
+                  {item.agent_name || `Agente #${item.agent_id}`}
+                </div>
+                <div className="text-[#C5C5C5] text-xs md:text-sm" title={item.morada || undefined}>
+                  {item.morada || '—'}
+                </div>
+                <div className="text-xs font-semibold uppercase text-[#E10600]">
+                  {item.status}
+                </div>
+                <div className="hidden text-xs text-[#C5C5C5] md:block">
+                  {new Date(item.created_at).toLocaleDateString('pt-PT')}
+                </div>
+                <div className="text-xs text-[#C5C5C5]">
+                  <div className="h-2 w-full rounded-full bg-[#1F1F22]">
+                    <div
+                      className="h-2 rounded-full bg-[#E10600]"
+                      style={{ width: `${item.progresso}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px]">{item.progresso}%</span>
+                </div>
+                <div className="hidden text-xs text-[#C5C5C5] md:block">
+                  {new Date(item.created_at).toLocaleDateString('pt-PT')}
+                </div>
+
+                <button
+                  onClick={handleCancel}
+                  className="absolute right-3 top-3 rounded-full p-1.5 text-[#ef4444] hover:bg-[#1f1f22]"
+                  title="Cancelar/ocultar para o agente"
+                >
+                  <XCircleIcon className="h-5 w-5" />
+                </button>
               </div>
-              <div className="hidden text-xs text-[#C5C5C5] md:block">
-                {new Date(item.created_at).toLocaleDateString('pt-PT')}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </BackofficeLayout>

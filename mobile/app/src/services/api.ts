@@ -293,6 +293,44 @@ class ApiService {
     }
   }
 
+  /**
+   * Download de ficheiros (blob) - ex.: PDF
+   */
+  async download(endpoint: string, options: RequestInit = {}): Promise<Blob> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string>),
+    };
+
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    const doFetch = async (isRetry: boolean = false): Promise<Blob> => {
+      const response = await fetch(url, { ...options, headers });
+
+      if (response.status === 401 && !isRetry) {
+        const newToken = await this.refreshAccessToken();
+        headers['Authorization'] = `Bearer ${newToken}`;
+        return doFetch(true);
+      }
+
+      if (!response.ok) {
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw this.handleErrorResponse(response.status, errorData);
+      }
+
+      return await response.blob();
+    };
+
+    return doFetch(false);
+  }
+
   // Mock responses para desenvolvimento quando backend estiver com problemas
   private getMockedResponse<T>(endpoint: string): T {
     console.log(`[API MOCK] Gerando resposta mockada para: ${endpoint}`);

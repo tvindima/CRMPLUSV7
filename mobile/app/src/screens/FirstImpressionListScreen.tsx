@@ -12,12 +12,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { firstImpressionService, FirstImpressionListItem } from '../services/firstImpressionService';
+import { preAngariacaoService } from '../services/preAngariacaoService';
 
 const STATUS_COLORS = {
   draft: '#6b7280',
   signed: '#3b82f6',
   completed: '#10b981',
   cancelled: '#ef4444',
+  cancelado: '#ef4444',
 };
 
 const STATUS_LABELS = {
@@ -25,6 +27,7 @@ const STATUS_LABELS = {
   signed: 'Assinado',
   completed: 'Concluído',
   cancelled: 'Cancelado',
+  cancelado: 'Cancelado',
 };
 
 export default function FirstImpressionListScreen() {
@@ -42,7 +45,7 @@ export default function FirstImpressionListScreen() {
       
       const filters = filter !== 'all' ? { status: filter } : undefined;
       const data = await firstImpressionService.list(filters);
-      const visible = data.filter((item) => item.status !== 'cancelled');
+      const visible = data.filter((item) => item.status !== 'cancelled' && item.status !== 'cancelado');
       setImpressions(visible);
     } catch (error: any) {
       console.error('Erro ao carregar First Impressions:', error);
@@ -82,15 +85,15 @@ export default function FirstImpressionListScreen() {
               try {
                 const pre = await preAngariacaoService.getByFirstImpression(id);
                 if (pre?.id) {
-                    await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
+                  await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
                 }
               } catch (e) {
                 // se não existir, seguir
               }
               // Marcar 1ª impressão como cancelada em vez de apagar
               await firstImpressionService.update(id, { status: 'cancelled' } as any);
+              setImpressions((prev) => prev.filter((it) => it.id !== id));
               Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
-              loadImpressions(false);
             } catch (error) {
               console.error('Erro ao apagar:', error);
               Alert.alert('Erro', 'Não foi possível apagar. Tente novamente.');

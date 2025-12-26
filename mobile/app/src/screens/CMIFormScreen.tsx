@@ -28,6 +28,8 @@ import { cloudinaryService } from '../services/cloudinary';
 import { preAngariacaoService } from '../services/preAngariacaoService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/config';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 interface Props {
   navigation: any;
@@ -73,6 +75,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [cmi, setCmi] = useState<CMI | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // === AGENTE RESPONSÁVEL ===
   const [agenteNome, setAgenteNome] = useState('');
@@ -352,6 +355,46 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       Alert.alert('Erro', error.message || 'Erro ao guardar');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    if (!cmi?.id) {
+      Alert.alert('Aviso', 'Guarde o contrato antes de gerar o PDF.');
+      return;
+    }
+    setPdfLoading(true);
+    try {
+      const blob = await cmiService.getPdf(cmi.id);
+      if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } else {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const res = reader.result as string;
+            resolve(res.substring(res.indexOf(',') + 1));
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob as any);
+        });
+        const fileUri = `${FileSystem.cacheDirectory}cmi-${cmi.numero_contrato || cmi.id}.pdf`;
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf' });
+        } else {
+          Alert.alert('PDF gerado', 'PDF disponível em cache do aplicativo.');
+        }
+      }
+    } catch (error: any) {
+      console.error('[PDF] ❌ Erro:', error);
+      Alert.alert('Erro', error?.detail || error?.message || 'Não foi possível gerar o PDF.');
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -984,11 +1027,18 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
         {/* BOTÃO GERAR PDF */}
         <TouchableOpacity
-          style={styles.pdfButton}
-          onPress={() => Alert.alert('Em breve', 'Geração de PDF será implementada')}
+          style={[styles.pdfButton, pdfLoading && styles.saveButtonDisabled]}
+          onPress={handleGeneratePdf}
+          disabled={pdfLoading}
         >
-          <Ionicons name="document" size={20} color="#fff" />
-          <Text style={styles.pdfButtonText}>Gerar PDF</Text>
+          {pdfLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="document" size={20} color="#fff" />
+              <Text style={styles.pdfButtonText}>Gerar PDF</Text>
+            </>
+          )}
         </TouchableOpacity>
 
       </ScrollView>

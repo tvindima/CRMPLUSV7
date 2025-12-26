@@ -188,10 +188,28 @@ class CloudinaryService {
 
     console.log('[Cloudinary] 📤 Uploading file:', fileName, mimeType);
 
+    // Web: blob:/file: URLs precisam ser convertidos para base64
+    let dataUri = base64Data;
+    if (!dataUri && fileUri && typeof window !== 'undefined' && fileUri.startsWith('blob:')) {
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+      const b64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.substring(res.indexOf(',') + 1));
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      dataUri = b64;
+      mimeType = blob.type || mimeType;
+    }
+
     const formData = new FormData();
-    if (base64Data) {
+    if (dataUri) {
       // Enviar como data URI (necessário para blob: URLs no web)
-      formData.append('file', `data:${mimeType || 'application/octet-stream'};base64,${base64Data}`);
+      formData.append('file', `data:${mimeType || 'application/octet-stream'};base64,${dataUri}`);
     } else {
       formData.append('file', {
         uri: fileUri,

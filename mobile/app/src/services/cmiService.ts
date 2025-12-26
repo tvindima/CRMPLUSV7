@@ -229,6 +229,15 @@ class CMIService {
   }> {
     return apiService.get('/cmi/stats');
   }
+
+  /**
+   * Download do PDF do CMI
+   */
+  async getPdf(id: number): Promise<Blob> {
+    return apiService.download(`/cmi/${id}/pdf`, {
+      method: 'GET',
+    });
+  }
 }
 
 export const cmiService = new CMIService();
