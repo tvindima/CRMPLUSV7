@@ -16,12 +16,7 @@ export interface CompareProperty {
   imagem?: string;
   tipo_negocio?: string;
   tipo_imovel?: string;
-  ano_construcao?: number;
   certificado_energetico?: string;
-  garagem?: boolean;
-  varanda?: boolean;
-  piscina?: boolean;
-  jardim?: boolean;
 }
 
 interface CompareContextType {
@@ -32,6 +27,7 @@ interface CompareContextType {
   isInCompare: (id: number) => boolean;
   canAddMore: boolean;
 }
+
 
 const CompareContext = createContext<CompareContextType | undefined>(undefined);
 

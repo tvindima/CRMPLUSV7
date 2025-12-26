@@ -299,12 +299,7 @@ export default async function ImovelDetail({ params }: Props) {
                 imagem: images[0],
                 tipo_negocio: property.business_type ?? undefined,
                 tipo_imovel: property.property_type ?? undefined,
-                ano_construcao: property.year_built ?? undefined,
                 certificado_energetico: property.energy_certificate ?? undefined,
-                garagem: property.has_garage ?? undefined,
-                varanda: property.has_balcony ?? undefined,
-                piscina: property.has_pool ?? undefined,
-                jardim: property.has_garden ?? undefined,
               }}
               price={property.price || 0}
             />

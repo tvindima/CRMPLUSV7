@@ -140,12 +140,7 @@ export default function CompararPage() {
             <CompareRow label="Localização" values={compareList.map((p) => p.localizacao)} />
             <CompareRow label="Tipo de Negócio" values={compareList.map((p) => p.tipo_negocio)} />
             <CompareRow label="Tipo de Imóvel" values={compareList.map((p) => p.tipo_imovel)} />
-            <CompareRow label="Ano Construção" values={compareList.map((p) => p.ano_construcao)} />
             <CompareRow label="Cert. Energético" values={compareList.map((p) => p.certificado_energetico)} />
-            <CompareRow label="Garagem" values={compareList.map((p) => p.garagem)} />
-            <CompareRow label="Varanda" values={compareList.map((p) => p.varanda)} />
-            <CompareRow label="Piscina" values={compareList.map((p) => p.piscina)} />
-            <CompareRow label="Jardim" values={compareList.map((p) => p.jardim)} />
             
             {/* Ações */}
             <tr>
