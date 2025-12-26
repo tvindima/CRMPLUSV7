@@ -1111,7 +1111,9 @@ def processar_documento_ocr(
     if full_text:  # Só extrair se tivermos texto
         logger.info(f"[OCR] Extraindo dados do documento tipo: {doc_tipo}")
         
-        # CARTÃO DE CIDADÃO
+        # CARTÃO DE CIDADÃO - DADOS DO CLIENTE (quem assina o CMI)
+        # IMPORTANTE: O NIF do CC é de quem ASSINA o contrato
+        # O NIF da Caderneta pode ser de outra pessoa (ex: falecido, empresa)
         if doc_tipo in ("cc_frente", "cc_verso"):
             parsed = extrair_cc(full_text)
             logger.info(f"[OCR CC] Resultado: {parsed}")
@@ -1131,13 +1133,12 @@ def processar_documento_ocr(
                 dados_para_mobile["sexo"] = parsed["sexo"]
             if parsed.get("nacionalidade"):
                 dados_para_mobile["nacionalidade"] = parsed["nacionalidade"]
-            # NIF do CC: usar se não houver NIF da Caderneta
+            # NIF do CC: É O NIF DO CLIENTE (quem assina o CMI)
+            # TEM PRIORIDADE sobre Caderneta porque é quem vai assinar!
             if parsed.get("nif"):
-                # Só preencher NIF se ainda não tiver (Caderneta tem prioridade)
-                if not item.cliente_nif:
-                    updates["cliente_nif"] = parsed["nif"]
+                updates["cliente_nif"] = parsed["nif"]
                 dados_para_mobile["nif"] = parsed["nif"]
-                logger.info(f"[OCR CC] NIF extraído: {parsed['nif']}")
+                logger.info(f"[OCR CC] ✅ NIF do CLIENTE (CC): {parsed['nif']}")
         
         # CADERNETA PREDIAL (FONTE DO NIF!)
         elif doc_tipo == "caderneta_predial":
@@ -1187,16 +1188,21 @@ def processar_documento_ocr(
                 if not item.valor_pretendido:
                     updates["valor_pretendido"] = Decimal(str(parsed["valor_patrimonial"]))
             
-            # TITULAR E NIF (FONTE PRIMÁRIA!)
+            # TITULAR E NIF DA CADERNETA (PROPRIETÁRIO REGISTADO NA MATRIZ)
+            # ATENÇÃO: Este NIF pode ser diferente do cliente que assina!
+            # Ex: Imóvel em nome de falecido, cabeça de casal assina como herdeiro
+            # Ex: Imóvel de empresa, representante legal assina
             if parsed.get("titular_nif"):
-                updates["cliente_nif"] = parsed["titular_nif"]
-                dados_para_mobile["nif"] = parsed["titular_nif"]
-                logger.info(f"[OCR] ✅ NIF extraído da Caderneta: {parsed['titular_nif']}")
+                # Enviar como "proprietario_nif" para o mobile distinguir
+                dados_para_mobile["proprietario_nif"] = parsed["titular_nif"]
+                # NÃO atualizar cliente_nif! Esse vem do CC de quem assina
+                logger.info(f"[OCR] ℹ️ NIF PROPRIETÁRIO (Caderneta): {parsed['titular_nif']} - Não é necessariamente o cliente!")
             if parsed.get("titular_nome"):
-                # Só usar se não tiver nome do CC (CC é mais fiável para nome)
+                dados_para_mobile["proprietario_nome"] = parsed["titular_nome"]
+                # Só usar para cliente se não tiver nome do CC (fallback)
                 if not item.cliente_nome:
                     updates["cliente_nome"] = parsed["titular_nome"]
-                dados_para_mobile["titular_nome"] = parsed["titular_nome"]
+                    logger.info(f"[OCR] Nome do proprietário usado como fallback: {parsed['titular_nome']}")
         
         # CERTIDÃO PERMANENTE (PREVALECE SOBRE AT!)
         elif doc_tipo == "certidao_permanente":
