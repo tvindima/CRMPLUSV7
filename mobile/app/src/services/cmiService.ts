@@ -36,6 +36,8 @@ export interface CMI {
   imovel_distrito?: string;
   imovel_artigo_matricial?: string;
   imovel_fraccao?: string;
+  imovel_conservatoria?: string;
+  imovel_numero_descricao?: string;
   imovel_area_bruta?: number;
   imovel_area_util?: number;
   imovel_estado_conservacao?: string;
@@ -115,6 +117,8 @@ export interface UpdateCMI {
   imovel_freguesia?: string;
   imovel_concelho?: string;
   imovel_artigo_matricial?: string;
+  imovel_conservatoria?: string;
+  imovel_numero_descricao?: string;
   imovel_area_bruta?: number;
   imovel_area_util?: number;
   imovel_estado_conservacao?: string;

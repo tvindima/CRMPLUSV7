@@ -148,9 +148,12 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [imovelFreguesia, setImovelFreguesia] = useState('');
   const [imovelConcelho, setImovelConcelho] = useState('');
   const [imovelArtigoMatricial, setImovelArtigoMatricial] = useState('');
+  const [imovelConservatoria, setImovelConservatoria] = useState('');
+  const [imovelNumeroDescricao, setImovelNumeroDescricao] = useState('');
   const [imovelAreaBruta, setImovelAreaBruta] = useState('');
   const [imovelAreaUtil, setImovelAreaUtil] = useState('');
   const [imovelEstadoConservacao, setImovelEstadoConservacao] = useState('');
+  const [imovelCertificadoEnergetico, setImovelCertificadoEnergetico] = useState('');
 
   // === SECÇÃO 3: CONDIÇÕES ===
   const [tipoContrato, setTipoContrato] = useState('exclusivo');
@@ -345,9 +348,12 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setImovelFreguesia(data.imovel_freguesia || '');
     setImovelConcelho(data.imovel_concelho || '');
     setImovelArtigoMatricial(data.imovel_artigo_matricial || '');
+    setImovelConservatoria(data.imovel_conservatoria || '');
+    setImovelNumeroDescricao(data.imovel_numero_descricao || '');
     setImovelAreaBruta(data.imovel_area_bruta?.toString() || '');
     setImovelAreaUtil(data.imovel_area_util?.toString() || '');
     setImovelEstadoConservacao(data.imovel_estado_conservacao || '');
+    setImovelCertificadoEnergetico(data.imovel_certificado_energetico || '');
 
     // Condições
     setTipoContrato(data.tipo_contrato || 'exclusivo');
@@ -448,9 +454,12 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         imovel_freguesia: imovelFreguesia || undefined,
         imovel_concelho: imovelConcelho || undefined,
         imovel_artigo_matricial: imovelArtigoMatricial || undefined,
+        imovel_conservatoria: imovelConservatoria || undefined,
+        imovel_numero_descricao: imovelNumeroDescricao || undefined,
         imovel_area_bruta: imovelAreaBruta ? parseFloat(imovelAreaBruta) : undefined,
         imovel_area_util: imovelAreaUtil ? parseFloat(imovelAreaUtil) : undefined,
         imovel_estado_conservacao: imovelEstadoConservacao || undefined,
+        imovel_certificado_energetico: imovelCertificadoEnergetico || undefined,
         tipo_contrato: tipoContrato,
         tipo_negocio: tipoNegocio,
         valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
@@ -700,12 +709,16 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             setImovelArtigoMatricial(dados.artigo_matricial);
             camposPreenchidos++;
           }
-          if (dados.area_bruta) {
-            setImovelAreaBruta(dados.area_bruta);
+          if (dados.conservatoria) {
+            setImovelConservatoria(dados.conservatoria);
             camposPreenchidos++;
           }
-          if (dados.area_util) {
-            setImovelAreaUtil(dados.area_util);
+          if (dados.numero_descricao) {
+            setImovelNumeroDescricao(dados.numero_descricao);
+            camposPreenchidos++;
+          }
+          if (dados.area_bruta) {
+            setImovelAreaBruta(dados.area_bruta.toString());
             camposPreenchidos++;
           }
           if (dados.morada) {
@@ -716,8 +729,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             setImovelFreguesia(dados.freguesia);
             camposPreenchidos++;
           }
-          if (dados.concelho) {
-            setImovelConcelho(dados.concelho);
+          if (dados.tipo_imovel) {
+            setImovelTipo(dados.tipo_imovel);
             camposPreenchidos++;
           }
         } else if (tipoDocumento === 'certificado_energetico') {

@@ -965,7 +965,7 @@ def extrair_cc(text: str) -> dict:
     Extrator dedicado para Cartão de Cidadão Português.
     
     REGRAS:
-    - Nome legal vem SEMPRE da MRZ (linha com <<)
+    - Nome: Preferir APELIDO + NOME da frente (completo), usar MRZ como fallback
     - Datas vêm da MRZ (linha numérica com 6 dígitos + M/F)
     - Número documento: 8-9 dígitos + ZX/ZY sufixo
     - NIF: Extrair se visível (campo "TAX No" ou "FISCAL")
@@ -973,7 +973,7 @@ def extrair_cc(text: str) -> dict:
     MRZ do CC Português:
     - Linha 1: I<PRT092207960<ZX16<<<<<<<<<< (tipo + país + nº doc)
     - Linha 2: 6104243F3011249PRT<<<<<<<<<<<6 (nascimento + sexo + validade + país)
-    - Linha 3: SOARES<VINDIMA<FERREIRA<<ROSA< (apelidos<<nomes)
+    - Linha 3: SOARES<VINDIMA<FERREIRA<<ROSA< (apelidos<<nomes) - PODE ESTAR TRUNCADO!
     """
     logger.info("[OCR CC] Iniciando extração robusta")
     
@@ -990,20 +990,54 @@ def extrair_cc(text: str) -> dict:
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     text_clean = text.replace(" ", "")
     
-    # ===== 1. NOME VIA MRZ =====
-    # Linha com APELIDO<<NOME (só letras e <)
-    for line in lines:
-        clean_line = line.replace(" ", "")
-        # MRZ de nome: só letras maiúsculas e <, tem <<
-        if "<<" in clean_line and re.match(r'^[A-Z<]+$', clean_line):
-            parts = clean_line.split("<<")
-            if len(parts) >= 2:
-                apelidos = parts[0].replace("<", " ").strip()
-                nomes = parts[1].replace("<", " ").strip()
-                if apelidos and nomes and len(apelidos) > 2:
-                    result["nome_completo"] = f"{nomes} {apelidos}".title()
-                    logger.info(f"[OCR CC] ✅ Nome MRZ: {result['nome_completo']}")
-                    break
+    # ===== 1. NOME - PREFERIR DA FRENTE DO CC (COMPLETO) =====
+    # Na frente do CC temos campos separados:
+    # "APELIDO(S) / SURNAME" seguido de "DE SOUSA AMADO ROSA"
+    # "NOME(S) / GIVEN NAME" seguido de "VITOR HUGO"
+    
+    apelido_frente = None
+    nome_frente = None
+    
+    # Procurar APELIDO
+    for i, line in enumerate(lines):
+        if re.search(r'APELIDO|SURNAME', line, re.IGNORECASE):
+            # O valor está na próxima linha ou após o label
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                # Verificar se não é outro label
+                if next_line and not re.search(r'NOME|NAME|SEXO|ALTURA|NACIONALIDADE', next_line, re.IGNORECASE):
+                    apelido_frente = next_line
+                    logger.info(f"[OCR CC] Apelido frente: {apelido_frente}")
+    
+    # Procurar NOME (GIVEN NAME)
+    for i, line in enumerate(lines):
+        if re.search(r'NOME\(?S?\)?.*GIVEN|GIVEN\s*NAME', line, re.IGNORECASE):
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                if next_line and not re.search(r'SEXO|ALTURA|HEIGHT|DATA|DOCUMENT', next_line, re.IGNORECASE):
+                    nome_frente = next_line
+                    logger.info(f"[OCR CC] Nome frente: {nome_frente}")
+    
+    # Se temos ambos da frente, usar (é o nome completo)
+    if apelido_frente and nome_frente:
+        result["nome_completo"] = f"{nome_frente} {apelido_frente}".title()
+        logger.info(f"[OCR CC] ✅ Nome completo (frente): {result['nome_completo']}")
+    
+    # ===== FALLBACK: NOME VIA MRZ =====
+    if not result["nome_completo"]:
+        # Linha com APELIDO<<NOME (só letras e <)
+        for line in lines:
+            clean_line = line.replace(" ", "")
+            # MRZ de nome: só letras maiúsculas e <, tem <<
+            if "<<" in clean_line and re.match(r'^[A-Z<]+$', clean_line):
+                parts = clean_line.split("<<")
+                if len(parts) >= 2:
+                    apelidos = parts[0].replace("<", " ").strip()
+                    nomes = parts[1].replace("<", " ").strip()
+                    if apelidos and nomes and len(apelidos) > 2:
+                        result["nome_completo"] = f"{nomes} {apelidos}".title()
+                        logger.info(f"[OCR CC] ✅ Nome MRZ (pode estar truncado): {result['nome_completo']}")
+                        break
     
     # ===== 2. DADOS DA MRZ (linha com data nascimento) =====
     # Procurar linha que tem padrão: AAMMDD + M/F + AAMMDD (nascimento + sexo + validade)
@@ -1134,20 +1168,34 @@ def extrair_caderneta(text: str) -> dict:
     }
     
     text_upper = text.upper()
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    
+    # ===== DETECTAR SE É RÚSTICA OU URBANA =====
+    is_rustica = "RÚSTICA" in text_upper or "RUSTICA" in text_upper
+    
+    # Natureza: URBANO ou RÚSTICO  
+    if is_rustica:
+        result["natureza"] = "RÚSTICO"
+        result["tipo_imovel"] = "Terreno"  # Caderneta rústica = Terreno
+        logger.info("[OCR CADERNETA] Detectada Caderneta RÚSTICA -> tipo=Terreno")
+    elif "URBANO" in text_upper or "URBANA" in text_upper:
+        result["natureza"] = "URBANO"
     
     # ===== BLOCO: IDENTIFICAÇÃO DO PRÉDIO =====
     
-    # Artigo matricial
-    m = re.search(r'ARTIGO\s+MATR[IÍ]CIAL[:\s]+(\d+)', text, re.IGNORECASE)
-    if m:
-        result["artigo_matricial"] = m.group(1)
-        logger.info(f"[OCR CADERNETA] Artigo: {result['artigo_matricial']}")
-    
-    # Natureza: URBANO ou RÚSTICO
-    if "URBANO" in text_upper:
-        result["natureza"] = "URBANO"
-    elif "RÚSTICO" in text_upper:
-        result["natureza"] = "RÚSTICO"
+    # Artigo matricial - vários formatos
+    # Formato: "ARTIGO MATRICIAL Nº: 96" ou "ARTIGO MATRICIAL N°: 96 ARV"
+    artigo_patterns = [
+        r'ARTIGO\s+MATR[IÍ]CIAL\s*N[ºo°]?\s*[:\s]*(\d+)',
+        r'ARTIGO\s*[:\s]+(\d+)',
+        r'MATRIZ\s*n[ºo°]?\s*[:\s]*(\d+)',
+    ]
+    for pattern in artigo_patterns:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            result["artigo_matricial"] = m.group(1)
+            logger.info(f"[OCR CADERNETA] Artigo: {result['artigo_matricial']}")
+            break
     
     # ===== DETECÇÃO DO TIPO DE IMÓVEL =====
     # Baseado em padrões típicos da Caderneta Predial
@@ -1203,16 +1251,35 @@ def extrair_caderneta(text: str) -> dict:
     logger.info(f"[OCR CADERNETA] Tipo imóvel detectado: {tipo_detectado}")
     
     # Localização: DISTRITO, CONCELHO, FREGUESIA
-    # Formato: "DISTRITO: 10 - LEIRIA" ou "DISTRITO: LEIRIA"
-    for campo, key in [("DISTRITO", "distrito"), ("CONCELHO", "concelho"), ("FREGUESIA", "freguesia")]:
-        m = re.search(rf'{campo}[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s+(?:CONCELHO|FREGUESIA|ARTIGO|$))', text, re.IGNORECASE)
-        if m:
-            result[key] = m.group(1).strip().title()
+    # Formato caderneta rústica: "DISTRITO: 05 - C BRANCO CONCELHO: 02 - CASTELO BRANCO FREGUESIA: 21 - SANTO ANDRE DAS TOJEIRAS"
+    # Formato caderneta urbana: "DISTRITO: 10 - LEIRIA" ou "DISTRITO: LEIRIA"
     
-    # Morada/Rua
-    m = re.search(r'(?:Av\./Rua/Praça|Rua|Estrada)[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)', text, re.IGNORECASE)
+    # Primeiro tentar formato de caderneta rústica (tudo numa linha)
+    m = re.search(r'DISTRITO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*CONCELHO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*FREGUESIA[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)(?:\s+SEC|$)', text, re.IGNORECASE)
     if m:
-        result["morada"] = m.group(1).strip()
+        result["distrito"] = m.group(1).strip().title()
+        result["concelho"] = m.group(2).strip().title()
+        result["freguesia"] = m.group(3).strip().title()
+        logger.info(f"[OCR CADERNETA] Localização (rústica): {result['distrito']}, {result['concelho']}, {result['freguesia']}")
+    else:
+        # Fallback: formato caderneta urbana (campos separados)
+        for campo, key in [("DISTRITO", "distrito"), ("CONCELHO", "concelho"), ("FREGUESIA", "freguesia")]:
+            m = re.search(rf'{campo}[:\s]+(?:\d+\s*-\s*)?([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s+(?:CONCELHO|FREGUESIA|ARTIGO|SEC|$))', text, re.IGNORECASE)
+            if m:
+                result[key] = m.group(1).strip().title()
+    
+    # Nome/Localização do prédio (caderneta rústica)
+    # Formato: "NOME/LOCALIZAÇÃO PRÉDIO" seguido de "NAVEJOLAS"
+    m = re.search(r'NOME/LOCALIZA[ÇC][ÃA]O\s+PR[ÉE]DIO\s*\n?\s*([A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s*\n|ELEMENTOS|$)', text, re.IGNORECASE)
+    if m:
+        result["morada"] = m.group(1).strip().title()
+        logger.info(f"[OCR CADERNETA] Morada (nome prédio): {result['morada']}")
+    
+    # Morada/Rua (fallback para caderneta urbana)
+    if not result["morada"]:
+        m = re.search(r'(?:Av\./Rua/Praça|Rua|Estrada)[:\s]+([^\n]+?)(?:\s+Lugar|\s+Código|$)', text, re.IGNORECASE)
+        if m:
+            result["morada"] = m.group(1).strip()
     
     # Código Postal
     m = re.search(r'C[óo]digo\s+Postal[:\s]+([\d]{4}-[\d]{3})\s+([A-ZÀ-Ú\s]+)', text, re.IGNORECASE)
@@ -1222,6 +1289,29 @@ def extrair_caderneta(text: str) -> dict:
     
     # ===== BLOCO: ÁREAS =====
     
+    # Para cadernetas rústicas: "Área Total (ha): 1,588000" = 1.588 ha = 15880 m²
+    if is_rustica:
+        m = re.search(r'[ÁA]rea\s+Total\s*\(ha\)[:\s]*([\d\.,]+)', text, re.IGNORECASE)
+        if m:
+            val = m.group(1).replace(",", ".")
+            try:
+                area_ha = float(val)
+                result["area_total_terreno"] = area_ha * 10000  # Converter ha para m²
+                logger.info(f"[OCR CADERNETA] Área total terreno: {area_ha} ha = {result['area_total_terreno']} m²")
+            except:
+                pass
+        
+        # Área descoberta (caderneta rústica na certidão)
+        m = re.search(r'[ÁA]REA\s+DESCOBERTA[:\s]*([\d\.,]+)\s*M2', text, re.IGNORECASE)
+        if m and not result["area_total_terreno"]:
+            val = m.group(1).replace(".", "").replace(",", ".")
+            try:
+                result["area_total_terreno"] = float(val)
+                logger.info(f"[OCR CADERNETA] Área descoberta: {result['area_total_terreno']} m²")
+            except:
+                pass
+    
+    # Para cadernetas urbanas
     areas_map = [
         (r'[ÁA]rea\s+total\s+do\s+terreno[:\s]+([\d\.,]+)', "area_total_terreno"),
         (r'[ÁA]rea\s+bruta\s+privativa[:\s]+([\d\.,]+)', "area_bruta_privativa"),
@@ -1229,6 +1319,8 @@ def extrair_caderneta(text: str) -> dict:
         (r'[ÁA]rea\s+bruta\s+dependente[:\s]+([\d\.,]+)', "area_bruta_dependente"),
     ]
     for pattern, key in areas_map:
+        if result.get(key):  # Não sobrescrever se já foi preenchido
+            continue
         m = re.search(pattern, text, re.IGNORECASE)
         if m:
             val = m.group(1).replace(".", "").replace(",", ".")
@@ -1300,29 +1392,63 @@ def extrair_certidao(text: str) -> dict:
         "conservatoria": None,
         "descricao_numero": None,
         "freguesia": None,
+        "natureza": None,  # RÚSTICO/URBANO
         "matriz_numero": None,
         "area_total": None,
+        "morada": None,
         "proprietarios_legais": [],
         "onus": [],
     }
     
-    # Conservatória
-    m = re.search(r'Conservat[óo]ria[^:]*[:\s]+([A-Za-zÀ-ÿ\s]+?)(?:\s+Freguesia|$)', text, re.IGNORECASE)
-    if m:
-        result["conservatoria"] = m.group(1).strip()
+    text_upper = text.upper()
     
-    # Número descrição
-    m = re.search(r'Descri[çc][ãa]o[^:]*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+    # Detectar natureza (RÚSTICO vs URBANO)
+    if "RÚSTICO" in text_upper or "RUSTICO" in text_upper:
+        result["natureza"] = "RÚSTICO"
+        logger.info("[OCR CERTIDÃO] Detectado prédio RÚSTICO")
+    elif "URBANO" in text_upper:
+        result["natureza"] = "URBANO"
+    
+    # Conservatória - formato: "Conservatória do Registo Predial de Castelo Branco"
+    m = re.search(r'Conservat[óo]ria\s+(?:do\s+)?Registo\s+Predial\s+de\s+([A-Za-zÀ-ÿ\s]+?)(?:\s+Freguesia|\s+\d|$)', text, re.IGNORECASE)
+    if m:
+        result["conservatoria"] = m.group(1).strip().title()
+        logger.info(f"[OCR CERTIDÃO] Conservatória: {result['conservatoria']}")
+    
+    # Freguesia - formato: "Freguesia Santo André das Tojeiras" ou no cabeçalho
+    m = re.search(r'Freguesia\s+([A-Za-zÀ-ÿ\s]+?)(?:\s+\d|$)', text, re.IGNORECASE)
+    if m:
+        result["freguesia"] = m.group(1).strip().title()
+        logger.info(f"[OCR CERTIDÃO] Freguesia: {result['freguesia']}")
+    
+    # Número descrição - formato: "3177/20090225"
+    m = re.search(r'(\d{4}/\d{8})', text)
     if m:
         result["descricao_numero"] = m.group(1)
+        logger.info(f"[OCR CERTIDÃO] Descrição: {result['descricao_numero']}")
+    else:
+        # Fallback: "Descrição nº 1234"
+        m = re.search(r'Descri[çc][ãa]o[^:]*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+        if m:
+            result["descricao_numero"] = m.group(1)
     
-    # Matriz
+    # Matriz - formato: "MATRIZ nº: 96"
     m = re.search(r'MATRIZ\s*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
     if m:
         result["matriz_numero"] = m.group(1)
+        logger.info(f"[OCR CERTIDÃO] Matriz: {result['matriz_numero']}")
     
-    # Área total
-    m = re.search(r'[ÁA]REA\s+TOTAL[:\s]+([\d\.,]+)', text, re.IGNORECASE)
+    # Morada/Situado em - formato: "SITUADO EM: Navejolas"
+    m = re.search(r'SITUADO\s+EM[:\s]+([A-Za-zÀ-ÿ\s]+?)(?:\s+ÁREA|\s+\n|$)', text, re.IGNORECASE)
+    if m:
+        result["morada"] = m.group(1).strip().title()
+        logger.info(f"[OCR CERTIDÃO] Morada: {result['morada']}")
+    
+    # Área total - vários formatos
+    m = re.search(r'[ÁA]REA\s+TOTAL[:\s]+([\d\.,]+)\s*M2', text, re.IGNORECASE)
+    if m:
+        val = m.group(1).replace(".", "").replace(",", ".")
+        try:
     if m:
         val = m.group(1).replace(".", "").replace(",", ".")
         try:
@@ -1520,7 +1646,10 @@ def extrair_dados_ocr_standalone(
             dados_para_mobile["codigo_postal"] = dados_extraidos["codigo_postal"]
         if dados_extraidos.get("localidade"):
             dados_para_mobile["localidade"] = dados_extraidos["localidade"]
-        if dados_extraidos.get("area_bruta_privativa"):
+        # Área: preferir area_total_terreno, depois area_bruta_privativa
+        if dados_extraidos.get("area_total_terreno"):
+            dados_para_mobile["area_bruta"] = dados_extraidos["area_total_terreno"]
+        elif dados_extraidos.get("area_bruta_privativa"):
             dados_para_mobile["area_bruta"] = dados_extraidos["area_bruta_privativa"]
         if dados_extraidos.get("area_bruta_dependente"):
             dados_para_mobile["area_dependente"] = dados_extraidos["area_bruta_dependente"]
@@ -1528,10 +1657,31 @@ def extrair_dados_ocr_standalone(
             dados_para_mobile["tipologia"] = dados_extraidos["tipologia"]
         if dados_extraidos.get("tipo_imovel"):
             dados_para_mobile["tipo_imovel"] = dados_extraidos["tipo_imovel"]
+        if dados_extraidos.get("natureza"):
+            dados_para_mobile["natureza"] = dados_extraidos["natureza"]
         if dados_extraidos.get("titular_nif"):
             dados_para_mobile["nif_titular"] = dados_extraidos["titular_nif"]
         if dados_extraidos.get("titular_nome"):
             dados_para_mobile["nome_titular"] = dados_extraidos["titular_nome"]
+    elif doc_tipo == "certidao_permanente":
+        # Certidão Permanente: dados do registo predial
+        if dados_extraidos.get("conservatoria"):
+            dados_para_mobile["conservatoria"] = dados_extraidos["conservatoria"]
+        if dados_extraidos.get("descricao_numero"):
+            dados_para_mobile["numero_descricao"] = dados_extraidos["descricao_numero"]
+        if dados_extraidos.get("freguesia"):
+            dados_para_mobile["freguesia"] = dados_extraidos["freguesia"]
+        if dados_extraidos.get("matriz_numero"):
+            dados_para_mobile["artigo_matricial"] = dados_extraidos["matriz_numero"]
+        if dados_extraidos.get("area_total"):
+            dados_para_mobile["area_bruta"] = dados_extraidos["area_total"]
+        if dados_extraidos.get("morada"):
+            dados_para_mobile["morada"] = dados_extraidos["morada"]
+        if dados_extraidos.get("natureza"):
+            dados_para_mobile["natureza"] = dados_extraidos["natureza"]
+            # Se é RÚSTICO, tipo é Terreno
+            if dados_extraidos["natureza"] == "RÚSTICO":
+                dados_para_mobile["tipo_imovel"] = "Terreno"
     else:
         # Outros tipos: passar dados como estão
         dados_para_mobile = dados_extraidos
