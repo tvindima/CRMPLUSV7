@@ -1,12 +1,14 @@
 "use client";
 
 import { useCompare } from "@/contexts/CompareContext";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { MortgageSimulator } from "@/components/MortgageSimulator";
 import { TaxCalculator } from "@/components/TaxCalculator";
 import { AddExternalPropertyModal } from "@/components/AddExternalPropertyModal";
+import { LoginPromptModal } from "@/components/LoginPromptModal";
 import { createPortal } from "react-dom";
 
 // Helper para verificar se é imóvel externo
@@ -15,9 +17,28 @@ const getExternalUrl = (imagem?: string) => imagem?.replace("external:", "") || 
 
 export default function CompararPage() {
   const { compareList, removeFromCompare, clearCompare, canAddMore } = useCompare();
+  const { isAuthenticated } = useAuth();
   const [showSimulator, setShowSimulator] = useState<number | null>(null);
   const [showTaxCalc, setShowTaxCalc] = useState<number | null>(null);
   const [showExternalModal, setShowExternalModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [pendingTool, setPendingTool] = useState<string>("");
+  const [pendingPrice, setPendingPrice] = useState<number>(0);
+
+  const handleToolClick = (tool: "simulator" | "tax", price: number) => {
+    if (!isAuthenticated) {
+      setPendingTool(tool === "simulator" ? "Simulador de Prestação" : "Calculadora de IMT");
+      setPendingPrice(price);
+      setShowLoginPrompt(true);
+      return;
+    }
+    
+    if (tool === "simulator") {
+      setShowSimulator(price);
+    } else {
+      setShowTaxCalc(price);
+    }
+  };
 
   if (compareList.length === 0) {
     return (
@@ -224,22 +245,32 @@ export default function CompararPage() {
                 <td key={property.id} className="py-4 px-4">
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => setShowSimulator(property.preco)}
+                      onClick={() => handleToolClick("simulator", property.preco)}
                       className="flex items-center justify-center gap-2 rounded-lg bg-[#2A2A2E] px-3 py-2 text-xs text-white transition hover:bg-[#E10600]"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                       Simular Prestação
+                      {!isAuthenticated && (
+                        <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </button>
                     <button
-                      onClick={() => setShowTaxCalc(property.preco)}
+                      onClick={() => handleToolClick("tax", property.preco)}
                       className="flex items-center justify-center gap-2 rounded-lg bg-[#2A2A2E] px-3 py-2 text-xs text-white transition hover:bg-[#E10600]"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Calcular IMT
+                      {!isAuthenticated && (
+                        <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </button>
                     {external ? (
                       <a
@@ -323,6 +354,13 @@ export default function CompararPage() {
       <AddExternalPropertyModal
         isOpen={showExternalModal}
         onClose={() => setShowExternalModal(false)}
+      />
+
+      {/* Modal Login Prompt */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        toolName={pendingTool}
       />
     </div>
   );
