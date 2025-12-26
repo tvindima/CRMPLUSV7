@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 
 interface UserData {
@@ -178,9 +179,10 @@ export function UserMenuWrapper() {
         <span className="hidden md:block">Entrar</span>
       </button>
 
-      {showAuthModal && (
+      {showAuthModal && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+          className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+          style={{ zIndex: 99999 }}
           onClick={() => setShowAuthModal(false)}
         >
           <div
@@ -292,7 +294,8 @@ export function UserMenuWrapper() {
               .
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
