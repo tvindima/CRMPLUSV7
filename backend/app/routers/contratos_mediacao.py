@@ -531,41 +531,70 @@ def classificar_documento(text: str) -> str:
     """
     PASSO ZERO: Classificar tipo de documento por âncoras determinísticas.
     Nunca misturar lógica entre tipos.
+    
+    ORDEM DE PRIORIDADE (mais específico primeiro):
+    1. Caderneta Predial (âncoras muito específicas)
+    2. Certidão Permanente (âncoras específicas)
+    3. Certificado Energético
+    4. Licença de Utilização
+    5. Cartão de Cidadão (último porque é menos específico)
     """
     text_upper = text.upper()
     
-    # Cartão de Cidadão - âncoras obrigatórias
+    # 1. CADERNETA PREDIAL - âncoras muito específicas (verificar primeiro!)
+    if ("CADERNETA PREDIAL" in text_upper or 
+        "AUTORIDADE TRIBUTÁRIA" in text_upper or
+        "ARTIGO MATRICIAL" in text_upper or
+        "SERVIÇO DE FINANÇAS" in text_upper or
+        "VALOR PATRIMONIAL" in text_upper):
+        logger.info("[CLASSIFICADOR] Detectado: caderneta_predial")
+        return "caderneta_predial"
+    
+    # 2. CERTIDÃO PERMANENTE / Registo Predial
+    if ("REGISTO PREDIAL" in text_upper or 
+        "INFORMAÇÃO PREDIAL" in text_upper or
+        "CONSERVATÓRIA" in text_upper or 
+        "SUJEITO ATIVO" in text_upper or
+        "SUJEITOS ATIVOS" in text_upper):
+        logger.info("[CLASSIFICADOR] Detectado: certidao_permanente")
+        return "certidao_permanente"
+    
+    # 3. CERTIFICADO ENERGÉTICO - ADENE
+    if ("CERTIFICADO ENERG" in text_upper or 
+        "ADENE" in text_upper or 
+        "CLASSE ENERG" in text_upper or 
+        "DESEMPENHO ENERG" in text_upper):
+        logger.info("[CLASSIFICADOR] Detectado: certificado_energetico")
+        return "certificado_energetico"
+    
+    # 4. LICENÇA DE UTILIZAÇÃO
+    if ("LICENÇA DE UTILIZAÇÃO" in text_upper or 
+        ("CÂMARA MUNICIPAL" in text_upper and "UTILIZAÇÃO" in text_upper)):
+        logger.info("[CLASSIFICADOR] Detectado: licenca_utilizacao")
+        return "licenca_utilizacao"
+    
+    # 5. CARTÃO DE CIDADÃO - verificar por último (menos específico)
     if "CARTÃO DE CIDADÃO" in text_upper or "CITIZEN CARD" in text_upper:
         # Distinguir frente vs verso
         if "FILIAÇÃO" in text_upper or "PARENTS" in text_upper:
+            logger.info("[CLASSIFICADOR] Detectado: cc_verso (tem FILIAÇÃO)")
             return "cc_verso"
         if "APELIDO" in text_upper or "SURNAME" in text_upper:
+            logger.info("[CLASSIFICADOR] Detectado: cc_frente (tem APELIDO)")
             return "cc_frente"
         # Fallback: verificar MRZ
         if "<<" in text:
-            return "cc_verso"  # MRZ está no verso
+            logger.info("[CLASSIFICADOR] Detectado: cc_verso (tem MRZ)")
+            return "cc_verso"
+        logger.info("[CLASSIFICADOR] Detectado: cc_frente (default)")
         return "cc_frente"
     
-    # Caderneta Predial - âncoras: AT + CADERNETA
-    if ("CADERNETA PREDIAL" in text_upper or "AUTORIDADE TRIBUTÁRIA" in text_upper or 
-        ("AT" in text_upper and "ARTIGO MATRICIAL" in text_upper)):
-        return "caderneta_predial"
+    # Fallback: Se tiver MRZ mas não tiver "CARTÃO DE CIDADÃO", provavelmente é CC
+    if "<<" in text and text.count("<") > 5:
+        logger.info("[CLASSIFICADOR] Detectado: cc_verso (MRZ sem label CC)")
+        return "cc_verso"
     
-    # Certidão Permanente / Registo Predial
-    if ("REGISTO PREDIAL" in text_upper or "INFORMAÇÃO PREDIAL" in text_upper or
-        "CONSERVATÓRIA" in text_upper or "SUJEITO" in text_upper):
-        return "certidao_permanente"
-    
-    # Certificado Energético - ADENE
-    if ("CERTIFICADO ENERG" in text_upper or "ADENE" in text_upper or 
-        "CLASSE ENERG" in text_upper or ("SCE" in text_upper and "A+" in text_upper)):
-        return "certificado_energetico"
-    
-    # Licença de Utilização
-    if "LICENÇA DE UTILIZAÇÃO" in text_upper or "CÂMARA MUNICIPAL" in text_upper:
-        return "licenca_utilizacao"
-    
-    # Default
+    logger.warning("[CLASSIFICADOR] Tipo desconhecido")
     return "desconhecido"
 
 
@@ -987,10 +1016,18 @@ def processar_documento_ocr(
             mensagem = "Texto extraído com Google Vision"
             logger.info(f"[OCR] Texto extraído ({len(full_text)} chars)")
             
-            # PASSO ZERO: Classificar documento por âncoras
-            if not doc_tipo:
-                doc_tipo = classificar_documento(full_text)
-                logger.info(f"[OCR] Tipo detectado automaticamente: {doc_tipo}")
+            # SEMPRE classificar documento por âncoras (ignora tipo enviado pelo mobile)
+            # Isto é mais fiável porque o mobile pode enviar tipo errado
+            tipo_detectado = classificar_documento(full_text)
+            logger.info(f"[OCR] Tipo enviado: '{doc_tipo}', Tipo detectado: '{tipo_detectado}'")
+            
+            # Se o tipo detectado é diferente e mais específico, usar o detectado
+            if tipo_detectado != "desconhecido":
+                if doc_tipo != tipo_detectado:
+                    logger.warning(f"[OCR] ⚠️ Tipo enviado ({doc_tipo}) diferente do detectado ({tipo_detectado}). Usando detectado.")
+                doc_tipo = tipo_detectado
+            elif not doc_tipo:
+                doc_tipo = tipo_detectado
                 
         except Exception as e:
             logger.error(f"OCR Vision falhou: {e}")
