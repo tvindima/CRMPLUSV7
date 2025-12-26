@@ -990,8 +990,9 @@ def extrair_cc(text: str) -> dict:
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     text_clean = text.replace(" ", "")
     
-    # DEBUG: Mostrar primeiras linhas do OCR
-    logger.info(f"[OCR CC] Primeiras 10 linhas: {lines[:10]}")
+    # DEBUG: Mostrar primeiras linhas do OCR (usar print para garantir que aparece no Railway)
+    print(f"[OCR CC] === TEXTO OCR ===")
+    print(f"[OCR CC] Primeiras 15 linhas: {lines[:15]}")
     
     # ===== 1. NOME - PREFERIR DA FRENTE DO CC (COMPLETO) =====
     # Na frente do CC temos campos separados:
@@ -1004,45 +1005,48 @@ def extrair_cc(text: str) -> dict:
     # Procurar APELIDO - também tentar na mesma linha com ":"
     for i, line in enumerate(lines):
         if re.search(r'APELIDO|SURNAME', line, re.IGNORECASE):
-            logger.info(f"[OCR CC] Encontrado label APELIDO na linha {i}: '{line}'")
+            print(f"[OCR CC] Encontrado label APELIDO na linha {i}: '{line}'")
             # Tentar extrair da mesma linha (formato: "APELIDO(S) DE SOUSA AMADO ROSA")
             m = re.search(r'(?:APELIDO\(?S?\)?|SURNAME)[\s/|:]+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+)', line, re.IGNORECASE)
             if m:
                 apelido_frente = m.group(1).strip()
-                logger.info(f"[OCR CC] Apelido mesma linha: {apelido_frente}")
+                print(f"[OCR CC] Apelido mesma linha: {apelido_frente}")
             elif i + 1 < len(lines):
                 next_line = lines[i + 1].strip()
                 # Verificar se não é outro label
                 if next_line and not re.search(r'NOME|NAME|SEXO|ALTURA|NACIONALIDADE|GIVEN', next_line, re.IGNORECASE):
                     apelido_frente = next_line
-                    logger.info(f"[OCR CC] Apelido próxima linha: {apelido_frente}")
+                    print(f"[OCR CC] Apelido próxima linha: {apelido_frente}")
     
     # Procurar NOME (GIVEN NAME) - vários formatos
     for i, line in enumerate(lines):
         # Match "NOME(S)" seguido ou não de "GIVEN NAME" mas NÃO "APELIDO"
         if re.search(r'NOME\(?S?\)?|GIVEN\s*NAME', line, re.IGNORECASE) and not re.search(r'APELIDO|SURNAME', line, re.IGNORECASE):
-            logger.info(f"[OCR CC] Encontrado label NOME na linha {i}: '{line}'")
+            print(f"[OCR CC] Encontrado label NOME na linha {i}: '{line}'")
             # Tentar extrair da mesma linha
             m = re.search(r'(?:NOME\(?S?\)?|GIVEN\s*NAME)[\s/|:]+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+)', line, re.IGNORECASE)
             if m:
                 nome_frente = m.group(1).strip()
-                logger.info(f"[OCR CC] Nome mesma linha: {nome_frente}")
+                print(f"[OCR CC] Nome mesma linha: {nome_frente}")
                 break
             elif i + 1 < len(lines):
                 next_line = lines[i + 1].strip()
                 # Verificar se é um nome válido (não é outro label e tem caracteres)
                 if next_line and len(next_line) > 2 and not re.search(r'SEXO|ALTURA|HEIGHT|DATA|DOCUMENT|APELIDO|SURNAME|^M$|^F$|^\d', next_line, re.IGNORECASE):
                     nome_frente = next_line
-                    logger.info(f"[OCR CC] Nome próxima linha: {nome_frente}")
+                    print(f"[OCR CC] Nome próxima linha: {nome_frente}")
                     break
+    
+    print(f"[OCR CC] Resultado: apelido_frente={apelido_frente}, nome_frente={nome_frente}")
     
     # Se temos ambos da frente, usar (é o nome completo)
     if apelido_frente and nome_frente:
         result["nome_completo"] = f"{nome_frente} {apelido_frente}".title()
-        logger.info(f"[OCR CC] ✅ Nome completo (frente): {result['nome_completo']}")
+        print(f"[OCR CC] ✅ Nome completo (frente): {result['nome_completo']}")
     
     # ===== FALLBACK: NOME VIA MRZ =====
     if not result["nome_completo"]:
+        print(f"[OCR CC] ⚠️ Nome não encontrado na frente, tentando MRZ...")
         # Linha com APELIDO<<NOME (só letras e <)
         for line in lines:
             clean_line = line.replace(" ", "")
@@ -1439,10 +1443,14 @@ def extrair_certidao(text: str) -> dict:
     
     text_upper = text.upper()
     
+    # DEBUG: Mostrar texto para análise
+    print(f"[OCR CERTIDÃO] === TEXTO OCR (primeiros 800 chars) ===")
+    print(f"{text[:800]}")
+    
     # Detectar natureza (RÚSTICO vs URBANO)
     if "RÚSTICO" in text_upper or "RUSTICO" in text_upper:
         result["natureza"] = "RÚSTICO"
-        logger.info("[OCR CERTIDÃO] Detectado prédio RÚSTICO")
+        print("[OCR CERTIDÃO] Detectado prédio RÚSTICO")
     elif "URBANO" in text_upper:
         result["natureza"] = "URBANO"
     
@@ -1450,7 +1458,7 @@ def extrair_certidao(text: str) -> dict:
     m = re.search(r'Conservat[óo]ria\s+(?:do\s+)?Registo\s+Predial\s+de\s+([A-Za-zÀ-ÿ\s]+?)(?:\s+Freguesia|\s+\d|$)', text, re.IGNORECASE)
     if m:
         result["conservatoria"] = m.group(1).strip().title()
-        logger.info(f"[OCR CERTIDÃO] Conservatória: {result['conservatoria']}")
+        print(f"[OCR CERTIDÃO] Conservatória: {result['conservatoria']}")
     
     # Freguesia - formato: "Freguesia Santo André das Tojeiras" ou no cabeçalho
     # Pode aparecer como "Freguesia Santo André das Tojeiras" no topo
@@ -1459,18 +1467,22 @@ def extrair_certidao(text: str) -> dict:
         # Limpar espaços extras
         freguesia_raw = re.sub(r'\s+', ' ', m.group(1).strip())
         result["freguesia"] = freguesia_raw.title()
-        logger.info(f"[OCR CERTIDÃO] Freguesia: {result['freguesia']}")
+        print(f"[OCR CERTIDÃO] Freguesia: {result['freguesia']}")
     
     # Número descrição - formato: "3177/20090225" (aparece no cabeçalho da certidão)
     # DEBUG: Procurar padrões de números
     all_nums = re.findall(r'\d{4,}/\d{6,}', text)
-    logger.info(f"[OCR CERTIDÃO] Padrões numéricos encontrados: {all_nums}")
+    print(f"[OCR CERTIDÃO] Padrões numéricos (formato X/Y): {all_nums}")
+    
+    # Também procurar números de 12 dígitos que podem ser o formato concatenado
+    all_long_nums = re.findall(r'\d{10,14}', text)
+    print(f"[OCR CERTIDÃO] Números longos (10-14 dígitos): {all_long_nums}")
     
     # Tentar formato completo primeiro (4 dígitos / 8 dígitos)
     m = re.search(r'(\d{4}/\d{8})', text)
     if m:
         result["descricao_numero"] = m.group(1)
-        logger.info(f"[OCR CERTIDÃO] Descrição: {result['descricao_numero']}")
+        print(f"[OCR CERTIDÃO] ✅ Descrição: {result['descricao_numero']}")
     else:
         # Formato alternativo: números variáveis separados por /
         m = re.search(r'(\d{3,5})[/\\](\d{6,10})', text)
