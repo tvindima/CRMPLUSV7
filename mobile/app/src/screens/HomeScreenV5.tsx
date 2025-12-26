@@ -102,7 +102,6 @@ export default function HomeScreenV5({ navigation }: any) {
         events_today: (agentStats.visits_today || 0) + (agentStats.tasks_today || 0),
         events_future: agentStats.events_future || 0,
       });
-      });
     }
   }, [agentStats]);
 
