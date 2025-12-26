@@ -71,6 +71,7 @@ export default function FirstImpressionListScreen() {
 
   // Apagar documento (agente): marcar como cancelado e cancelar pré-angariação, mas sem remover do admin
   const handleDelete = (id: number, clientName: string) => {
+    console.log('[handleDelete] Chamado para id:', id, 'cliente:', clientName);
     Alert.alert(
       'Apagar pré-angariação',
       `Esta ação é irreversível. Confirmar apagar a pré-angariação de ${clientName}?`,
@@ -80,6 +81,7 @@ export default function FirstImpressionListScreen() {
           text: 'Apagar',
           style: 'destructive',
           onPress: async () => {
+            console.log('[handleDelete] Confirmado apagar id:', id);
             try {
               // Cancelar pré-angariação ligada (sem apagar para admin)
               try {
@@ -88,14 +90,16 @@ export default function FirstImpressionListScreen() {
                   await preAngariacaoService.update(pre.id, { status: 'cancelado' } as any);
                 }
               } catch (e) {
-                // se não existir, seguir
+                console.log('[handleDelete] Sem pré-angariação ligada, ignorando');
               }
               // Usar endpoint /cancel em vez de update
+              console.log('[handleDelete] Chamando firstImpressionService.cancel...');
               await firstImpressionService.cancel(id);
+              console.log('[handleDelete] ✅ Cancelado com sucesso!');
               setImpressions((prev) => prev.filter((it) => it.id !== id));
               Alert.alert('Sucesso', 'Pré-angariação removida da sua lista.');
             } catch (error: any) {
-              console.error('Erro ao apagar:', error);
+              console.error('[handleDelete] ❌ Erro:', error);
               Alert.alert('Erro', error?.response?.data?.detail || 'Não foi possível apagar. Tente novamente.');
             }
           },
@@ -178,10 +182,14 @@ export default function FirstImpressionListScreen() {
             </View>
           )}
 
-          {item.status === 'draft' && (
+          {/* Botão apagar - disponível em draft ou signed */}
+          {(item.status === 'draft' || item.status === 'signed') && (
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => handleDelete(item.id, item.client_name)}
+              onPress={() => {
+                console.log('[DELETE] Clicado para id:', item.id, 'status:', item.status);
+                handleDelete(item.id, item.client_name);
+              }}
             >
               <Ionicons name="trash-outline" size={18} color="#ef4444" />
             </TouchableOpacity>
