@@ -102,6 +102,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   // === AGENTE RESPONSÁVEL ===
   const [agenteNome, setAgenteNome] = useState('');
   const [agenteNif, setAgenteNif] = useState('');
+  const [agenteCarteiraProfissional, setAgenteCarteiraProfissional] = useState('');
 
   // === SECÇÃO 1: CLIENTE (1º Outorgante) ===
   const [clienteNome, setClienteNome] = useState('');
@@ -259,6 +260,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         const agent = statsResponse.agent;
         setAgenteNome(agent.name || '');
         setAgenteNif(agent.nif || '');
+        setAgenteCarteiraProfissional(agent.license_ami || '');
       }
     } catch (error) {
       console.log('Não foi possível carregar dados do agente:', error);
@@ -353,6 +355,10 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setFormaPagamento(data.opcao_pagamento || 'cpcv');
     setPrazoMeses(data.prazo_meses?.toString() || '6');
 
+    // Agente (se existir no CMI, usar; senão manter o do login)
+    if (data.agente_nome) setAgenteNome(data.agente_nome);
+    if (data.agente_carteira_profissional) setAgenteCarteiraProfissional(data.agente_carteira_profissional);
+
     // Assinaturas
     setAssinaturaCliente(data.assinatura_cliente || null);
   };
@@ -445,6 +451,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         opcao_pagamento: formaPagamento,
         prazo_meses: prazoMeses ? parseInt(prazoMeses) : undefined,
         agente_nome: agenteNome || undefined,
+        agente_carteira_profissional: agenteCarteiraProfissional || undefined,
       });
 
       // Sincronizar dados principais para a Pré-Angariação (visível no backoffice)

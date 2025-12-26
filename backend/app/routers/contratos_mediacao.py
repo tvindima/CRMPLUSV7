@@ -415,10 +415,16 @@ def gerar_pdf(
     y -= 2*mm
     c.drawString(margin_left, y, "2 – O segundo contratante obriga-se a pagar à Mediadora, sobre o preço de venda do imóvel:")
     y -= 3*mm
-    comissao = safe(item.comissao_percentagem) or "5"
-    c.drawString(margin_left, y, f"   ■ {comissao}% (acrescido de IVA à taxa legal em vigor, se o negócio for superior a €100.000,00)")
-    y -= 3*mm
-    c.drawString(margin_left, y, "   ■ €4.000,00 (acrescido de IVA à taxa legal em vigor, se o negócio for igual ou inferior a €100.000,00)")
+    # Determinar tipo de comissão: se tem valor fixo, mostrar valor fixo; senão mostrar percentagem
+    comissao_percentagem = safe(item.comissao_percentagem)
+    comissao_valor_fixo = item.comissao_valor_fixo
+    if comissao_valor_fixo and float(comissao_valor_fixo) > 0:
+        # Mostrar apenas valor fixo
+        c.drawString(margin_left, y, f"   {format_money(comissao_valor_fixo)} (acrescido de IVA à taxa legal em vigor)")
+    else:
+        # Mostrar apenas percentagem
+        perc = comissao_percentagem or "5"
+        c.drawString(margin_left, y, f"   {perc}% (acrescido de IVA à taxa legal em vigor)")
     y -= 3*mm
     # Mostrar apenas a opção de pagamento selecionada
     opcao_pag = getattr(item, 'opcao_pagamento', 'cpcv') or 'cpcv'
