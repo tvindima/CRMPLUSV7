@@ -89,11 +89,15 @@ export default function HomeScreenV5({ navigation }: any) {
   const [heroProperties, setHeroProperties] = useState<number[]>([]);
   const [savingSitePrefs, setSavingSitePrefs] = useState(false);
 
+  // ✅ Carregar dados quando user está autenticado
   useEffect(() => {
-    loadData();
+    if (user) {
+      console.log('[HomeScreenV5] User authenticated, loading data...');
+      loadData();
+    }
     loadShortcuts();
     loadSitePreferences();
-  }, []);
+  }, [user?.id]);
 
   // ✅ NOVO: Atualizar stats locais quando agentStats mudar
   useEffect(() => {

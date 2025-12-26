@@ -62,6 +62,12 @@ export function AgentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadAgentData = useCallback(async () => {
+    // ✅ NÃO FAZER FETCH SE NÃO TIVER TOKEN
+    if (!accessToken) {
+      console.log('[AgentContext] No access token, skipping fetch');
+      return;
+    }
+    
     // Cache por 30 segundos
     const now = Date.now();
     if (agentProfile && stats && (now - lastFetch) < 30000) {
@@ -94,7 +100,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [agentProfile, stats, lastFetch]);
+  }, [agentProfile, stats, lastFetch, accessToken]);
 
   const refreshAgentData = useCallback(async () => {
     setLastFetch(0); // Force refresh
