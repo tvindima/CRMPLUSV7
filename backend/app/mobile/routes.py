@@ -119,6 +119,122 @@ def get_mobile_profile(
 
 
 # =====================================================
+# PASSWORD MANAGEMENT
+# =====================================================
+
+from pydantic import BaseModel
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class ChangeAssistantPasswordRequest(BaseModel):
+    assistant_id: int
+    new_password: str
+
+@router.post("/auth/change-password")
+def change_own_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Alterar a própria password.
+    Requer password atual para confirmar identidade.
+    """
+    from app.security import verify_password, get_password_hash
+    
+    # Verificar password atual
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Password atual incorreta")
+    
+    # Validar nova password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Nova password deve ter pelo menos 6 caracteres")
+    
+    # Atualizar password
+    current_user.hashed_password = get_password_hash(data.new_password)
+    db.commit()
+    
+    logger.info(f"✅ Password alterada com sucesso para user {current_user.email}")
+    return {"message": "Password alterada com sucesso"}
+
+
+@router.get("/auth/assistants")
+def list_my_assistants(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Listar assistentes que trabalham para o agente atual.
+    Apenas agentes com assistentes associados podem ver esta lista.
+    """
+    effective_agent_id = get_effective_agent_id(request, db)
+    
+    if not effective_agent_id:
+        return []
+    
+    # Buscar users com role assistant que trabalham para este agente
+    assistants = db.query(User).filter(
+        User.works_for_agent_id == effective_agent_id,
+        User.role == UserRole.ASSISTANT.value,
+        User.is_active == True
+    ).all()
+    
+    return [
+        {
+            "id": a.id,
+            "email": a.email,
+            "full_name": a.full_name,
+            "avatar_url": a.avatar_url,
+            "phone": a.phone,
+        }
+        for a in assistants
+    ]
+
+
+@router.post("/auth/change-assistant-password")
+def change_assistant_password(
+    request: Request,
+    data: ChangeAssistantPasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Alterar password de um assistente.
+    Apenas o agente responsável pode alterar a password do seu assistente.
+    """
+    from app.security import get_password_hash
+    
+    effective_agent_id = get_effective_agent_id(request, db)
+    
+    if not effective_agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    # Buscar assistente
+    assistant = db.query(User).filter(
+        User.id == data.assistant_id,
+        User.works_for_agent_id == effective_agent_id,
+        User.role == UserRole.ASSISTANT.value
+    ).first()
+    
+    if not assistant:
+        raise HTTPException(status_code=404, detail="Assistente não encontrado ou não autorizado")
+    
+    # Validar nova password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Nova password deve ter pelo menos 6 caracteres")
+    
+    # Atualizar password
+    assistant.hashed_password = get_password_hash(data.new_password)
+    db.commit()
+    
+    logger.info(f"✅ Password do assistente {assistant.email} alterada por {current_user.email}")
+    return {"message": f"Password de {assistant.full_name} alterada com sucesso"}
+
+
+# =====================================================
 # PROPERTIES - CRUD COMPLETO
 # =====================================================
 

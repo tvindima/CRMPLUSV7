@@ -1,7 +1,7 @@
 """
 Router para First Impressions (Primeiras Impressões)
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import List, Optional
@@ -18,22 +18,24 @@ from app.schemas.first_impression import (
     FirstImpressionListItem,
     FirstImpressionSignature,
 )
-from app.security import get_current_user
+from app.security import get_current_user, get_effective_agent_id
 from app.users.models import User
 
 router = APIRouter(prefix="/mobile/first-impressions", tags=["first-impressions"])
 
 
-def get_current_agent(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Helper para obter agente do usuário autenticado"""
-    if not current_user.agent_id:
+def get_current_agent_from_request(request: Request, db: Session, current_user: User):
+    """Helper para obter agente do usuário autenticado - suporta assistentes"""
+    effective_agent_id = get_effective_agent_id(request, db)
+    
+    if not effective_agent_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuário não tem agente associado"
+            detail="Utilizador não tem agente associado"
         )
     
     from app.agents.models import Agent
-    agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+    agent = db.query(Agent).filter(Agent.id == effective_agent_id).first()
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -49,12 +51,13 @@ def get_current_agent(current_user: User = Depends(get_current_user), db: Sessio
 
 @router.post("", response_model=FirstImpressionResponse, status_code=status.HTTP_201_CREATED)
 async def create_first_impression(
+    request: Request,
     data: FirstImpressionCreate,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Criar nova First Impression (rascunho).
+    Criar nova First Impression (rascunho) - suporta assistentes.
     
     - **client_name**: Nome completo obrigatório
     - **client_phone**: Telefone obrigatório
@@ -62,6 +65,7 @@ async def create_first_impression(
     - **lead_id**: Opcional (associar a lead)
     - **Status inicial**: draft
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Validar property_id se fornecido
         if data.property_id:
@@ -113,6 +117,7 @@ async def create_first_impression(
 
 @router.get("", response_model=List[FirstImpressionListItem])
 async def list_first_impressions(
+    request: Request,
     status_filter: Optional[str] = Query(None, description="Filtrar por status (draft, signed, completed, cancelled)"),
     property_id: Optional[int] = Query(None, description="Filtrar por imóvel"),
     lead_id: Optional[int] = Query(None, description="Filtrar por lead"),
@@ -120,10 +125,10 @@ async def list_first_impressions(
     skip: int = Query(0, ge=0, description="Paginação: registos a saltar"),
     limit: int = Query(50, ge=1, le=100, description="Paginação: limite de registos"),
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Listar First Impressions do agente autenticado.
+    Listar First Impressions do agente autenticado - suporta assistentes.
     
     **Filtros disponíveis:**
     - `status`: draft, signed, completed, cancelled
@@ -134,6 +139,7 @@ async def list_first_impressions(
     
     **Ordenação:** Mais recentes primeiro (created_at DESC)
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Query base
         query = db.query(FirstImpression).filter(
@@ -206,12 +212,13 @@ async def list_first_impressions(
 
 @router.get("/{impression_id}", response_model=FirstImpressionResponse)
 async def get_first_impression(
+    request: Request,
     impression_id: int,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Obter detalhes completos de uma First Impression.
+    Obter detalhes completos de uma First Impression - suporta assistentes.
     
     Inclui:
     - Todos os dados CMI
@@ -219,6 +226,7 @@ async def get_first_impression(
     - Assinatura (base64 completo)
     - URL do PDF (se gerado)
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         impression = db.query(FirstImpression).filter(
             FirstImpression.id == impression_id,
@@ -251,18 +259,20 @@ async def get_first_impression(
 
 @router.put("/{impression_id}", response_model=FirstImpressionResponse)
 async def update_first_impression(
+    request: Request,
     impression_id: int,
     data: FirstImpressionUpdate,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Atualizar First Impression existente.
+    Atualizar First Impression existente - suporta assistentes.
     
     - Todos os campos são opcionais
     - Só pode atualizar status 'draft' ou 'signed'
     - Status 'completed' ou 'cancelled' são finais (imutáveis)
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Buscar impression
         impression = db.query(FirstImpression).filter(
@@ -335,18 +345,20 @@ async def update_first_impression(
 
 @router.post("/{impression_id}/signature", response_model=FirstImpressionResponse)
 async def add_signature(
+    request: Request,
     impression_id: int,
     signature_data: FirstImpressionSignature,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Adicionar assinatura digital à First Impression.
+    Adicionar assinatura digital à First Impression - suporta assistentes.
     
     - Assinatura em formato base64 (PNG)
     - Muda status de 'draft' → 'signed'
     - Regista data/hora da assinatura
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Buscar impression
         impression = db.query(FirstImpression).filter(
@@ -397,17 +409,19 @@ async def add_signature(
 
 @router.post("/{impression_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_first_impression(
+    request: Request,
     impression_id: int,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Cancelar First Impression (soft delete).
+    Cancelar First Impression (soft delete) - suporta assistentes.
     
     - Marca status como 'cancelled'
     - Não apaga da base de dados
     - Pode cancelar mesmo se já assinada
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Buscar impression (do agente autenticado)
         impression = db.query(FirstImpression).filter(
@@ -452,17 +466,19 @@ async def cancel_first_impression(
 
 @router.delete("/{impression_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_first_impression(
+    request: Request,
     impression_id: int,
     db: Session = Depends(get_db),
-    current_agent = Depends(get_current_agent),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Apagar First Impression.
+    Apagar First Impression - suporta assistentes.
     
     - Só pode apagar suas próprias
     - Apagar é permanente (hard delete)
     - Alternativa: usar PUT para mudar status → 'cancelled'
     """
+    current_agent = get_current_agent_from_request(request, db, current_user)
     try:
         # Buscar impression
         impression = db.query(FirstImpression).filter(

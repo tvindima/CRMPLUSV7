@@ -1,6 +1,6 @@
 /**
  * SettingsScreen - Definições da App
- * Notificações, idioma, tema da app com vários estilos
+ * Notificações, idioma, tema da app, alteração de password
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,12 +14,15 @@ import {
   Modal,
   Alert,
   Platform,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
+import { apiService } from '../services/api';
 
 interface AppTheme {
   id: string;
@@ -31,6 +34,14 @@ interface AppTheme {
     accent: string;
   };
   preview: string[];
+}
+
+interface Assistant {
+  id: number;
+  email: string;
+  full_name: string;
+  avatar_url?: string;
+  phone?: string;
 }
 
 const APP_THEMES: AppTheme[] = [
@@ -89,7 +100,7 @@ const SETTINGS_STORAGE_KEY = '@crm_plus_settings';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   
   // Notifications
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -105,9 +116,33 @@ export default function SettingsScreen() {
   const [selectedTheme, setSelectedTheme] = useState('futuristic');
   const [showThemeModal, setShowThemeModal] = useState(false);
 
+  // Password modals
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showAssistantPasswordModal, setShowAssistantPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  // Assistants
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(null);
+  const [assistantNewPassword, setAssistantNewPassword] = useState('');
+  const [assistantConfirmPassword, setAssistantConfirmPassword] = useState('');
+
   useEffect(() => {
     loadSettings();
+    loadAssistants();
   }, []);
+
+  const loadAssistants = async () => {
+    try {
+      const response = await apiService.get<Assistant[]>('/mobile/auth/assistants');
+      setAssistants(response || []);
+    } catch (error) {
+      console.log('Sem assistentes ou erro ao carregar:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -181,6 +216,71 @@ export default function SettingsScreen() {
 
   const getCurrentTheme = () => {
     return APP_THEMES.find(t => t.id === selectedTheme) || APP_THEMES[0];
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Erro', 'As passwords não coincidem');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Erro', 'A password deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await apiService.post('/mobile/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      Alert.alert('Sucesso', 'Password alterada com sucesso');
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      Alert.alert('Erro', error.response?.data?.detail || 'Erro ao alterar password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleChangeAssistantPassword = async () => {
+    if (!selectedAssistant) return;
+    
+    if (assistantNewPassword !== assistantConfirmPassword) {
+      Alert.alert('Erro', 'As passwords não coincidem');
+      return;
+    }
+    if (assistantNewPassword.length < 6) {
+      Alert.alert('Erro', 'A password deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await apiService.post('/mobile/auth/change-assistant-password', {
+        assistant_id: selectedAssistant.id,
+        new_password: assistantNewPassword,
+      });
+      Alert.alert('Sucesso', `Password de ${selectedAssistant.full_name} alterada com sucesso`);
+      setShowAssistantPasswordModal(false);
+      setSelectedAssistant(null);
+      setAssistantNewPassword('');
+      setAssistantConfirmPassword('');
+    } catch (error: any) {
+      Alert.alert('Erro', error.response?.data?.detail || 'Erro ao alterar password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const openAssistantPasswordModal = (assistant: Assistant) => {
+    setSelectedAssistant(assistant);
+    setAssistantNewPassword('');
+    setAssistantConfirmPassword('');
+    setShowAssistantPasswordModal(true);
   };
 
   return (
@@ -324,6 +424,58 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#6b7280" />
           </TouchableOpacity>
+        </View>
+
+        {/* Security Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Segurança</Text>
+          
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => {
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setShowPasswordModal(true);
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: '#00d9ff20' }]}>
+                <Ionicons name="key" size={20} color="#00d9ff" />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>Alterar Password</Text>
+                <Text style={styles.settingDesc}>Modificar a sua password de acesso</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#6b7280" />
+          </TouchableOpacity>
+
+          {assistants.length > 0 && (
+            <>
+              <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 8 }]}>
+                Passwords dos Assistentes
+              </Text>
+              {assistants.map((assistant) => (
+                <TouchableOpacity 
+                  key={assistant.id}
+                  style={styles.settingRow}
+                  onPress={() => openAssistantPasswordModal(assistant)}
+                >
+                  <View style={styles.settingLeft}>
+                    <View style={[styles.settingIcon, { backgroundColor: '#8b5cf620' }]}>
+                      <Ionicons name="person" size={20} color="#8b5cf6" />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <Text style={styles.settingTitle}>{assistant.full_name}</Text>
+                      <Text style={styles.settingDesc}>{assistant.email}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#6b7280" />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
         </View>
 
         {/* Data Section */}
@@ -481,6 +633,134 @@ export default function SettingsScreen() {
                 ))}
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={showPasswordModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alterar Password</Text>
+              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalScroll}>
+              <Text style={styles.inputLabel}>Password Atual</Text>
+              <TextInput
+                style={styles.input}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                secureTextEntry
+                placeholder="Introduza a password atual"
+                placeholderTextColor="#6b7280"
+              />
+
+              <Text style={styles.inputLabel}>Nova Password</Text>
+              <TextInput
+                style={styles.input}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                placeholder="Introduza a nova password"
+                placeholderTextColor="#6b7280"
+              />
+
+              <Text style={styles.inputLabel}>Confirmar Password</Text>
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                placeholder="Confirme a nova password"
+                placeholderTextColor="#6b7280"
+              />
+
+              <TouchableOpacity 
+                style={[styles.saveButton, passwordLoading && styles.saveButtonDisabled]}
+                onPress={handleChangePassword}
+                disabled={passwordLoading}
+              >
+                {passwordLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar Password</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change Assistant Password Modal */}
+      <Modal
+        visible={showAssistantPasswordModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAssistantPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Password do Assistente</Text>
+              <TouchableOpacity onPress={() => setShowAssistantPasswordModal(false)}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalScroll}>
+              {selectedAssistant && (
+                <View style={styles.assistantInfo}>
+                  <View style={[styles.settingIcon, { backgroundColor: '#8b5cf620' }]}>
+                    <Ionicons name="person" size={24} color="#8b5cf6" />
+                  </View>
+                  <View>
+                    <Text style={styles.assistantName}>{selectedAssistant.full_name}</Text>
+                    <Text style={styles.assistantEmail}>{selectedAssistant.email}</Text>
+                  </View>
+                </View>
+              )}
+
+              <Text style={styles.inputLabel}>Nova Password</Text>
+              <TextInput
+                style={styles.input}
+                value={assistantNewPassword}
+                onChangeText={setAssistantNewPassword}
+                secureTextEntry
+                placeholder="Introduza a nova password"
+                placeholderTextColor="#6b7280"
+              />
+
+              <Text style={styles.inputLabel}>Confirmar Password</Text>
+              <TextInput
+                style={styles.input}
+                value={assistantConfirmPassword}
+                onChangeText={setAssistantConfirmPassword}
+                secureTextEntry
+                placeholder="Confirme a nova password"
+                placeholderTextColor="#6b7280"
+              />
+
+              <TouchableOpacity 
+                style={[styles.saveButton, passwordLoading && styles.saveButtonDisabled]}
+                onPress={handleChangeAssistantPassword}
+                disabled={passwordLoading}
+              >
+                {passwordLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar Password</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -712,5 +992,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  input: {
+    backgroundColor: '#1a1f2e',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: '#fff',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff10',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9ca3af',
+    marginBottom: 8,
+  },
+  saveButton: {
+    backgroundColor: '#00d9ff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#00d9ff80',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0a0e1a',
+  },
+  assistantInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#1a1f2e',
+    borderRadius: 12,
+  },
+  assistantName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  assistantEmail: {
+    fontSize: 13,
+    color: '#6b7280',
   },
 });

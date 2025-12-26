@@ -192,6 +192,11 @@ export default function HomeScreenV5({ navigation }: any) {
   };
 
   const getFirstName = () => {
+    // Primeiro verificar nome do próprio utilizador (importante para assistentes)
+    if (user?.name) {
+      return user.name.split(' ')[0];
+    }
+    // Fallback para nome do agente
     if (agentProfile?.name) {
       return agentProfile.name.split(' ')[0];
     }
@@ -202,7 +207,9 @@ export default function HomeScreenV5({ navigation }: any) {
   };
 
   const getAvatarUrl = () => {
-    const candidate = agentProfile?.photo || agentProfile?.avatar_url || user?.avatar_url;
+    // Primeiro verificar avatar do próprio utilizador
+    const userAvatar = user?.avatar_url || user?.avatar;
+    const candidate = userAvatar || agentProfile?.photo || agentProfile?.avatar_url;
     if (!candidate) return null;
 
     // Se vier relativo, construir URL absoluto (web serve avatares públicos)
