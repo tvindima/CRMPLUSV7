@@ -24,6 +24,7 @@ interface DashboardStats {
   new_leads?: number;
   leads?: number;
   properties?: number;
+  pre_angariacoes?: number;
 }
 
 interface AgentContextData {

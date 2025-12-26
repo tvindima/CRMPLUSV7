@@ -26,6 +26,7 @@ from app.calendar import schemas as task_schemas
 from app.schemas import visit as visit_schemas
 from app.models.visit import Visit, VisitStatus, InterestLevel
 from app.models.event import Event
+from app.models.pre_angariacao import PreAngariacao
 from app.schemas import event as event_schemas
 from app.schemas import site_preferences as site_prefs_schemas
 from app.models.agent_site_preferences import AgentSitePreferences
@@ -838,6 +839,7 @@ def get_mobile_dashboard_stats(
     """
     # Valores default
     properties_count = 0
+    pre_angariacoes_count = 0
     leads_count = 0
     tasks_pending = 0
     tasks_today = 0
@@ -853,6 +855,17 @@ def get_mobile_dashboard_stats(
             properties_count = db.query(Property).count()
     except Exception as e:
         print(f"[STATS] Error counting properties: {e}")
+    
+    try:
+        # Contar pré-angariações activas
+        if current_user.agent_id:
+            pre_angariacoes_count = db.query(PreAngariacao).filter(
+                PreAngariacao.agent_id == current_user.agent_id
+            ).count()
+        else:
+            pre_angariacoes_count = db.query(PreAngariacao).count()
+    except Exception as e:
+        print(f"[STATS] Error counting pre_angariacoes: {e}")
     
     try:
         # Contar leads ativos
@@ -900,6 +913,7 @@ def get_mobile_dashboard_stats(
     
     return {
         "properties": properties_count,
+        "pre_angariacoes": pre_angariacoes_count,
         "leads": leads_count,
         "tasks_pending": tasks_pending,
         "tasks_today": tasks_today,
