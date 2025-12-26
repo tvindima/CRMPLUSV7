@@ -119,3 +119,20 @@ def require_admin(req: Request, db: Session = Depends(lambda: None)):
     if user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissão insuficiente - Admin necessário")
     return user
+
+
+def get_effective_agent_id(req: Request, db: Session = Depends(lambda: None)) -> Optional[int]:
+    """
+    Obtém o agent_id efetivo do token JWT.
+    Para assistentes, retorna o works_for_agent_id (que está no token como agent_id).
+    Para agentes normais, retorna o próprio agent_id.
+    """
+    token = extract_token(req)
+    if not token:
+        return None
+    
+    try:
+        payload = decode_token(token)
+        return payload.get("agent_id")
+    except:
+        return None

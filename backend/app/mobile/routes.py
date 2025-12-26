@@ -2,7 +2,7 @@
 Rotas API para aplicação móvel - Agentes Editores
 Endpoints otimizados para app mobile com permissões completas de agente
 """
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc, func
@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 import math
 
 from app.database import get_db
-from app.security import get_current_user
+from app.security import get_current_user, get_effective_agent_id
 from app.users.models import User, UserRole
 
 # Importar modelos e schemas
@@ -53,16 +53,22 @@ def get_mobile_version():
 
 @router.get("/auth/me", response_model=dict)
 def get_mobile_profile(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Obter perfil completo do agente para app mobile
     Inclui informações do usuário e dados do agente associado
+    
+    IMPORTANTE: Usa agent_id do token JWT para suportar assistentes
     """
+    # Usar agent_id do token (suporta assistentes que trabalham para outro agente)
+    effective_agent_id = get_effective_agent_id(request, db)
+    
     agent_data = None
-    if current_user.agent_id:
-        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+    if effective_agent_id:
+        agent = db.query(Agent).filter(Agent.id == effective_agent_id).first()
         if agent:
             agent_data = {
                 "id": agent.id,
@@ -79,6 +85,14 @@ def get_mobile_profile(
                 "whatsapp": getattr(agent, 'whatsapp', None),
             }
     
+    # Se é assistente, indicar isso na resposta
+    is_assistant = current_user.role == UserRole.ASSISTANT.value
+    working_for = None
+    if is_assistant and effective_agent_id:
+        agent = db.query(Agent).filter(Agent.id == effective_agent_id).first()
+        if agent:
+            working_for = agent.name
+    
     return {
         "user": {
             "id": current_user.id,
@@ -88,6 +102,8 @@ def get_mobile_profile(
             "avatar_url": current_user.avatar_url,
             "phone": current_user.phone,
             "is_active": current_user.is_active,
+            "is_assistant": is_assistant,
+            "working_for": working_for,
         },
         "agent": agent_data,
         "permissions": {
@@ -108,6 +124,7 @@ def get_mobile_profile(
 
 @router.get("/properties", response_model=List[property_schemas.PropertyOut])
 def list_mobile_properties(
+    request: Request,
     skip: int = 0,
     limit: int = 500,
     per_page: Optional[int] = None,  # Alias para limit
@@ -126,7 +143,12 @@ def list_mobile_properties(
     - Opção de mostrar apenas propriedades do agente (my_properties=true)
     - per_page: alias para limit
     - sort: price_asc, price_desc, recent (default)
+    
+    IMPORTANTE: Usa agent_id do token JWT para suportar assistentes
     """
+    # Usar agent_id do token (suporta assistentes)
+    effective_agent_id = get_effective_agent_id(request, db)
+    
     # per_page é alias para limit
     if per_page is not None:
         limit = per_page
@@ -135,10 +157,10 @@ def list_mobile_properties(
     
     # Filtrar apenas propriedades do agente atual
     if my_properties:
-        if not current_user.agent_id:
-            # Se my_properties=true mas utilizador não tem agent_id, retornar lista vazia
+        if not effective_agent_id:
+            # Se my_properties=true mas não tem agent_id, retornar lista vazia
             return []
-        query = query.filter(Property.agent_id == current_user.agent_id)
+        query = query.filter(Property.agent_id == effective_agent_id)
     
     # Filtros
     if status:
@@ -830,13 +852,20 @@ def delete_task_mobile(
 
 @router.get("/dashboard/stats")
 def get_mobile_dashboard_stats(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Estatísticas do dashboard para app mobile
     Dados resumidos do agente - v2 simplificado
+    
+    IMPORTANTE: Usa agent_id do token JWT (não da base de dados)
+    Isto permite que assistentes vejam dados do agente para quem trabalham
     """
+    # Usar agent_id do token (suporta assistentes)
+    effective_agent_id = get_effective_agent_id(request, db)
+    
     # Valores default
     properties_count = 0
     pre_angariacoes_count = 0
@@ -847,9 +876,9 @@ def get_mobile_dashboard_stats(
     
     try:
         # Contar propriedades
-        if current_user.agent_id:
+        if effective_agent_id:
             properties_count = db.query(Property).filter(
-                Property.agent_id == current_user.agent_id
+                Property.agent_id == effective_agent_id
             ).count()
         else:
             properties_count = db.query(Property).count()
@@ -858,9 +887,9 @@ def get_mobile_dashboard_stats(
     
     try:
         # Contar pré-angariações activas (excluir canceladas e activadas)
-        if current_user.agent_id:
+        if effective_agent_id:
             pre_angariacoes_count = db.query(PreAngariacao).filter(
-                PreAngariacao.agent_id == current_user.agent_id,
+                PreAngariacao.agent_id == effective_agent_id,
                 PreAngariacao.status.notin_(['cancelado', 'activado'])
             ).count()
         else:
@@ -872,29 +901,29 @@ def get_mobile_dashboard_stats(
     
     try:
         # Contar leads ativos
-        if current_user.agent_id:
+        if effective_agent_id:
             leads_count = db.query(Lead).filter(
-                Lead.assigned_agent_id == current_user.agent_id
+                Lead.assigned_agent_id == effective_agent_id
             ).count()
     except Exception as e:
         print(f"[STATS] Error counting leads: {e}")
     
     try:
         # Contar tarefas pendentes
-        if current_user.agent_id:
+        if effective_agent_id:
             tasks_pending = db.query(Task).filter(
-                Task.assigned_agent_id == current_user.agent_id
+                Task.assigned_agent_id == effective_agent_id
             ).count()
     except Exception as e:
         print(f"[STATS] Error counting tasks: {e}")
     
     try:
         # Contar tarefas de hoje
-        if current_user.agent_id:
+        if effective_agent_id:
             today = datetime.utcnow().date()
             tasks_today = db.query(Task).filter(
                 and_(
-                    Task.assigned_agent_id == current_user.agent_id,
+                    Task.assigned_agent_id == effective_agent_id,
                     func.date(Task.due_date) == today
                 )
             ).count()
@@ -903,11 +932,11 @@ def get_mobile_dashboard_stats(
     
     try:
         # Contar tarefas futuras (após hoje)
-        if current_user.agent_id:
+        if effective_agent_id:
             today = datetime.utcnow().date()
             tasks_future = db.query(Task).filter(
                 and_(
-                    Task.assigned_agent_id == current_user.agent_id,
+                    Task.assigned_agent_id == effective_agent_id,
                     func.date(Task.due_date) > today
                 )
             ).count()
@@ -921,7 +950,7 @@ def get_mobile_dashboard_stats(
         "tasks_pending": tasks_pending,
         "tasks_today": tasks_today,
         "events_future": tasks_future,
-        "agent_id": current_user.agent_id,
+        "agent_id": effective_agent_id,
     }
 
 
