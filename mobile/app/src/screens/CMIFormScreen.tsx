@@ -22,6 +22,7 @@ import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import SignatureScreen from 'react-native-signature-canvas';
 import { cmiService, CMI } from '../services/cmiService';
+import { firstImpressionService } from '../services/firstImpressionService';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import { cloudinaryService } from '../services/cloudinary';
@@ -487,6 +488,21 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           estado_conservacao: imovelEstadoConservacao || undefined,
           valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
         });
+      }
+
+      // Sincronizar nome do cliente para a 1ª Impressão (atualiza "A Identificar")
+      if (firstImpressionId && clienteNome && clienteNome !== 'A Identificar') {
+        try {
+          await firstImpressionService.update(firstImpressionId, {
+            client_name: clienteNome,
+            client_nif: clienteNif || undefined,
+            client_phone: clienteTelefone || undefined,
+            client_email: clienteEmail || undefined,
+          });
+          console.log('[CMI] ✅ FirstImpression atualizada com nome do cliente');
+        } catch (e) {
+          console.warn('[CMI] ⚠️ Não foi possível atualizar FirstImpression:', e);
+        }
       }
 
       Alert.alert('Sucesso', 'Contrato guardado com sucesso!');
