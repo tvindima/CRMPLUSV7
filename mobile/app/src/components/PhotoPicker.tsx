@@ -188,7 +188,6 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
             'Limite atingido',
             `${MAX_PHOTOS} fotos adicionadas.\n\nPara adicionar mais, remova fotos existentes.`
           );
-          );
         }
       }
     } catch (error) {
