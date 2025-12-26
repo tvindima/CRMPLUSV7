@@ -81,8 +81,16 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
     """Obter dados do mediador (fixos) e do agente responsável pela angariação"""
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
     
-    # Dados da mediadora são sempre fixos
-    dados = MEDIADORA_DADOS.copy()
+    # Apenas os campos que existem no modelo ContratoMediacaoImobiliaria
+    dados = {
+        "mediador_nome": MEDIADORA_DADOS["mediador_nome"],
+        "mediador_licenca_ami": MEDIADORA_DADOS["mediador_licenca_ami"],
+        "mediador_nif": MEDIADORA_DADOS["mediador_nif"],
+        "mediador_morada": MEDIADORA_DADOS["mediador_morada"],
+        "mediador_codigo_postal": MEDIADORA_DADOS["mediador_codigo_postal"],
+        "mediador_telefone": MEDIADORA_DADOS["mediador_telefone"],
+        "mediador_email": MEDIADORA_DADOS["mediador_email"],
+    }
     
     # Adicionar dados do agente (responsável pela angariação)
     if agent:
