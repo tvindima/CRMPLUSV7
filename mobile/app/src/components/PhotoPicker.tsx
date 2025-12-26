@@ -8,9 +8,11 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { cloudinaryService } from '../services/cloudinary';
 
 interface PhotoPickerProps {
   photos: string[];
@@ -19,6 +21,45 @@ interface PhotoPickerProps {
 
 // ✅ CONSTANTE LIMITE (fácil alterar)
 const MAX_PHOTOS = 30;
+
+// Helper: converter URI local para URL Cloudinary
+const uploadToCloudinary = async (uri: string): Promise<string> => {
+  try {
+    // Se já é URL http, não precisa upload
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      return uri;
+    }
+    
+    const filename = `photo-${Date.now()}.jpg`;
+    
+    // Web: blob: URI - precisa converter para base64
+    if (Platform.OS === 'web' && uri.startsWith('blob:')) {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          const b64 = result.substring(result.indexOf(',') + 1);
+          resolve(b64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const url = await cloudinaryService.uploadFile(uri, filename, blob.type || 'image/jpeg', base64);
+      console.log('[PhotoPicker] ✅ Uploaded to Cloudinary:', url);
+      return url;
+    }
+    
+    // Native: file: URI ou asset-library:
+    const url = await cloudinaryService.uploadFile(uri, filename, 'image/jpeg');
+    console.log('[PhotoPicker] ✅ Uploaded to Cloudinary:', url);
+    return url;
+  } catch (error) {
+    console.error('[PhotoPicker] ❌ Upload failed:', error);
+    throw error;
+  }
+};
 
 export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange }) => {
   const [loading, setLoading] = useState(false);
@@ -67,13 +108,15 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
       });
 
       if (!result.canceled && result.assets[0]) {
-        const newPhotos = [...photos, result.assets[0].uri];
+        // Upload imediato para Cloudinary
+        const cloudinaryUrl = await uploadToCloudinary(result.assets[0].uri);
+        const newPhotos = [...photos, cloudinaryUrl];
         onPhotosChange(newPhotos);
-        console.log('[PhotoPicker] ✅ Foto tirada:', result.assets[0].uri);
+        console.log('[PhotoPicker] ✅ Foto tirada e uploaded:', cloudinaryUrl);
       }
     } catch (error) {
-      console.error('[PhotoPicker] ❌ Erro câmara:', error);
-      Alert.alert('Erro', 'Erro ao tirar foto. Tente novamente.');
+      console.error('[PhotoPicker] ❌ Erro câmara/upload:', error);
+      Alert.alert('Erro', 'Erro ao tirar foto ou fazer upload. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -119,15 +162,32 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
           return;
         }
         
-        const newPhotos = [...photos, ...newUris];
+        // Upload todas as fotos para Cloudinary
+        const uploadedUrls: string[] = [];
+        for (const uri of newUris) {
+          try {
+            const cloudinaryUrl = await uploadToCloudinary(uri);
+            uploadedUrls.push(cloudinaryUrl);
+          } catch (e) {
+            console.warn('[PhotoPicker] ⚠️ Falha upload de uma foto:', e);
+          }
+        }
+        
+        if (uploadedUrls.length === 0) {
+          Alert.alert('Erro', 'Não foi possível fazer upload das fotos. Tente novamente.');
+          return;
+        }
+        
+        const newPhotos = [...photos, ...uploadedUrls];
         onPhotosChange(newPhotos);
-        console.log('[PhotoPicker] ✅ Fotos selecionadas:', newUris.length);
+        console.log('[PhotoPicker] ✅ Fotos uploaded:', uploadedUrls.length);
         
         // ✅ INFO quando atingir limite
         if (newPhotos.length === MAX_PHOTOS) {
           Alert.alert(
             'Limite atingido',
             `${MAX_PHOTOS} fotos adicionadas.\n\nPara adicionar mais, remova fotos existentes.`
+          );
           );
         }
       }
