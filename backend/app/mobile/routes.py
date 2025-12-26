@@ -155,10 +155,18 @@ def list_mobile_properties(
     
     query = db.query(Property)
     
-    # Filtrar apenas propriedades do agente atual
-    if my_properties:
+    # ASSISTENTES: Sempre filtrar pelo agente responsável
+    # AGENTES: Filtrar apenas se my_properties=true
+    is_assistant = current_user.role == UserRole.ASSISTANT.value
+    
+    if is_assistant:
+        # Assistentes SEMPRE vêem apenas propriedades do agente responsável
         if not effective_agent_id:
-            # Se my_properties=true mas não tem agent_id, retornar lista vazia
+            return []
+        query = query.filter(Property.agent_id == effective_agent_id)
+    elif my_properties:
+        # Agentes só filtram se pedirem explicitamente
+        if not effective_agent_id:
             return []
         query = query.filter(Property.agent_id == effective_agent_id)
     
@@ -449,6 +457,7 @@ def get_cloudinary_upload_config(current_user: User = Depends(get_current_user))
 
 @router.get("/leads", response_model=List[lead_schemas.LeadOut])
 def list_mobile_leads(
+    request: Request,
     skip: int = 0,
     limit: int = 500,
     status: Optional[str] = None,
@@ -460,15 +469,26 @@ def list_mobile_leads(
     Listar leads para app mobile
     Por padrão mostra apenas leads do agente (my_leads=true)
     
+    IMPORTANTE: Assistentes sempre vêem leads do agente responsável
+    
     Args:
         status: Status único ou múltiplos separados por vírgula
                 Exemplos: "new" ou "contacted,qualified,negotiation"
     """
+    # Usar agent_id do token (suporta assistentes)
+    effective_agent_id = get_effective_agent_id(request, db)
+    is_assistant = current_user.role == UserRole.ASSISTANT.value
+    
     query = db.query(Lead)
     
-    # Filtrar leads do agente atual
-    if my_leads and current_user.agent_id:
-        query = query.filter(Lead.assigned_agent_id == current_user.agent_id)
+    # Assistentes SEMPRE vêem apenas leads do agente responsável
+    # Agentes filtram se my_leads=true
+    if is_assistant:
+        if not effective_agent_id:
+            return []
+        query = query.filter(Lead.assigned_agent_id == effective_agent_id)
+    elif my_leads and effective_agent_id:
+        query = query.filter(Lead.assigned_agent_id == effective_agent_id)
     
     # Filtro por status (suportar múltiplos valores)
     if status:
@@ -661,6 +681,7 @@ def convert_lead_to_client(
 
 @router.get("/tasks", response_model=List[task_schemas.TaskOut])
 def list_mobile_tasks(
+    request: Request,
     skip: int = 0,
     limit: int = 500,
     status: Optional[str] = None,
@@ -671,12 +692,23 @@ def list_mobile_tasks(
     """
     Listar tarefas para app mobile
     Por padrão mostra apenas tarefas do agente
+    
+    IMPORTANTE: Assistentes sempre vêem tarefas do agente responsável
     """
+    # Usar agent_id do token (suporta assistentes)
+    effective_agent_id = get_effective_agent_id(request, db)
+    is_assistant = current_user.role == UserRole.ASSISTANT.value
+    
     query = db.query(Task)
     
-    # Filtrar tarefas do agente atual
-    if my_tasks and current_user.agent_id:
-        query = query.filter(Task.assigned_agent_id == current_user.agent_id)
+    # Assistentes SEMPRE vêem apenas tarefas do agente responsável
+    # Agentes filtram se my_tasks=true
+    if is_assistant:
+        if not effective_agent_id:
+            return []
+        query = query.filter(Task.assigned_agent_id == effective_agent_id)
+    elif my_tasks and effective_agent_id:
+        query = query.filter(Task.assigned_agent_id == effective_agent_id)
     
     # Filtro por status
     if status:
@@ -690,18 +722,21 @@ def list_mobile_tasks(
 
 @router.get("/tasks/today")
 def get_tasks_today_mobile(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obter tarefas de hoje - widget para app mobile"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    
+    if not effective_agent_id:
         return {"tasks": [], "count": 0}
     
     today = datetime.utcnow().date()
     
     tasks = db.query(Task).filter(
         and_(
-            Task.assigned_agent_id == current_user.agent_id,
+            Task.assigned_agent_id == effective_agent_id,
             func.date(Task.due_date) == today,
             Task.status != TaskStatus.COMPLETED.value
         )
@@ -956,6 +991,7 @@ def get_mobile_dashboard_stats(
 
 @router.get("/dashboard/recent-activity")
 def get_mobile_recent_activity(
+    request: Request,
     limit: int = 20,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -963,23 +999,28 @@ def get_mobile_recent_activity(
     """
     Atividade recente do agente
     Últimas propriedades, leads e tarefas
+    
+    IMPORTANTE: Usa agent_id do token JWT para suportar assistentes
     """
-    if not current_user.agent_id:
+    # Usar agent_id do token (suporta assistentes)
+    effective_agent_id = get_effective_agent_id(request, db)
+    
+    if not effective_agent_id:
         return {"recent_properties": [], "recent_leads": [], "recent_tasks": []}
     
     # Últimas propriedades
     recent_properties = db.query(Property).filter(
-        Property.agent_id == current_user.agent_id
+        Property.agent_id == effective_agent_id
     ).order_by(desc(Property.created_at)).limit(5).all()
     
     # Últimos leads
     recent_leads = db.query(Lead).filter(
-        Lead.assigned_agent_id == current_user.agent_id
+        Lead.assigned_agent_id == effective_agent_id
     ).order_by(desc(Lead.created_at)).limit(5).all()
     
     # Últimas tarefas
     recent_tasks = db.query(Task).filter(
-        Task.assigned_agent_id == current_user.agent_id
+        Task.assigned_agent_id == effective_agent_id
     ).order_by(desc(Task.created_at)).limit(5).all()
     
     return {
