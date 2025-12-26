@@ -30,5 +30,9 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     python init_db.py
 fi
 
+# Always run alembic migrations to keep schema up to date
+echo "🔄 Running database migrations..."
+alembic upgrade head || echo "⚠️ Migration failed or already up to date"
+
 echo "🌐 Starting Uvicorn..."
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
