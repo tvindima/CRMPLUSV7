@@ -49,6 +49,7 @@ export interface CMI {
   comissao_percentagem?: number;
   comissao_valor_fixo?: number;
   comissao_iva_incluido: boolean;
+  opcao_pagamento?: string;  // cpcv, escritura, faseado
   prazo_meses: number;
   renovacao_automatica: boolean;
   data_inicio?: string;
@@ -124,6 +125,8 @@ export interface UpdateCMI {
   valor_pretendido?: number;
   valor_minimo?: number;
   comissao_percentagem?: number;
+  comissao_valor_fixo?: number;
+  opcao_pagamento?: string;
   prazo_meses?: number;
   
   // Agente responsável

@@ -42,14 +42,16 @@ interface Props {
   };
 }
 
-// Tipos de documentos para scan
+// Tipos de documentos para scan - 1º Proprietário
 const DOCUMENT_TYPES = [
-  { id: 'cc_frente', label: 'CC - Frente', icon: 'card' },
-  { id: 'cc_verso', label: 'CC - Verso', icon: 'card-outline' },
-  { id: 'caderneta_predial', label: 'Caderneta Predial', icon: 'document-text' },
-  { id: 'certidao_permanente', label: 'Certidão Permanente', icon: 'document' },
-  { id: 'licenca_utilizacao', label: 'Licença de Utilização', icon: 'clipboard' },
-  { id: 'certificado_energetico', label: 'Certificado Energético', icon: 'flash' },
+  { id: 'cc_frente', label: 'CC - Frente', icon: 'card', target: 1 },
+  { id: 'cc_verso', label: 'CC - Verso', icon: 'card-outline', target: 1 },
+  { id: 'cc2_frente', label: '2º CC - Frente (Cônjuge/Co-prop.)', icon: 'people', target: 2 },
+  { id: 'cc2_verso', label: '2º CC - Verso (Cônjuge/Co-prop.)', icon: 'people-outline', target: 2 },
+  { id: 'caderneta_predial', label: 'Caderneta Predial', icon: 'document-text', target: 0 },
+  { id: 'certidao_permanente', label: 'Certidão Permanente', icon: 'document', target: 0 },
+  { id: 'licenca_utilizacao', label: 'Licença de Utilização', icon: 'clipboard', target: 0 },
+  { id: 'certificado_energetico', label: 'Certificado Energético', icon: 'flash', target: 0 },
 ];
 
 // Estados civis
@@ -60,6 +62,26 @@ const TIPOS_CONTRATO = [
   { id: 'exclusivo', label: 'Exclusivo' },
   { id: 'nao_exclusivo', label: 'Não Exclusivo' },
   { id: 'partilhado', label: 'Partilhado' },
+];
+
+// Natureza do negócio
+const TIPOS_NEGOCIO = [
+  { id: 'venda', label: 'Compra/Venda' },
+  { id: 'arrendamento', label: 'Arrendamento' },
+  { id: 'trespasse', label: 'Trespasse' },
+];
+
+// Tipo de comissão
+const TIPOS_COMISSAO = [
+  { id: 'percentagem', label: 'Percentagem (%)' },
+  { id: 'valor_fixo', label: 'Valor Fixo (€)' },
+];
+
+// Forma de pagamento da comissão
+const FORMAS_PAGAMENTO = [
+  { id: 'cpcv', label: 'Toda no CPCV' },
+  { id: 'escritura', label: 'Toda após Escritura' },
+  { id: 'faseado', label: '50% CPCV + 50% Escritura' },
 ];
 
 export default function CMIFormScreen({ navigation, route }: Props) {
@@ -120,9 +142,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   // === SECÇÃO 3: CONDIÇÕES ===
   const [tipoContrato, setTipoContrato] = useState('exclusivo');
+  const [tipoNegocio, setTipoNegocio] = useState('venda');
   const [valorPretendido, setValorPretendido] = useState('');
   const [valorMinimo, setValorMinimo] = useState('');
+  const [tipoComissao, setTipoComissao] = useState('percentagem');
   const [comissaoPercentagem, setComissaoPercentagem] = useState('5');
+  const [comissaoValorFixo, setComissaoValorFixo] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState('cpcv');
   const [prazoMeses, setPrazoMeses] = useState('6');
 
   // === MODAIS ===
@@ -313,9 +339,18 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
     // Condições
     setTipoContrato(data.tipo_contrato || 'exclusivo');
+    setTipoNegocio(data.tipo_negocio || 'venda');
     setValorPretendido(data.valor_pretendido?.toString() || '');
     setValorMinimo(data.valor_minimo?.toString() || '');
-    setComissaoPercentagem(data.comissao_percentagem?.toString() || '5');
+    // Determinar tipo de comissão baseado nos dados
+    if (data.comissao_valor_fixo && parseFloat(data.comissao_valor_fixo.toString()) > 0) {
+      setTipoComissao('valor_fixo');
+      setComissaoValorFixo(data.comissao_valor_fixo.toString());
+    } else {
+      setTipoComissao('percentagem');
+      setComissaoPercentagem(data.comissao_percentagem?.toString() || '5');
+    }
+    setFormaPagamento(data.opcao_pagamento || 'cpcv');
     setPrazoMeses(data.prazo_meses?.toString() || '6');
 
     // Assinaturas
@@ -389,9 +424,12 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         imovel_area_util: imovelAreaUtil ? parseFloat(imovelAreaUtil) : undefined,
         imovel_estado_conservacao: imovelEstadoConservacao || undefined,
         tipo_contrato: tipoContrato,
+        tipo_negocio: tipoNegocio,
         valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
         valor_minimo: valorMinimo ? parseFloat(valorMinimo) : undefined,
-        comissao_percentagem: comissaoPercentagem ? parseFloat(comissaoPercentagem) : undefined,
+        comissao_percentagem: tipoComissao === 'percentagem' && comissaoPercentagem ? parseFloat(comissaoPercentagem) : undefined,
+        comissao_valor_fixo: tipoComissao === 'valor_fixo' && comissaoValorFixo ? parseFloat(comissaoValorFixo) : undefined,
+        opcao_pagamento: formaPagamento,
         prazo_meses: prazoMeses ? parseInt(prazoMeses) : undefined,
         agente_nome: agenteNome || undefined,
       });
@@ -464,12 +502,30 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   // === CÂMARA / OCR ===
   const openDocumentScanner = (docType: string, targetCliente: 1 | 2 = 1) => {
-    setCurrentDocType(docType);
-    setOcrTargetCliente(targetCliente);  // Define qual cliente preencher
+    // Para documentos do 2º proprietário, definir target automaticamente
+    let actualTarget = targetCliente;
+    let actualDocType = docType;
+    
+    if (docType === 'cc2_frente') {
+      actualTarget = 2;
+      actualDocType = 'cc_frente';  // Backend processa como CC normal
+      setShowCliente2(true);  // Mostrar secção do 2º outorgante
+    } else if (docType === 'cc2_verso') {
+      actualTarget = 2;
+      actualDocType = 'cc_verso';
+      setShowCliente2(true);
+    }
+    
+    setCurrentDocType(actualDocType);
+    setOcrTargetCliente(actualTarget);
     setShowCameraModal(true);
   };
 
   const docTypeToPreKey = (docType: string) => {
+    // cc2_frente e cc2_verso também vão para documentos_proprietario
+    if (docType === 'cc2_frente' || docType === 'cc2_verso') {
+      return 'documentos_proprietario';
+    }
     return docType === 'caderneta_predial' ? 'caderneta_predial'
       : docType === 'certidao_permanente' ? 'certidao_permanente'
       : docType === 'licenca_utilizacao' ? 'licenca_utilizacao'
@@ -1158,6 +1214,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📋 CONDIÇÕES DO CONTRATO</Text>
 
+          {/* Tipo de Contrato */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Tipo de Contrato</Text>
             <View style={styles.chipContainer}>
@@ -1168,6 +1225,24 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                   onPress={() => setTipoContrato(tipo.id)}
                 >
                   <Text style={[styles.chipText, tipoContrato === tipo.id && styles.chipTextSelected]}>
+                    {tipo.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Natureza do Negócio */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Natureza do Negócio</Text>
+            <View style={styles.chipContainer}>
+              {TIPOS_NEGOCIO.map((tipo) => (
+                <TouchableOpacity
+                  key={tipo.id}
+                  style={[styles.chip, tipoNegocio === tipo.id && styles.chipSelected]}
+                  onPress={() => setTipoNegocio(tipo.id)}
+                >
+                  <Text style={[styles.chipText, tipoNegocio === tipo.id && styles.chipTextSelected]}>
                     {tipo.label}
                   </Text>
                 </TouchableOpacity>
@@ -1201,18 +1276,50 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, styles.halfWidth]}>
-              <Text style={styles.label}>Comissão (%)</Text>
-              <TextInput
-                style={styles.input}
-                value={comissaoPercentagem}
-                onChangeText={setComissaoPercentagem}
-                placeholder="5"
-                placeholderTextColor="#666"
-                keyboardType="decimal-pad"
-              />
+          {/* Tipo de Comissão */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Tipo de Comissão</Text>
+            <View style={styles.chipContainer}>
+              {TIPOS_COMISSAO.map((tipo) => (
+                <TouchableOpacity
+                  key={tipo.id}
+                  style={[styles.chip, tipoComissao === tipo.id && styles.chipSelected]}
+                  onPress={() => setTipoComissao(tipo.id)}
+                >
+                  <Text style={[styles.chipText, tipoComissao === tipo.id && styles.chipTextSelected]}>
+                    {tipo.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </View>
+
+          <View style={styles.row}>
+            {tipoComissao === 'percentagem' ? (
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>Comissão (%)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={comissaoPercentagem}
+                  onChangeText={setComissaoPercentagem}
+                  placeholder="5"
+                  placeholderTextColor="#666"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            ) : (
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>Valor Fixo (€)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={comissaoValorFixo}
+                  onChangeText={setComissaoValorFixo}
+                  placeholder="5000"
+                  placeholderTextColor="#666"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
 
             <View style={[styles.inputContainer, styles.halfWidth]}>
               <Text style={styles.label}>Prazo (meses)</Text>
@@ -1224,6 +1331,24 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                 placeholderTextColor="#666"
                 keyboardType="number-pad"
               />
+            </View>
+          </View>
+
+          {/* Forma de Pagamento da Comissão */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Pagamento da Comissão</Text>
+            <View style={styles.chipContainer}>
+              {FORMAS_PAGAMENTO.map((forma) => (
+                <TouchableOpacity
+                  key={forma.id}
+                  style={[styles.chip, formaPagamento === forma.id && styles.chipSelected]}
+                  onPress={() => setFormaPagamento(forma.id)}
+                >
+                  <Text style={[styles.chipText, formaPagamento === forma.id && styles.chipTextSelected]}>
+                    {forma.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
