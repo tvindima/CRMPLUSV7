@@ -109,16 +109,35 @@ function NewAgentInner() {
 
     try {
       setLoading(true);
+      
+      // Mapear campos do formulário para o schema do backend
+      const agentData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        license_ami: formData.license_number || null,
+        bio: null,
+        instagram: formData.instagram_url || null,
+        facebook: formData.facebook_url || null,
+        linkedin: formData.linkedin_url || null,
+        whatsapp: formData.phone || null,
+        team_id: formData.team_id || null,
+        agency_id: null,
+      };
+      
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(agentData),
         }
       );
 
-      if (!response.ok) throw new Error('Erro ao criar agente');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Erro ao criar agente');
+      }
 
       toast?.push('Agente criado com sucesso!', 'success');
       setTimeout(() => {
@@ -126,7 +145,7 @@ function NewAgentInner() {
       }, 1500);
     } catch (error) {
       console.error('Erro ao criar agente:', error);
-      toast?.push('Erro ao criar agente', 'error');
+      toast?.push(error instanceof Error ? error.message : 'Erro ao criar agente', 'error');
     } finally {
       setLoading(false);
     }
