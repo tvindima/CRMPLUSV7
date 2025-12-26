@@ -31,6 +31,7 @@ import FirstImpressionFormScreen from '../screens/FirstImpressionFormScreen';
 import FirstImpressionSignatureScreen from '../screens/FirstImpressionSignatureScreen';
 import CMIFormScreen from '../screens/CMIFormScreen';
 import TaxCalculatorScreen from '../screens/TaxCalculatorScreen';
+import MortgageSimulatorScreen from '../screens/MortgageSimulatorScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   FirstImpressionSignature: { impressionId: number; clientName: string };
   CMIForm: { cmiId?: number; firstImpressionId?: number };
   TaxCalculator: undefined;
+  MortgageSimulator: undefined;
 };
 
 export type TabParamList = {
@@ -79,6 +81,7 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="PropertyDetail" component={PropertyDetailScreenV4} options={{ title: 'Detalhe do Imóvel' }} />
       <HomeStack.Screen name="LeadDetail" component={LeadDetailScreenV4} options={{ title: 'Detalhe do Lead' }} />
       <HomeStack.Screen name="TaxCalculator" component={TaxCalculatorScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="MortgageSimulator" component={MortgageSimulatorScreen} options={{ headerShown: false }} />
     </HomeStack.Navigator>
   );
 }

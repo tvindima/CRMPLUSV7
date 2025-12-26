@@ -1,0 +1,34 @@
+{
+  "version": "2025",
+  "lastUpdate": "2025-01-01",
+  "euribor": {
+    "taxa": 0.025,
+    "descricao": "Euribor 12 meses (valor indicativo de mercado)"
+  },
+  "spread": {
+    "hpp": {
+      "taxa": 0.01,
+      "descricao": "Spread médio para Habitação Própria Permanente"
+    },
+    "secundaria": {
+      "taxa": 0.015,
+      "descricao": "Spread médio para Habitação Secundária/Investimento"
+    }
+  },
+  "entradaMinima": {
+    "hpp": 0.10,
+    "secundaria": 0.20
+  },
+  "prazosDisponiveis": [20, 25, 30, 35, 40],
+  "taxaEsforcoLimites": {
+    "confortavel": 0.30,
+    "aceitavel": 0.35,
+    "risco": 0.40
+  },
+  "notas": [
+    "Taxas indicativas baseadas em valores médios de mercado",
+    "Não representa qualquer entidade bancária específica",
+    "Simulação não vinculativa",
+    "Sujeito a análise de crédito individual"
+  ]
+}
