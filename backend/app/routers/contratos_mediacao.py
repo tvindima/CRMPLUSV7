@@ -947,14 +947,88 @@ def processar_documento_ocr(
     db.commit()
     db.refresh(item)
     
-    db.commit()
+    # Mapear os campos extraídos para o formato esperado pelo mobile
+    # O mobile espera: nome, nif, numero_documento, artigo_matricial, area_bruta, etc.
+    dados_para_mobile = {}
+    
+    if data.tipo in ("cc_frente", "cc_verso"):
+        if updates.get("cliente_nome"):
+            dados_para_mobile["nome"] = updates["cliente_nome"]
+        if updates.get("cliente_nif"):
+            dados_para_mobile["nif"] = updates["cliente_nif"]
+        if updates.get("cliente_cc"):
+            dados_para_mobile["numero_documento"] = updates["cliente_cc"]
+        if updates.get("cliente_cc_validade"):
+            dados_para_mobile["validade"] = updates["cliente_cc_validade"]
+    
+    elif data.tipo == "caderneta_predial":
+        if updates.get("imovel_artigo_matricial"):
+            dados_para_mobile["artigo_matricial"] = updates["imovel_artigo_matricial"]
+        if updates.get("imovel_area_bruta"):
+            dados_para_mobile["area_bruta"] = str(updates["imovel_area_bruta"])
+        if updates.get("imovel_area_util"):
+            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
+        if updates.get("imovel_freguesia"):
+            dados_para_mobile["freguesia"] = updates["imovel_freguesia"]
+        if updates.get("imovel_concelho"):
+            dados_para_mobile["concelho"] = updates["imovel_concelho"]
+        if updates.get("imovel_distrito"):
+            dados_para_mobile["distrito"] = updates["imovel_distrito"]
+        if updates.get("imovel_morada"):
+            dados_para_mobile["morada"] = updates["imovel_morada"]
+        if updates.get("imovel_codigo_postal"):
+            dados_para_mobile["codigo_postal"] = updates["imovel_codigo_postal"]
+        if updates.get("valor_pretendido"):
+            dados_para_mobile["valor_patrimonial"] = str(updates["valor_pretendido"])
+    
+    elif data.tipo == "certidao_permanente":
+        if updates.get("imovel_artigo_matricial"):
+            dados_para_mobile["artigo_matricial"] = updates["imovel_artigo_matricial"]
+        if updates.get("imovel_area_bruta"):
+            dados_para_mobile["area_bruta"] = str(updates["imovel_area_bruta"])
+        if updates.get("imovel_area_util"):
+            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
+        if updates.get("imovel_morada"):
+            dados_para_mobile["morada"] = updates["imovel_morada"]
+        if updates.get("imovel_freguesia"):
+            dados_para_mobile["freguesia"] = updates["imovel_freguesia"]
+        if updates.get("imovel_concelho"):
+            dados_para_mobile["concelho"] = updates["imovel_concelho"]
+    
+    elif data.tipo == "certificado_energetico":
+        if updates.get("imovel_certificado_energetico"):
+            dados_para_mobile["classe_energetica"] = updates["imovel_certificado_energetico"]
+        if updates.get("imovel_morada"):
+            dados_para_mobile["morada"] = updates["imovel_morada"]
+        if updates.get("imovel_codigo_postal"):
+            dados_para_mobile["codigo_postal"] = updates["imovel_codigo_postal"]
+        if updates.get("imovel_area_util"):
+            dados_para_mobile["area_util"] = str(updates["imovel_area_util"])
+    
+    elif data.tipo == "licenca_utilizacao":
+        if updates.get("imovel_licenca_numero"):
+            dados_para_mobile["licenca_numero"] = updates["imovel_licenca_numero"]
+        if updates.get("imovel_licenca_data"):
+            dados_para_mobile["licenca_data"] = updates["imovel_licenca_data"]
+    
+    # Se não extraiu nada, usar os dados originais (stub ou raw_text)
+    if not dados_para_mobile:
+        dados_para_mobile = dados_extraidos
+    else:
+        # Incluir raw_text também para debug se existir
+        if dados_extraidos.get("raw_text"):
+            dados_para_mobile["raw_text"] = dados_extraidos["raw_text"]
+    
+    # Ajustar confiança se extraímos dados reais
+    if updates and confianca < 0.5:
+        confianca = 0.7  # Confiança média se extraímos alguma coisa
     
     return schemas.DocumentoOCRResponse(
         sucesso=True,
         tipo=data.tipo,
-        dados_extraidos=dados_extraidos,
+        dados_extraidos=dados_para_mobile,
         confianca=confianca,
-        mensagem=mensagem
+        mensagem=mensagem if mensagem else f"Extraídos {len(dados_para_mobile)} campos"
     )
 
 

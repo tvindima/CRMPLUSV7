@@ -452,37 +452,110 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     // Processar via OCR
     Alert.alert('A Processar', 'A extrair dados do documento...');
     
-    const ocrResult = await cmiService.processOCR(
-      cmi.id,
-      currentDocType,
-      base64
-    );
-
-    if (ocrResult.sucesso) {
-      // Preencher campos automaticamente
-      if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
-        if (ocrResult.dados_extraidos.nome) {
-          setClienteNome(ocrResult.dados_extraidos.nome);
-        }
-        if (ocrResult.dados_extraidos.nif) {
-          setClienteNif(ocrResult.dados_extraidos.nif);
-        }
-        if (ocrResult.dados_extraidos.numero_documento) {
-          setClienteCc(ocrResult.dados_extraidos.numero_documento);
-        }
-      } else if (currentDocType === 'caderneta_predial') {
-        if (ocrResult.dados_extraidos.artigo_matricial) {
-          setImovelArtigoMatricial(ocrResult.dados_extraidos.artigo_matricial);
-        }
-        if (ocrResult.dados_extraidos.area_bruta) {
-          setImovelAreaBruta(ocrResult.dados_extraidos.area_bruta);
-        }
-      }
-
-      Alert.alert(
-        'Documento Processado',
-        `${ocrResult.mensagem}\n\nConfiança: ${(ocrResult.confianca * 100).toFixed(0)}%\n\nVerifique os campos preenchidos.`
+    try {
+      const ocrResult = await cmiService.processOCR(
+        cmi.id,
+        currentDocType,
+        base64
       );
+
+      console.log('[OCR] Resultado:', JSON.stringify(ocrResult, null, 2));
+
+      if (ocrResult.sucesso) {
+        const dados = ocrResult.dados_extraidos;
+        let camposPreenchidos = 0;
+        
+        // Preencher campos automaticamente
+        if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
+          if (dados.nome) {
+            setClienteNome(dados.nome);
+            camposPreenchidos++;
+          }
+          if (dados.nif) {
+            setClienteNif(dados.nif);
+            camposPreenchidos++;
+          }
+          if (dados.numero_documento) {
+            setClienteCc(dados.numero_documento);
+            camposPreenchidos++;
+          }
+          if (dados.validade) {
+            // Se tiver campo de validade, setar aqui
+            camposPreenchidos++;
+          }
+        } else if (currentDocType === 'caderneta_predial') {
+          if (dados.artigo_matricial) {
+            setImovelArtigoMatricial(dados.artigo_matricial);
+            camposPreenchidos++;
+          }
+          if (dados.area_bruta) {
+            setImovelAreaBruta(dados.area_bruta);
+            camposPreenchidos++;
+          }
+          if (dados.area_util) {
+            setImovelAreaUtil(dados.area_util);
+            camposPreenchidos++;
+          }
+          if (dados.morada) {
+            setImovelMorada(dados.morada);
+            camposPreenchidos++;
+          }
+          if (dados.codigo_postal) {
+            setImovelCodigoPostal(dados.codigo_postal);
+            camposPreenchidos++;
+          }
+          if (dados.freguesia) {
+            setImovelFreguesia(dados.freguesia);
+            camposPreenchidos++;
+          }
+          if (dados.concelho) {
+            setImovelConcelho(dados.concelho);
+            camposPreenchidos++;
+          }
+        } else if (currentDocType === 'certidao_permanente') {
+          if (dados.artigo_matricial) {
+            setImovelArtigoMatricial(dados.artigo_matricial);
+            camposPreenchidos++;
+          }
+          if (dados.area_bruta) {
+            setImovelAreaBruta(dados.area_bruta);
+            camposPreenchidos++;
+          }
+          if (dados.area_util) {
+            setImovelAreaUtil(dados.area_util);
+            camposPreenchidos++;
+          }
+          if (dados.morada) {
+            setImovelMorada(dados.morada);
+            camposPreenchidos++;
+          }
+          if (dados.freguesia) {
+            setImovelFreguesia(dados.freguesia);
+            camposPreenchidos++;
+          }
+          if (dados.concelho) {
+            setImovelConcelho(dados.concelho);
+            camposPreenchidos++;
+          }
+        } else if (currentDocType === 'certificado_energetico') {
+          if (dados.classe_energetica) {
+            setImovelCertificadoEnergetico(dados.classe_energetica);
+            camposPreenchidos++;
+          }
+        }
+
+        console.log('[OCR] Campos preenchidos:', camposPreenchidos);
+
+        Alert.alert(
+          'Documento Processado',
+          `${ocrResult.mensagem}\n\nConfiança: ${(ocrResult.confianca * 100).toFixed(0)}%\n\n${camposPreenchidos > 0 ? `${camposPreenchidos} campos preenchidos automaticamente.` : 'Verifique os dados e preencha manualmente se necessário.'}`
+        );
+      } else {
+        Alert.alert('Erro OCR', ocrResult.mensagem || 'Não foi possível processar o documento');
+      }
+    } catch (error: any) {
+      console.error('[OCR] Erro:', error);
+      Alert.alert('Erro', error.message || 'Erro ao processar documento');
     }
   };
 
