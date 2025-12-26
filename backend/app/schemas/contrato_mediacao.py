@@ -92,6 +92,16 @@ class CMIBase(BaseModel):
     prazo_meses: int = Field(default=6)
     renovacao_automatica: bool = True
     
+    # Ónus e encargos
+    imovel_livre_onus: bool = Field(default=True, description="True = livre de ónus, False = tem ónus/encargos")
+    imovel_onus_descricao: Optional[str] = Field(default=None, description="Descrição dos ónus (hipotecas, penhoras)")
+    imovel_onus_valor: Optional[Decimal] = Field(default=None, description="Valor em dívida dos ónus")
+    
+    # Condições de pagamento da comissão
+    opcao_pagamento: str = Field(default="cpcv", description="Opção de pagamento: cpcv, escritura, faseado")
+    pagamento_percentagem_cpcv: Optional[Decimal] = Field(default=50, description="% a pagar no CPCV (se faseado)")
+    pagamento_percentagem_escritura: Optional[Decimal] = Field(default=50, description="% a pagar na escritura (se faseado)")
+    
     # Cláusulas
     clausulas_especiais: Optional[str] = None
 
@@ -154,6 +164,17 @@ class CMIUpdate(BaseModel):
     data_fim: Optional[date] = None
     prazo_meses: Optional[int] = None
     renovacao_automatica: Optional[bool] = None
+    
+    # Ónus e encargos
+    imovel_livre_onus: Optional[bool] = None
+    imovel_onus_descricao: Optional[str] = None
+    imovel_onus_valor: Optional[Decimal] = None
+    
+    # Condições de pagamento
+    opcao_pagamento: Optional[str] = None
+    pagamento_percentagem_cpcv: Optional[Decimal] = None
+    pagamento_percentagem_escritura: Optional[Decimal] = None
+    
     clausulas_especiais: Optional[str] = None
 
 
@@ -188,6 +209,16 @@ class CMIResponse(CMIBase):
     assinatura_mediador: Optional[str] = None
     assinatura_mediador_data: Optional[datetime] = None
     local_assinatura: Optional[str] = None
+    
+    # Ónus e encargos
+    imovel_livre_onus: bool = True
+    imovel_onus_descricao: Optional[str] = None
+    imovel_onus_valor: Optional[Decimal] = None
+    
+    # Condições de pagamento
+    opcao_pagamento: str = "cpcv"
+    pagamento_percentagem_cpcv: Optional[Decimal] = None
+    pagamento_percentagem_escritura: Optional[Decimal] = None
     
     # PDF
     pdf_url: Optional[str] = None

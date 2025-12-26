@@ -104,17 +104,29 @@ class ContratoMediacaoImobiliaria(Base):
     
     # === SECÇÃO 4: CONDIÇÕES DO CONTRATO ===
     tipo_contrato = Column(String(50), nullable=False, default=TipoContrato.EXCLUSIVO)
-    tipo_negocio = Column(String(50), nullable=False, default="venda")  # venda, arrendamento
+    tipo_negocio = Column(String(50), nullable=False, default="venda")  # venda, arrendamento, trespasse
     
     # Valor
     valor_pretendido = Column(DECIMAL(15, 2), nullable=True)  # Valor de venda pretendido
     valor_minimo = Column(DECIMAL(15, 2), nullable=True)  # Valor mínimo aceite
     
+    # === CLÁUSULA 3 - ÓNUS E ENCARGOS ===
+    imovel_livre_onus = Column(Boolean, default=True)  # True = livre, False = tem ónus
+    imovel_onus_descricao = Column(String(255), nullable=True)  # Descrição dos ónus (hipotecas, penhoras)
+    imovel_onus_valor = Column(DECIMAL(15, 2), nullable=True)  # Valor dos ónus
+    
+    # === CLÁUSULA 5 - REMUNERAÇÃO ===
     # Comissão
     comissao_percentagem = Column(DECIMAL(5, 2), nullable=True)  # Ex: 5.00 = 5%
     comissao_valor_fixo = Column(DECIMAL(15, 2), nullable=True)  # Valor fixo (alternativa)
     comissao_iva_incluido = Column(Boolean, default=False)
     comissao_observacoes = Column(Text, nullable=True)
+    
+    # Condições de pagamento (selecionar uma)
+    # opcao_pagamento: "escritura" | "cpcv" | "faseado"
+    opcao_pagamento = Column(String(50), default="cpcv")
+    pagamento_percentagem_cpcv = Column(DECIMAL(5, 2), nullable=True)  # % no CPCV
+    pagamento_percentagem_escritura = Column(DECIMAL(5, 2), nullable=True)  # % na escritura
     
     # Prazo
     data_inicio = Column(Date, nullable=True)
