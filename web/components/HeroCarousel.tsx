@@ -92,7 +92,7 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
   };
 
   return (
-    <section className="relative isolate h-[450px] w-full overflow-hidden md:h-[520px]">
+    <section className="relative h-[450px] w-full overflow-hidden md:h-[520px]">
       {/* Background Image ou Video */}
       {hasVideo && videoInfo ? (
         <>
