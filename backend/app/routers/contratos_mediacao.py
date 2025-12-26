@@ -345,14 +345,33 @@ def gerar_pdf(
     c.drawCentredString(width/2, y, "Cláusula 1.ª - (Identificação do Imóvel)")
     y -= 5*mm
     c.setFont("Helvetica", 8)
-    im = f"O Segundo Contratante é proprietário e legítimo possuidor da fracção autónoma/prédio(rústico/urbano)/"
-    im += f"estabelecimento comercial, destinado(a) a {tipo_imovel}, sendo constituído por "
+    
+    # Determinar tipo de propriedade baseado no tipo de imóvel
+    tipo_imovel_lower = (tipo_imovel or "").lower()
+    if tipo_imovel_lower in ["apartamento", "flat", "t0", "t1", "t2", "t3", "t4", "t5"]:
+        tipo_propriedade = "fracção autónoma"
+        natureza_predial = "urbana"
+    elif tipo_imovel_lower in ["moradia", "vivenda", "villa", "house", "quinta", "herdade"]:
+        tipo_propriedade = "prédio urbano"
+        natureza_predial = "urbana"
+    elif tipo_imovel_lower in ["terreno", "lote", "rústico", "agrícola"]:
+        tipo_propriedade = "prédio rústico"
+        natureza_predial = "rústica"
+    elif tipo_imovel_lower in ["loja", "escritório", "armazém", "estabelecimento", "comercial"]:
+        tipo_propriedade = "estabelecimento comercial"
+        natureza_predial = "urbana"
+    else:
+        tipo_propriedade = "prédio urbano"
+        natureza_predial = "urbana"
+    
+    im = f"O Segundo Contratante é proprietário e legítimo possuidor do {tipo_propriedade}, "
+    im += f"destinado(a) a {tipo_imovel}, sendo constituído por "
     im += f"{safe(item.imovel_tipologia) or '___'} divisões assoalhadas, com uma área total de "
-    im += f"{safe(item.imovel_area_bruta) or '___'} m², sito na(Rua,Av.,Etc.) {safe(item.imovel_morada) or '______________'}, "
+    im += f"{safe(item.imovel_area_bruta) or '___'} m², sito em {safe(item.imovel_morada) or '______________'}, "
     im += f"concelho de {safe(item.imovel_concelho) or '__________'}, código postal {safe(item.imovel_codigo_postal) or '____-___'}, "
     im += f"descrito na Conservatória do Registo Predial de {safe(item.imovel_conservatoria) or '__________'}, "
     im += f"sob a descrição n.º {safe(item.imovel_numero_descricao) or '________'}, "
-    im += f"inscrito na matriz predial (urbana/rústica) com o artigo n.º {safe(item.imovel_artigo_matricial) or '____'} "
+    im += f"inscrito na matriz predial {natureza_predial} com o artigo n.º {safe(item.imovel_artigo_matricial) or '____'} "
     im += f"da freguesia de {safe(item.imovel_freguesia) or '__________'}, "
     im += f"e certificado energético nº {safe(item.imovel_certificado_energetico) or '___________'} válido até ___________."
     y = draw_text(c, im, margin_left, y, usable_width, 8, 10)

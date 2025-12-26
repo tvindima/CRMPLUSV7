@@ -64,6 +64,18 @@ const TIPOS_CONTRATO = [
   { id: 'partilhado', label: 'Partilhado' },
 ];
 
+// Tipos de imóvel
+const TIPOS_IMOVEL = [
+  'Apartamento',
+  'Moradia',
+  'Terreno',
+  'Loja',
+  'Escritório',
+  'Armazém',
+  'Quinta',
+  'Prédio',
+];
+
 // Natureza do negócio
 const TIPOS_NEGOCIO = [
   { id: 'venda', label: 'Compra/Venda' },
@@ -129,7 +141,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [ocrTargetCliente, setOcrTargetCliente] = useState<1 | 2>(1);
 
   // === SECÇÃO 2: IMÓVEL ===
-  const [imovelTipo, setImovelTipo] = useState('Apartamento');
+  const [imovelTipo, setImovelTipo] = useState('');
   const [imovelTipologia, setImovelTipologia] = useState('');
   const [imovelMorada, setImovelMorada] = useState('');
   const [imovelCodigoPostal, setImovelCodigoPostal] = useState('');
@@ -326,7 +338,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     }
 
     // Imóvel
-    setImovelTipo(data.imovel_tipo || 'Apartamento');
+    setImovelTipo(data.imovel_tipo || '');
     setImovelTipologia(data.imovel_tipologia || '');
     setImovelMorada(data.imovel_morada || '');
     setImovelCodigoPostal(data.imovel_codigo_postal || '');
@@ -649,6 +661,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         } else if (tipoDocumento === 'caderneta_predial') {
           if (dados.artigo_matricial) {
             setImovelArtigoMatricial(dados.artigo_matricial);
+            camposPreenchidos++;
+          }
+          if (dados.tipo_imovel) {
+            setImovelTipo(dados.tipo_imovel);
+            camposPreenchidos++;
+          }
+          if (dados.tipologia) {
+            setImovelTipologia(dados.tipologia);
             camposPreenchidos++;
           }
           if (dados.area_bruta) {
@@ -1144,28 +1164,32 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🏠 IMÓVEL</Text>
 
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, styles.halfWidth]}>
-              <Text style={styles.label}>Tipo</Text>
-              <TextInput
-                style={styles.input}
-                value={imovelTipo}
-                onChangeText={setImovelTipo}
-                placeholder="Apartamento"
-                placeholderTextColor="#666"
-              />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Tipo de Imóvel</Text>
+            <View style={styles.chipContainer}>
+              {TIPOS_IMOVEL.map((tipo) => (
+                <TouchableOpacity
+                  key={tipo}
+                  style={[styles.chip, imovelTipo === tipo && styles.chipSelected]}
+                  onPress={() => setImovelTipo(tipo)}
+                >
+                  <Text style={[styles.chipText, imovelTipo === tipo && styles.chipTextSelected]}>
+                    {tipo}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </View>
 
-            <View style={[styles.inputContainer, styles.halfWidth]}>
-              <Text style={styles.label}>Tipologia</Text>
-              <TextInput
-                style={styles.input}
-                value={imovelTipologia}
-                onChangeText={setImovelTipologia}
-                placeholder="T3"
-                placeholderTextColor="#666"
-              />
-            </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Tipologia (nº assoalhadas)</Text>
+            <TextInput
+              style={styles.input}
+              value={imovelTipologia}
+              onChangeText={setImovelTipologia}
+              placeholder="T3"
+              placeholderTextColor="#666"
+            />
           </View>
 
           <View style={styles.inputContainer}>
