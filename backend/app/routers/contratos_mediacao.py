@@ -1520,7 +1520,6 @@ def processar_documento_ocr(
                     data_val = parsed["data_validade"]
                     if "/" in data_val:
                         try:
-                            from datetime import datetime
                             dt = datetime.strptime(data_val, "%d/%m/%Y")
                             updates["cliente_cc_validade"] = dt.date()
                         except:
