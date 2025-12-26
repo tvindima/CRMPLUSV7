@@ -42,6 +42,20 @@ router = APIRouter(prefix="/cmi", tags=["Contratos Mediação (CMI)"])
 
 
 # =====================================================
+# Helper Functions
+# =====================================================
+
+def format_money(value) -> str:
+    """Formatar valor monetário para exibição"""
+    if value is None:
+        return "N/A"
+    try:
+        return f"{float(value):,.2f}€".replace(",", " ").replace(".", ",").replace(" ", ".")
+    except (ValueError, TypeError):
+        return str(value) if value else "N/A"
+
+
+# =====================================================
 # Dados do Mediador (carregados automaticamente)
 # =====================================================
 
