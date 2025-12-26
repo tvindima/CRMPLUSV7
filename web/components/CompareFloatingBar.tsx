@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useCompare } from "@/contexts/CompareContext";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import Image from "next/image";
 import { AddExternalPropertyModal } from "./AddExternalPropertyModal";
 
 export function CompareFloatingBar() {
   const { compareList, removeFromCompare, clearCompare, canAddMore } = useCompare();
+  const { isAuthenticated } = useAuth();
   const [showExternalModal, setShowExternalModal] = useState(false);
 
-  if (compareList.length === 0) return null;
+  // Só mostrar a barra se o utilizador estiver autenticado e tiver imóveis
+  if (!isAuthenticated || compareList.length === 0) return null;
 
   // Verificar se é imóvel externo (imagem começa com "external:")
   const isExternal = (imagem?: string) => imagem?.startsWith("external:");
