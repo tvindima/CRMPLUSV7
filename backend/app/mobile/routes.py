@@ -142,7 +142,7 @@ def change_own_password(
     Alterar a própria password.
     Requer password atual para confirmar identidade.
     """
-    from app.security import verify_password, get_password_hash
+    from app.users.services import verify_password, get_password_hash
     
     # Verificar password atual
     if not verify_password(data.current_password, current_user.hashed_password):
@@ -205,7 +205,7 @@ def change_assistant_password(
     Alterar password de um assistente.
     Apenas o agente responsável pode alterar a password do seu assistente.
     """
-    from app.security import get_password_hash
+    from app.users.services import get_password_hash
     
     effective_agent_id = get_effective_agent_id(request, db)
     
