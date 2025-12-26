@@ -28,57 +28,71 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "URL inválido" }, { status: 400 });
     }
 
-    // Fazer fetch da página (server-side, sem problemas de CORS)
-    // Usar headers completos para simular um browser real
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "pt-PT,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Cache-Control": "max-age=0",
-        "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"macOS"',
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
-        "Referer": "https://www.google.com/",
-      },
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      // Tentar com headers mais simples como fallback
-      const fallbackResponse = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-          "Accept": "text/html",
-        },
-      });
-      
-      if (!fallbackResponse.ok) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: `Site bloqueou o acesso. Por favor, preencha os dados manualmente.`,
-            partial: true 
+    let html: string | null = null;
+    
+    // Lista de proxies para tentar
+    const proxyAttempts = [
+      // Tentativa 1: Direto com headers completos
+      async () => {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "pt-PT,pt;q=0.9,en;q=0.8",
+            "Cache-Control": "no-cache",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "cross-site",
           },
-          { status: 200 }
-        );
+          redirect: "follow",
+        });
+        if (response.ok) return await response.text();
+        return null;
+      },
+      // Tentativa 2: Via proxy corsproxy.io
+      async () => {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, {
+          headers: { "Accept": "text/html" },
+        });
+        if (response.ok) return await response.text();
+        return null;
+      },
+      // Tentativa 3: Via proxy api.codetabs.com
+      async () => {
+        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (response.ok) return await response.text();
+        return null;
+      },
+      // Tentativa 4: Via thingproxy
+      async () => {
+        const proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
+        const response = await fetch(proxyUrl);
+        if (response.ok) return await response.text();
+        return null;
+      },
+    ];
+
+    // Tentar cada proxy até um funcionar
+    for (const attempt of proxyAttempts) {
+      try {
+        html = await attempt();
+        if (html && html.length > 1000) break;
+      } catch (e) {
+        continue;
       }
-      
-      const fallbackHtml = await fallbackResponse.text();
-      const urlLower = url.toLowerCase();
-      let data = extractGeneric(fallbackHtml, url);
-      return NextResponse.json({ success: true, data, partial: true });
     }
 
-    const html = await response.text();
+    // Se nenhum proxy funcionou
+    if (!html || html.length < 1000) {
+      return NextResponse.json({
+        success: false,
+        error: "Este site tem proteção anti-scraping. Por favor, preencha os dados manualmente.",
+        showForm: true,
+      });
+    }
+
     const urlLower = url.toLowerCase();
 
     let data: ExtractedData;
