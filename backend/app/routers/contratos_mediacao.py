@@ -1129,16 +1129,24 @@ def extrair_caderneta(text: str) -> dict:
     # Baseado em padrões típicos da Caderneta Predial
     tipo_detectado = None
     
+    # PRIMEIRO verificar se é Moradia/Casa (prioridade sobre Apartamento)
+    # "Uma casa de habitação" ou "casa de habitação" = Moradia
+    if re.search(r'CASA\s*DE\s*HABITA[ÇC][ÃA]O|UMA\s+CASA|MORADIA|VIVENDA|HABITA[ÇC][ÃA]O\s+UNIFAMILIAR', text_upper):
+        tipo_detectado = "Moradia"
+        logger.info(f"[OCR CADERNETA] Tipo detectado: Moradia (casa de habitação)")
+    # "Prédio em Prop. Total sem Andares" = Moradia (não é apartamento)
+    elif re.search(r'PR[ÉE]DIO\s+EM\s+PROP\.?\s*TOTAL\s+SEM\s+ANDARES', text_upper):
+        tipo_detectado = "Moradia"
+        logger.info(f"[OCR CADERNETA] Tipo detectado: Moradia (prédio total sem andares)")
     # Fracção autónoma = Apartamento
-    if re.search(r'FRAC[ÇC][ÃA]O\s+AUT[ÓO]NOMA', text_upper):
+    elif re.search(r'FRAC[ÇC][ÃA]O\s+AUT[ÓO]NOMA', text_upper):
         tipo_detectado = "Apartamento"
     elif re.search(r'PRÉDIO\s+EM\s+REGIME\s+DE\s+PROPRIEDADE\s+HORIZONTAL', text_upper):
         tipo_detectado = "Apartamento"
-    elif re.search(r'ANDAR|PISO|R/C|RES-DO-CHÃO', text_upper):
-        tipo_detectado = "Apartamento"
-    # Casa/Moradia independente
-    elif re.search(r'CASA\s+DE\s+HABITA[ÇC][ÃA]O|MORADIA|VIVENDA|HABITA[ÇC][ÃA]O\s+UNIFAMILIAR', text_upper):
-        tipo_detectado = "Moradia"
+    elif re.search(r'\bANDAR\b|\bPISO\b|\bR/C\b|RES-DO-CH[ÃA]O', text_upper):
+        # Só considerar apartamento se não foi já detectado como moradia
+        if not tipo_detectado:
+            tipo_detectado = "Apartamento"
     elif re.search(r'PR[ÉE]DIO\s+URBANO\s+(?!EM\s+REGIME)', text_upper) and not re.search(r'FRAC[ÇC][ÃA]O', text_upper):
         # Prédio urbano sem fracção = Moradia
         tipo_detectado = "Moradia"
@@ -1508,7 +1516,17 @@ def processar_documento_ocr(
                     updates["cliente_cc"] = parsed["numero_documento"]
                     dados_para_mobile["numero_documento"] = parsed["numero_documento"]
                 if parsed.get("data_validade"):
-                    updates["cliente_cc_validade"] = parsed["data_validade"]
+                    # Converter DD/MM/YYYY para date object (PostgreSQL espera YYYY-MM-DD)
+                    data_val = parsed["data_validade"]
+                    if "/" in data_val:
+                        try:
+                            from datetime import datetime
+                            dt = datetime.strptime(data_val, "%d/%m/%Y")
+                            updates["cliente_cc_validade"] = dt.date()
+                        except:
+                            updates["cliente_cc_validade"] = data_val
+                    else:
+                        updates["cliente_cc_validade"] = data_val
                     dados_para_mobile["validade"] = parsed["data_validade"]
                 if parsed.get("data_nascimento"):
                     dados_para_mobile["data_nascimento"] = parsed["data_nascimento"]
