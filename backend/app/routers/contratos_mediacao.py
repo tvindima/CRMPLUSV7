@@ -1449,9 +1449,6 @@ def extrair_certidao(text: str) -> dict:
     if m:
         val = m.group(1).replace(".", "").replace(",", ".")
         try:
-    if m:
-        val = m.group(1).replace(".", "").replace(",", ".")
-        try:
             result["area_total"] = float(val)
         except:
             pass
