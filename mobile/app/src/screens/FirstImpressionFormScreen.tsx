@@ -208,16 +208,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   };
 
   const ensureCMI = async () => {
-    const workingName = clientName?.trim() || '';
-    const nameParts = workingName.split(/\s+/).filter(Boolean);
-    if (nameParts.length < 2) {
-      Alert.alert(
-        'Preencha o nome',
-        'Indique nome e apelido para avançar (ex.: João Silva).'
-      );
-      return;
-    }
-
+    // Permitir avançar mesmo sem nome - OCR pode preencher depois
+    const workingName = clientName?.trim() || 'A Identificar';
+    
     // Já existe? Navega de imediato
     if (impressionId) {
       let targetPreId = preAngariacaoId;
@@ -241,7 +234,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     try {
       const payload = {
         ...buildPayload(),
-        client_name: workingName, // garantir mínimo 2 palavras
+        client_name: workingName, // usa placeholder se não houver nome
       };
       const created = await firstImpressionService.create(payload);
       setImpressionId(created.id);
