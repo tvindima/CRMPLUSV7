@@ -358,19 +358,16 @@ def gerar_pdf(
     y = draw_text(c, im, margin_left, y, usable_width, 8, 10)
     y -= 5*mm
     
-    # CLÁUSULA 2 - Identificação do Negócio (checkboxes dinâmicos)
+    # CLÁUSULA 2 - Identificação do Negócio
     c.setFont("Helvetica-Bold", 9)
     c.drawCentredString(width/2, y, "Cláusula 2.ª - (Identificação do Negócio)")
     y -= 5*mm
     c.setFont("Helvetica", 8)
-    # Checkboxes baseados no tipo_negocio
-    cb_compra = checkbox(item.tipo_negocio == "venda")
-    cb_arrend = checkbox(item.tipo_negocio == "arrendamento")
-    cb_tresp = checkbox(item.tipo_negocio == "trespasse")
-    neg = f"1 – A Mediadora obriga-se a diligenciar no sentido de conseguir interessado na  {cb_compra} Compra  "
-    neg += f"{cb_arrend} Arrendamento  {cb_tresp} Trespasse  pelo preço de {format_money(item.valor_pretendido)} "
-    neg += f"({format_money(item.valor_pretendido)} Euros), desenvolvendo para o efeito, ações de promoção e recolha de "
-    neg += "informações sobre os negócios pretendidos e características dos respetivos imóveis."
+    # Mostrar apenas o tipo de negócio selecionado
+    tipo_neg_txt = "Compra" if item.tipo_negocio == "venda" else "Arrendamento" if item.tipo_negocio == "arrendamento" else "Trespasse" if item.tipo_negocio == "trespasse" else "Compra"
+    neg = f"1 – A Mediadora obriga-se a diligenciar no sentido de conseguir interessado na {tipo_neg_txt} pelo preço de "
+    neg += f"{format_money(item.valor_pretendido)} ({format_money(item.valor_pretendido)} Euros), desenvolvendo para o efeito, "
+    neg += "ações de promoção e recolha de informações sobre os negócios pretendidos e características dos respetivos imóveis."
     y = draw_text(c, neg, margin_left, y, usable_width, 8, 10)
     y -= 2*mm
     c.drawString(margin_left, y, "2 – Qualquer alteração ao preço fixado no número anterior deverá ser comunicada de imediato e por escrito à Mediadora.")
@@ -382,16 +379,16 @@ def gerar_pdf(
     y -= 5*mm
     c.setFont("Helvetica", 8)
     livre_onus = getattr(item, 'imovel_livre_onus', True) if hasattr(item, 'imovel_livre_onus') else True
-    cb_livre = checkbox(livre_onus)
-    cb_onus = checkbox(not livre_onus)
-    c.drawString(margin_left, y, f"{cb_livre} O imóvel encontra-se livre de quaisquer ónus ou encargos.")
-    y -= 3*mm
-    onus_desc = getattr(item, 'imovel_onus_descricao', '') or '________________'
-    onus_val = getattr(item, 'imovel_onus_valor', '') or '________________'
-    c.drawString(margin_left, y, f"{cb_onus} O Segundo Contratante declara que sobre o imóvel descrito recaem os seguintes ónus e encargos")
-    y -= 3*mm
-    c.drawString(margin_left, y, f"   (hipotecas e penhoras) {onus_desc}, pelo valor de {onus_val} Euros.")
-    y -= 5*mm
+    if livre_onus:
+        c.drawString(margin_left, y, "O imóvel encontra-se livre de quaisquer ónus ou encargos.")
+        y -= 5*mm
+    else:
+        onus_desc = getattr(item, 'imovel_onus_descricao', '') or '________________'
+        onus_val = getattr(item, 'imovel_onus_valor', '') or '________________'
+        c.drawString(margin_left, y, "O Segundo Contratante declara que sobre o imóvel descrito recaem os seguintes ónus e encargos")
+        y -= 3*mm
+        c.drawString(margin_left, y, f"(hipotecas e penhoras) {onus_desc}, pelo valor de {onus_val} Euros.")
+        y -= 5*mm
     
     # CLÁUSULA 4 - Regime de Contratação
     c.setFont("Helvetica-Bold", 9)
@@ -423,14 +420,17 @@ def gerar_pdf(
     y -= 3*mm
     c.drawString(margin_left, y, "   ■ €4.000,00 (acrescido de IVA à taxa legal em vigor, se o negócio for igual ou inferior a €100.000,00)")
     y -= 3*mm
-    # Opção de pagamento (checkboxes dinâmicos)
+    # Mostrar apenas a opção de pagamento selecionada
     opcao_pag = getattr(item, 'opcao_pagamento', 'cpcv') or 'cpcv'
-    cb_cpcv = checkbox(opcao_pag == 'cpcv')
-    cb_escr = checkbox(opcao_pag == 'escritura')
-    cb_fase = checkbox(opcao_pag == 'faseado')
     pag_perc_cpcv = getattr(item, 'pagamento_percentagem_cpcv', 50) or 50
     pag_perc_escr = getattr(item, 'pagamento_percentagem_escritura', 50) or 50
-    c.drawString(margin_left, y, f"3 – Condições de pagamento: {cb_cpcv} Total aquando CPCV  {cb_escr} Na escritura  {cb_fase} Faseado {pag_perc_cpcv}%/{pag_perc_escr}%")
+    if opcao_pag == 'cpcv':
+        pag_txt = "Total aquando da celebração do Contrato Promessa de Compra e Venda (CPCV)"
+    elif opcao_pag == 'escritura':
+        pag_txt = "Total apenas após a celebração da Escritura"
+    else:  # faseado
+        pag_txt = f"{pag_perc_cpcv}% na assinatura do CPCV e {pag_perc_escr}% após a Escritura"
+    c.drawString(margin_left, y, f"3 – Condições de pagamento: {pag_txt}")
     y -= 3*mm
     c.drawString(margin_left, y, "4 – O direito à remuneração não é afastado pelo exercício de preferência legal sobre o imóvel.")
     y -= 3*mm
