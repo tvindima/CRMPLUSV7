@@ -1118,139 +1118,139 @@ def processar_documento_ocr(
             if doc_tipo in ("cc_frente", "cc_verso"):
                 parsed = extrair_cc(full_text)
                 logger.info(f"[OCR CC] Resultado: {parsed}")
+                
+                if parsed.get("nome_completo"):
+                    updates["cliente_nome"] = parsed["nome_completo"]
+                    dados_para_mobile["nome"] = parsed["nome_completo"]
+                if parsed.get("numero_documento"):
+                    updates["cliente_cc"] = parsed["numero_documento"]
+                    dados_para_mobile["numero_documento"] = parsed["numero_documento"]
+                if parsed.get("data_validade"):
+                    updates["cliente_cc_validade"] = parsed["data_validade"]
+                    dados_para_mobile["validade"] = parsed["data_validade"]
+                if parsed.get("data_nascimento"):
+                    dados_para_mobile["data_nascimento"] = parsed["data_nascimento"]
+                if parsed.get("sexo"):
+                    dados_para_mobile["sexo"] = parsed["sexo"]
+                if parsed.get("nacionalidade"):
+                    dados_para_mobile["nacionalidade"] = parsed["nacionalidade"]
+                # NIF do CC: É O NIF DO CLIENTE (quem assina o CMI)
+                # TEM PRIORIDADE sobre Caderneta porque é quem vai assinar!
+                if parsed.get("nif"):
+                    updates["cliente_nif"] = parsed["nif"]
+                    dados_para_mobile["nif"] = parsed["nif"]
+                    logger.info(f"[OCR CC] ✅ NIF do CLIENTE (CC): {parsed['nif']}")
             
-            if parsed.get("nome_completo"):
-                updates["cliente_nome"] = parsed["nome_completo"]
-                dados_para_mobile["nome"] = parsed["nome_completo"]
-            if parsed.get("numero_documento"):
-                updates["cliente_cc"] = parsed["numero_documento"]
-                dados_para_mobile["numero_documento"] = parsed["numero_documento"]
-            if parsed.get("data_validade"):
-                updates["cliente_cc_validade"] = parsed["data_validade"]
-                dados_para_mobile["validade"] = parsed["data_validade"]
-            if parsed.get("data_nascimento"):
-                dados_para_mobile["data_nascimento"] = parsed["data_nascimento"]
-            if parsed.get("sexo"):
-                dados_para_mobile["sexo"] = parsed["sexo"]
-            if parsed.get("nacionalidade"):
-                dados_para_mobile["nacionalidade"] = parsed["nacionalidade"]
-            # NIF do CC: É O NIF DO CLIENTE (quem assina o CMI)
-            # TEM PRIORIDADE sobre Caderneta porque é quem vai assinar!
-            if parsed.get("nif"):
-                updates["cliente_nif"] = parsed["nif"]
-                dados_para_mobile["nif"] = parsed["nif"]
-                logger.info(f"[OCR CC] ✅ NIF do CLIENTE (CC): {parsed['nif']}")
-        
-        # CADERNETA PREDIAL (FONTE DO NIF!)
-        elif doc_tipo == "caderneta_predial":
-            parsed = extrair_caderneta(full_text)
-            logger.info(f"[OCR CADERNETA] Resultado: {parsed}")
+            # CADERNETA PREDIAL (FONTE DO NIF!)
+            elif doc_tipo == "caderneta_predial":
+                parsed = extrair_caderneta(full_text)
+                logger.info(f"[OCR CADERNETA] Resultado: {parsed}")
+                
+                # Dados do imóvel
+                if parsed.get("artigo_matricial"):
+                    updates["imovel_artigo_matricial"] = parsed["artigo_matricial"]
+                    dados_para_mobile["artigo_matricial"] = parsed["artigo_matricial"]
+                if parsed.get("distrito"):
+                    updates["imovel_distrito"] = parsed["distrito"]
+                    dados_para_mobile["distrito"] = parsed["distrito"]
+                if parsed.get("concelho"):
+                    updates["imovel_concelho"] = parsed["concelho"]
+                    dados_para_mobile["concelho"] = parsed["concelho"]
+                if parsed.get("freguesia"):
+                    updates["imovel_freguesia"] = parsed["freguesia"]
+                    dados_para_mobile["freguesia"] = parsed["freguesia"]
+                if parsed.get("morada"):
+                    updates["imovel_morada"] = parsed["morada"]
+                    dados_para_mobile["morada"] = parsed["morada"]
+                if parsed.get("codigo_postal"):
+                    updates["imovel_codigo_postal"] = parsed["codigo_postal"]
+                    dados_para_mobile["codigo_postal"] = parsed["codigo_postal"]
+                if parsed.get("localidade"):
+                    dados_para_mobile["localidade"] = parsed["localidade"]
+                if parsed.get("tipologia"):
+                    updates["imovel_tipologia"] = parsed["tipologia"]
+                    dados_para_mobile["tipologia"] = parsed["tipologia"]
+                if parsed.get("afetacao"):
+                    dados_para_mobile["afetacao"] = parsed["afetacao"]
+                
+                # Áreas
+                if parsed.get("area_bruta_privativa"):
+                    updates["imovel_area_util"] = Decimal(str(parsed["area_bruta_privativa"]))
+                    dados_para_mobile["area_util"] = str(parsed["area_bruta_privativa"])
+                if parsed.get("area_bruta_construcao"):
+                    updates["imovel_area_bruta"] = Decimal(str(parsed["area_bruta_construcao"]))
+                    dados_para_mobile["area_bruta"] = str(parsed["area_bruta_construcao"])
+                if parsed.get("area_total_terreno"):
+                    dados_para_mobile["area_terreno"] = str(parsed["area_total_terreno"])
+                
+                # Valor patrimonial
+                if parsed.get("valor_patrimonial"):
+                    dados_para_mobile["valor_patrimonial"] = str(parsed["valor_patrimonial"])
+                    if not item.valor_pretendido:
+                        updates["valor_pretendido"] = Decimal(str(parsed["valor_patrimonial"]))
+                
+                # TITULAR E NIF DA CADERNETA (PROPRIETÁRIO REGISTADO NA MATRIZ)
+                # ATENÇÃO: Este NIF pode ser diferente do cliente que assina!
+                # Ex: Imóvel em nome de falecido, cabeça de casal assina como herdeiro
+                # Ex: Imóvel de empresa, representante legal assina
+                if parsed.get("titular_nif"):
+                    # Enviar como "proprietario_nif" para o mobile distinguir
+                    dados_para_mobile["proprietario_nif"] = parsed["titular_nif"]
+                    # NÃO atualizar cliente_nif! Esse vem do CC de quem assina
+                    logger.info(f"[OCR] ℹ️ NIF PROPRIETÁRIO (Caderneta): {parsed['titular_nif']} - Não é necessariamente o cliente!")
+                if parsed.get("titular_nome"):
+                    dados_para_mobile["proprietario_nome"] = parsed["titular_nome"]
+                    # Só usar para cliente se não tiver nome do CC (fallback)
+                    if not item.cliente_nome:
+                        updates["cliente_nome"] = parsed["titular_nome"]
+                        logger.info(f"[OCR] Nome do proprietário usado como fallback: {parsed['titular_nome']}")
             
-            # Dados do imóvel
-            if parsed.get("artigo_matricial"):
-                updates["imovel_artigo_matricial"] = parsed["artigo_matricial"]
-                dados_para_mobile["artigo_matricial"] = parsed["artigo_matricial"]
-            if parsed.get("distrito"):
-                updates["imovel_distrito"] = parsed["distrito"]
-                dados_para_mobile["distrito"] = parsed["distrito"]
-            if parsed.get("concelho"):
-                updates["imovel_concelho"] = parsed["concelho"]
-                dados_para_mobile["concelho"] = parsed["concelho"]
-            if parsed.get("freguesia"):
-                updates["imovel_freguesia"] = parsed["freguesia"]
-                dados_para_mobile["freguesia"] = parsed["freguesia"]
-            if parsed.get("morada"):
-                updates["imovel_morada"] = parsed["morada"]
-                dados_para_mobile["morada"] = parsed["morada"]
-            if parsed.get("codigo_postal"):
-                updates["imovel_codigo_postal"] = parsed["codigo_postal"]
-                dados_para_mobile["codigo_postal"] = parsed["codigo_postal"]
-            if parsed.get("localidade"):
-                dados_para_mobile["localidade"] = parsed["localidade"]
-            if parsed.get("tipologia"):
-                updates["imovel_tipologia"] = parsed["tipologia"]
-                dados_para_mobile["tipologia"] = parsed["tipologia"]
-            if parsed.get("afetacao"):
-                dados_para_mobile["afetacao"] = parsed["afetacao"]
+            # CERTIDÃO PERMANENTE (PREVALECE SOBRE AT!)
+            elif doc_tipo == "certidao_permanente":
+                parsed = extrair_certidao(full_text)
+                logger.info(f"[OCR CERTIDÃO] Resultado: {parsed}")
+                
+                if parsed.get("descricao_numero"):
+                    updates["imovel_descricao_conservatoria"] = parsed["descricao_numero"]
+                    dados_para_mobile["descricao_numero"] = parsed["descricao_numero"]
+                if parsed.get("matriz_numero"):
+                    updates["imovel_artigo_matricial"] = parsed["matriz_numero"]
+                    dados_para_mobile["artigo_matricial"] = parsed["matriz_numero"]
+                if parsed.get("area_total"):
+                    updates["imovel_area_bruta"] = Decimal(str(parsed["area_total"]))
+                    dados_para_mobile["area_bruta"] = str(parsed["area_total"])
+                if parsed.get("conservatoria"):
+                    dados_para_mobile["conservatoria"] = parsed["conservatoria"]
+                
+                # Proprietários legais (PREVALECE!)
+                if parsed.get("proprietarios_legais"):
+                    props = parsed["proprietarios_legais"]
+                    dados_para_mobile["proprietarios"] = props
+                    # Usar primeiro proprietário como cliente se não houver
+                    if props and not item.cliente_nome:
+                        updates["cliente_nome"] = props[0].get("nome")
+                        if props[0].get("nif"):
+                            updates["cliente_nif"] = props[0].get("nif")
             
-            # Áreas
-            if parsed.get("area_bruta_privativa"):
-                updates["imovel_area_util"] = Decimal(str(parsed["area_bruta_privativa"]))
-                dados_para_mobile["area_util"] = str(parsed["area_bruta_privativa"])
-            if parsed.get("area_bruta_construcao"):
-                updates["imovel_area_bruta"] = Decimal(str(parsed["area_bruta_construcao"]))
-                dados_para_mobile["area_bruta"] = str(parsed["area_bruta_construcao"])
-            if parsed.get("area_total_terreno"):
-                dados_para_mobile["area_terreno"] = str(parsed["area_total_terreno"])
-            
-            # Valor patrimonial
-            if parsed.get("valor_patrimonial"):
-                dados_para_mobile["valor_patrimonial"] = str(parsed["valor_patrimonial"])
-                if not item.valor_pretendido:
-                    updates["valor_pretendido"] = Decimal(str(parsed["valor_patrimonial"]))
-            
-            # TITULAR E NIF DA CADERNETA (PROPRIETÁRIO REGISTADO NA MATRIZ)
-            # ATENÇÃO: Este NIF pode ser diferente do cliente que assina!
-            # Ex: Imóvel em nome de falecido, cabeça de casal assina como herdeiro
-            # Ex: Imóvel de empresa, representante legal assina
-            if parsed.get("titular_nif"):
-                # Enviar como "proprietario_nif" para o mobile distinguir
-                dados_para_mobile["proprietario_nif"] = parsed["titular_nif"]
-                # NÃO atualizar cliente_nif! Esse vem do CC de quem assina
-                logger.info(f"[OCR] ℹ️ NIF PROPRIETÁRIO (Caderneta): {parsed['titular_nif']} - Não é necessariamente o cliente!")
-            if parsed.get("titular_nome"):
-                dados_para_mobile["proprietario_nome"] = parsed["titular_nome"]
-                # Só usar para cliente se não tiver nome do CC (fallback)
-                if not item.cliente_nome:
-                    updates["cliente_nome"] = parsed["titular_nome"]
-                    logger.info(f"[OCR] Nome do proprietário usado como fallback: {parsed['titular_nome']}")
-        
-        # CERTIDÃO PERMANENTE (PREVALECE SOBRE AT!)
-        elif doc_tipo == "certidao_permanente":
-            parsed = extrair_certidao(full_text)
-            logger.info(f"[OCR CERTIDÃO] Resultado: {parsed}")
-            
-            if parsed.get("descricao_numero"):
-                updates["imovel_descricao_conservatoria"] = parsed["descricao_numero"]
-                dados_para_mobile["descricao_numero"] = parsed["descricao_numero"]
-            if parsed.get("matriz_numero"):
-                updates["imovel_artigo_matricial"] = parsed["matriz_numero"]
-                dados_para_mobile["artigo_matricial"] = parsed["matriz_numero"]
-            if parsed.get("area_total"):
-                updates["imovel_area_bruta"] = Decimal(str(parsed["area_total"]))
-                dados_para_mobile["area_bruta"] = str(parsed["area_total"])
-            if parsed.get("conservatoria"):
-                dados_para_mobile["conservatoria"] = parsed["conservatoria"]
-            
-            # Proprietários legais (PREVALECE!)
-            if parsed.get("proprietarios_legais"):
-                props = parsed["proprietarios_legais"]
-                dados_para_mobile["proprietarios"] = props
-                # Usar primeiro proprietário como cliente se não houver
-                if props and not item.cliente_nome:
-                    updates["cliente_nome"] = props[0].get("nome")
-                    if props[0].get("nif"):
-                        updates["cliente_nif"] = props[0].get("nif")
-        
-        # CERTIFICADO ENERGÉTICO
-        elif doc_tipo == "certificado_energetico":
-            parsed = extrair_certificado_energetico(full_text)
-            logger.info(f"[OCR CE] Resultado: {parsed}")
-            
-            if parsed.get("classe_energetica"):
-                updates["imovel_certificado_energetico"] = parsed["classe_energetica"]
-                dados_para_mobile["classe_energetica"] = parsed["classe_energetica"]
-            if parsed.get("numero_certificado"):
-                updates["imovel_certificado_numero"] = parsed["numero_certificado"]
-                dados_para_mobile["numero_certificado"] = parsed["numero_certificado"]
-            if parsed.get("area_util"):
-                # Só usar se não tivermos da Caderneta
-                if not item.imovel_area_util:
-                    updates["imovel_area_util"] = Decimal(str(parsed["area_util"]))
-                dados_para_mobile["area_util"] = str(parsed["area_util"])
-            if parsed.get("validade"):
-                updates["imovel_certificado_validade"] = parsed["validade"]
-                dados_para_mobile["validade_ce"] = parsed["validade"]
+            # CERTIFICADO ENERGÉTICO
+            elif doc_tipo == "certificado_energetico":
+                parsed = extrair_certificado_energetico(full_text)
+                logger.info(f"[OCR CE] Resultado: {parsed}")
+                
+                if parsed.get("classe_energetica"):
+                    updates["imovel_certificado_energetico"] = parsed["classe_energetica"]
+                    dados_para_mobile["classe_energetica"] = parsed["classe_energetica"]
+                if parsed.get("numero_certificado"):
+                    updates["imovel_certificado_numero"] = parsed["numero_certificado"]
+                    dados_para_mobile["numero_certificado"] = parsed["numero_certificado"]
+                if parsed.get("area_util"):
+                    # Só usar se não tivermos da Caderneta
+                    if not item.imovel_area_util:
+                        updates["imovel_area_util"] = Decimal(str(parsed["area_util"]))
+                    dados_para_mobile["area_util"] = str(parsed["area_util"])
+                if parsed.get("validade"):
+                    updates["imovel_certificado_validade"] = parsed["validade"]
+                    dados_para_mobile["validade_ce"] = parsed["validade"]
         
         except Exception as e:
             logger.error(f"[OCR] Erro na extração de dados: {e}", exc_info=True)
