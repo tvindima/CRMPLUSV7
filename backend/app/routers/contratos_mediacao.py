@@ -95,11 +95,9 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
     # Adicionar dados do agente (responsável pela angariação)
     if agent:
         dados["agente_nome"] = agent.name
-        dados["agente_nif"] = agent.nif if hasattr(agent, 'nif') else ""
         dados["agente_carteira_profissional"] = agent.license_ami or ""
     else:
         dados["agente_nome"] = ""
-        dados["agente_nif"] = ""
         dados["agente_carteira_profissional"] = ""
     
     return dados
