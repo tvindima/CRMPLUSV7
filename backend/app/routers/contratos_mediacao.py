@@ -1376,7 +1376,106 @@ def extrair_certificado_energetico(text: str) -> dict:
     return result
 
 
-# ========== ENDPOINT OCR PRINCIPAL ==========
+# ========== ENDPOINT OCR STANDALONE (sem CMI) ==========
+
+@router.post("/ocr/extract", response_model=schemas.DocumentoOCRResponse)
+def extrair_dados_ocr_standalone(
+    data: schemas.DocumentoOCRRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Processar documento via OCR SEM precisar de CMI existente.
+    
+    Útil para:
+    - Pré-preenchimento antes de criar CMI
+    - Upload de documentos no início do fluxo
+    - Extrair dados para preencher formulário
+    
+    Retorna apenas os dados extraídos, não guarda em nenhum contrato.
+    """
+    if not current_user.agent_id:
+        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    dados_extraidos = {}
+    confianca = 0.0
+    mensagem = ""
+    doc_tipo = data.tipo
+
+    vision_flag = os.environ.get("GCP_VISION_ENABLED") or os.environ.get("GCP_VISION_ENABLE") or "false"
+    use_vision = vision_flag.lower() == "true" and VISION_AVAILABLE
+    
+    logger.info(f"[OCR-Standalone] Vision: {use_vision}, Tipo: '{doc_tipo}'")
+
+    full_text = ""
+    
+    if use_vision:
+        try:
+            client = vision.ImageAnnotatorClient()
+            image = vision.Image(content=base64.b64decode(data.imagem_base64))
+            response = client.text_detection(image=image)
+            if response.error.message:
+                raise RuntimeError(response.error.message)
+            full_text = response.full_text_annotation.text if response.full_text_annotation else ""
+            confianca = 0.9
+            mensagem = "Texto extraído com Google Vision"
+            logger.info(f"[OCR-Standalone] Texto extraído ({len(full_text)} chars)")
+            
+            # Classificar documento automaticamente
+            tipo_detectado = classificar_documento(full_text)
+            logger.info(f"[OCR-Standalone] Tipo enviado: '{doc_tipo}', Tipo detectado: '{tipo_detectado}'")
+            
+            # Usar o tipo detectado (mais fiável)
+            doc_tipo = tipo_detectado
+            
+            # Extrair dados conforme o tipo
+            if doc_tipo == "caderneta_predial":
+                dados_extraidos = extrair_caderneta(full_text)
+                mensagem = "Caderneta Predial processada"
+            elif doc_tipo == "certidao_permanente":
+                dados_extraidos = extrair_certidao_permanente(full_text)
+                mensagem = "Certidão Permanente processada"
+            elif doc_tipo in ("cc_frente", "cc_verso"):
+                dados_extraidos = extrair_cc(full_text)
+                mensagem = "Cartão de Cidadão processado"
+            elif doc_tipo == "certificado_energetico":
+                dados_extraidos = extrair_certificado_energetico(full_text)
+                mensagem = "Certificado Energético processado"
+            else:
+                # Tentar extração genérica
+                dados_extraidos = extrair_cc(full_text)
+                mensagem = f"Documento processado (tipo: {doc_tipo})"
+            
+            logger.info(f"[OCR-Standalone] Dados extraídos: {dados_extraidos}")
+            
+        except Exception as e:
+            logger.error(f"[OCR-Standalone] Erro Vision: {e}")
+            return schemas.DocumentoOCRResponse(
+                sucesso=False,
+                tipo=doc_tipo,
+                dados_extraidos={},
+                confianca=0.0,
+                mensagem=f"Erro ao processar: {str(e)}"
+            )
+    else:
+        return schemas.DocumentoOCRResponse(
+            sucesso=False,
+            tipo=doc_tipo,
+            dados_extraidos={},
+            confianca=0.0,
+            mensagem="Google Vision não está configurado"
+        )
+    
+    return schemas.DocumentoOCRResponse(
+        sucesso=True,
+        tipo=doc_tipo,
+        dados_extraidos=dados_extraidos,
+        confianca=confianca,
+        mensagem=mensagem
+    )
+
+
+# ========== ENDPOINT OCR PRINCIPAL (com CMI) ==========
 
 @router.post("/{cmi_id}/ocr", response_model=schemas.DocumentoOCRResponse)
 def processar_documento_ocr(

@@ -510,19 +510,18 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   const processOcrFromBase64 = async (base64: string) => {
-    if (!cmi) {
-      Alert.alert('Erro', 'CMI ainda não foi criado.');
-      return;
-    }
-    // Processar via OCR
+    // Processar via OCR - funciona com ou sem CMI
     Alert.alert('A Processar', 'A extrair dados do documento...');
     
     try {
-      const ocrResult = await cmiService.processOCR(
-        cmi.id,
-        currentDocType,
-        base64
-      );
+      // Usar endpoint standalone se não houver CMI, ou endpoint normal se houver
+      let ocrResult;
+      if (cmi) {
+        ocrResult = await cmiService.processOCR(cmi.id, currentDocType, base64);
+      } else {
+        // OCR standalone - permite extrair dados antes de criar CMI
+        ocrResult = await cmiService.processOCRStandalone(currentDocType, base64);
+      }
 
       console.log('[OCR] Resultado:', JSON.stringify(ocrResult, null, 2));
 
@@ -665,7 +664,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0] && cmi) {
+      // Permite capturar documento mesmo sem CMI - OCR standalone
+      if (!result.canceled && result.assets[0]) {
         setShowCameraModal(false);
         setPendingDocs((prev) => [
           ...prev,
@@ -687,10 +687,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   const pickDocumentFromLibrary = async (docType: string) => {
-    if (!cmi) {
-      Alert.alert('Erro', 'CMI ainda não foi criado.');
-      return;
-    }
+    // Permite carregar documentos mesmo sem CMI - OCR standalone
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {

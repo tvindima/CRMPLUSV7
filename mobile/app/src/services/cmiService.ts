@@ -201,10 +201,21 @@ class CMIService {
   }
   
   /**
-   * Processar documento via OCR
+   * Processar documento via OCR (requer CMI existente)
    */
   async processOCR(id: number, tipo: string, imagemBase64: string): Promise<OCRResult> {
     return apiService.post<OCRResult>(`/cmi/${id}/ocr`, {
+      tipo: tipo,
+      imagem_base64: imagemBase64
+    });
+  }
+
+  /**
+   * Processar documento via OCR STANDALONE (sem precisar de CMI)
+   * Útil para pré-preenchimento de formulários antes de criar o CMI
+   */
+  async processOCRStandalone(tipo: string, imagemBase64: string): Promise<OCRResult> {
+    return apiService.post<OCRResult>(`/cmi/ocr/extract`, {
       tipo: tipo,
       imagem_base64: imagemBase64
     });
