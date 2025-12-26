@@ -40,3 +40,39 @@ export async function GET(
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get(COOKIE_NAME);
+
+    if (!token?.value) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
+
+    const url = `${RAILWAY_API}/pre-angariacoes/${params.id}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token.value}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const error = await res.text();
+      console.error("Railway API error (pre-angariacao delete):", error);
+      return NextResponse.json({ error: "Erro ao cancelar pré-angariação" }, { status: res.status });
+    }
+
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Pre-angariação delete proxy error:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  }
+}
