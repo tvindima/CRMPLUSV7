@@ -602,102 +602,139 @@ def classificar_documento(text: str) -> str:
 
 def extrair_cc(text: str) -> dict:
     """
-    Extrator dedicado para Cartão de Cidadão.
-    REGRA MÃE: Nome legal vem SEMPRE da MRZ, não do texto "bonito".
-    NUNCA extrair NIF do CC - vem da AT.
+    Extrator dedicado para Cartão de Cidadão Português.
+    
+    REGRAS:
+    - Nome legal vem SEMPRE da MRZ (linha com <<)
+    - Datas vêm da MRZ (linha numérica com 6 dígitos + M/F)
+    - Número documento: 8-9 dígitos + ZX/ZY sufixo
+    - NIF: Extrair se visível (campo "TAX No" ou "FISCAL")
+    
+    MRZ do CC Português:
+    - Linha 1: I<PRT092207960<ZX16<<<<<<<<<< (tipo + país + nº doc)
+    - Linha 2: 6104243F3011249PRT<<<<<<<<<<<6 (nascimento + sexo + validade + país)
+    - Linha 3: SOARES<VINDIMA<FERREIRA<<ROSA< (apelidos<<nomes)
     """
-    logger.info("[OCR CC] Iniciando extração por âncoras")
+    logger.info("[OCR CC] Iniciando extração robusta")
     
     result = {
         "nome_completo": None,
         "numero_documento": None,
         "data_nascimento": None,
         "data_validade": None,
+        "nif": None,  # Extrair se visível no CC
         "nacionalidade": None,
         "sexo": None,
-        # NIF NÃO extraído do CC - fonte é AT
     }
     
-    lines = text.splitlines()
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    text_clean = text.replace(" ", "")
     
-    # ===== 1. NOME VIA MRZ (ÚNICA FONTE VÁLIDA) =====
-    # Formato MRZ: APELIDO<<NOME<PROPRIO<
-    # Linha com múltiplos < e << é MRZ de nome
+    # ===== 1. NOME VIA MRZ =====
+    # Linha com APELIDO<<NOME (só letras e <)
     for line in lines:
-        line = line.strip()
-        # MRZ de nome: tem << e só letras/< (sem números no início)
-        if "<<" in line and not line[0].isdigit():
-            # Verificar se é linha de nome (não de dados)
-            if re.match(r'^[A-Z<]+$', line.replace(' ', '')):
-                parts = line.split("<<")
-                if len(parts) >= 2:
-                    # APELIDO<<NOME
-                    apelidos = parts[0].replace("<", " ").strip()
-                    nomes = parts[1].replace("<", " ").strip()
-                    if apelidos and nomes:
-                        result["nome_completo"] = f"{nomes} {apelidos}".title()
-                        logger.info(f"[OCR CC] ✅ Nome MRZ: {result['nome_completo']}")
-                        break
+        clean_line = line.replace(" ", "")
+        # MRZ de nome: só letras maiúsculas e <, tem <<
+        if "<<" in clean_line and re.match(r'^[A-Z<]+$', clean_line):
+            parts = clean_line.split("<<")
+            if len(parts) >= 2:
+                apelidos = parts[0].replace("<", " ").strip()
+                nomes = parts[1].replace("<", " ").strip()
+                if apelidos and nomes and len(apelidos) > 2:
+                    result["nome_completo"] = f"{nomes} {apelidos}".title()
+                    logger.info(f"[OCR CC] ✅ Nome MRZ: {result['nome_completo']}")
+                    break
     
-    # ===== 2. DADOS DA MRZ (linha numérica) =====
-    # Formato: 6104243F3011249PRT<<<<<<<<<<<6
-    # Posições: AAMMDD S VALIDADE NAC
+    # ===== 2. DADOS DA MRZ (linha com data nascimento) =====
+    # Procurar linha que tem padrão: AAMMDD + M/F + AAMMDD (nascimento + sexo + validade)
     for line in lines:
-        line = line.strip().replace(" ", "")
-        # Linha MRZ de dados: começa com 6 dígitos (data nascimento)
-        if re.match(r'^\d{6}[MF]', line):
-            # Data nascimento: posições 0-5 (AAMMDD)
-            try:
-                ano = line[0:2]
-                mes = line[2:4]
-                dia = line[4:6]
-                # Converter ano 2 dígitos
-                ano_full = f"19{ano}" if int(ano) > 30 else f"20{ano}"
-                result["data_nascimento"] = f"{dia}/{mes}/{ano_full}"
-                logger.info(f"[OCR CC] Data nascimento MRZ: {result['data_nascimento']}")
-            except:
-                pass
+        clean_line = line.replace(" ", "")
+        # Padrão: 6 dígitos + M ou F + 6 dígitos
+        mrz_data = re.search(r'(\d{6})([MF])(\d{6})', clean_line)
+        if mrz_data:
+            # Data nascimento: AAMMDD
+            nasc = mrz_data.group(1)
+            ano_n = nasc[0:2]
+            mes_n = nasc[2:4]
+            dia_n = nasc[4:6]
+            # Anos: 00-30 = 2000s, 31-99 = 1900s
+            ano_n_full = f"19{ano_n}" if int(ano_n) > 30 else f"20{ano_n}"
+            result["data_nascimento"] = f"{dia_n}/{mes_n}/{ano_n_full}"
+            logger.info(f"[OCR CC] ✅ Nascimento MRZ: {result['data_nascimento']}")
             
-            # Sexo: posição 6
-            result["sexo"] = line[6] if len(line) > 6 else None
+            # Sexo
+            result["sexo"] = mrz_data.group(2)
             
-            # Data validade: posições 7-12 (AAMMDD)
-            if len(line) >= 13:
-                try:
-                    ano_v = line[7:9]
-                    mes_v = line[9:11]
-                    dia_v = line[11:13]
-                    ano_v_full = f"20{ano_v}"
-                    result["data_validade"] = f"{dia_v}/{mes_v}/{ano_v_full}"
-                    logger.info(f"[OCR CC] Validade MRZ: {result['data_validade']}")
-                except:
-                    pass
+            # Data validade: AAMMDD
+            val = mrz_data.group(3)
+            ano_v = val[0:2]
+            mes_v = val[2:4]
+            dia_v = val[4:6]
+            ano_v_full = f"20{ano_v}"  # Validade sempre 20xx
+            result["data_validade"] = f"{dia_v}/{mes_v}/{ano_v_full}"
+            logger.info(f"[OCR CC] ✅ Validade MRZ: {result['data_validade']}")
             
-            # Nacionalidade: após validade
-            nac_match = re.search(r'PRT|[A-Z]{3}', line[13:])
+            # Nacionalidade (logo após validade)
+            nac_match = re.search(r'PRT|[A-Z]{3}', clean_line[mrz_data.end():])
             if nac_match:
                 result["nacionalidade"] = nac_match.group(0)
             break
     
     # ===== 3. NÚMERO DO DOCUMENTO =====
-    # Formato: 09220796 0 ZX1 (8 dígitos + check + sufixo)
-    # Procurar na área "N DOCUMENTO" ou "DOCUMENT No"
-    doc_match = re.search(r'(\d{8})\s*\d?\s*([A-Z]{2}\d)', text)
-    if doc_match:
-        result["numero_documento"] = f"{doc_match.group(1)} {doc_match.group(2)}"
-        logger.info(f"[OCR CC] Nº documento: {result['numero_documento']}")
+    # Formato: 09220796 0 ZX1 ou na MRZ: I<PRT092207960<ZX16
     
-    # ===== 4. FALLBACK: Datas do texto (se MRZ falhou) =====
+    # Tentar da MRZ primeiro (mais fiável)
+    mrz_doc = re.search(r'I<PRT(\d{9})<([A-Z]{2}\d+)', text_clean)
+    if mrz_doc:
+        result["numero_documento"] = f"{mrz_doc.group(1)} {mrz_doc.group(2)}"
+        logger.info(f"[OCR CC] ✅ Nº doc MRZ: {result['numero_documento']}")
+    else:
+        # Fallback: procurar 8-9 dígitos seguidos de ZX/ZY
+        doc_match = re.search(r'(\d{8,9})\s*\d?\s*([A-Z]{2}\d+)', text)
+        if doc_match:
+            result["numero_documento"] = f"{doc_match.group(1)} {doc_match.group(2)}"
+            logger.info(f"[OCR CC] ✅ Nº doc texto: {result['numero_documento']}")
+    
+    # ===== 4. NIF (se visível no CC) =====
+    # Procurar após "TAX No", "FISCAL", "NIF"
+    nif_patterns = [
+        r'TAX\s*N[°ºo]?\s*[:\s]*(\d{9})',
+        r'FISCAL\s*[:\s]*(\d{9})',
+        r'NIF\s*[:\s]*(\d{9})',
+        r'(?:ÇÃO|CAO)\s+FISCAL[^0-9]*(\d{9})',  # "CAÇÃO FISCAL" do OCR
+    ]
+    for pattern in nif_patterns:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            result["nif"] = m.group(1)
+            logger.info(f"[OCR CC] ✅ NIF encontrado: {result['nif']}")
+            break
+    
+    # Fallback NIF: Procurar 9 dígitos após certas palavras-chave
+    if not result["nif"]:
+        # Procurar linhas com números de 9 dígitos
+        for i, line in enumerate(lines):
+            if any(kw in line.upper() for kw in ["TAX", "FISCAL", "NIF"]):
+                # Procurar na mesma linha ou próxima
+                search_text = line + " " + (lines[i+1] if i+1 < len(lines) else "")
+                nif_match = re.search(r'\b(\d{9})\b', search_text)
+                if nif_match:
+                    result["nif"] = nif_match.group(1)
+                    logger.info(f"[OCR CC] ✅ NIF contexto: {result['nif']}")
+                    break
+    
+    # ===== 5. FALLBACK: Datas do texto =====
     if not result["data_validade"]:
         dates = re.findall(r'\b(\d{2})[/\-.\s](\d{2})[/\-.\s](\d{4})\b', text)
         if dates:
-            # Última data é geralmente validade
             d = dates[-1]
             result["data_validade"] = f"{d[0]}/{d[1]}/{d[2]}"
             if len(dates) >= 2:
                 d0 = dates[0]
                 result["data_nascimento"] = f"{d0[0]}/{d0[1]}/{d0[2]}"
+            logger.info(f"[OCR CC] Datas fallback: nasc={result['data_nascimento']}, val={result['data_validade']}")
     
+    logger.info(f"[OCR CC] Resultado final: {result}")
     return result
 
 
@@ -1090,9 +1127,17 @@ def processar_documento_ocr(
                 dados_para_mobile["validade"] = parsed["data_validade"]
             if parsed.get("data_nascimento"):
                 dados_para_mobile["data_nascimento"] = parsed["data_nascimento"]
-            # REGRA: NIF NUNCA do CC - só da Caderneta!
-            # if parsed.get("nif"):  <- REMOVIDO propositalmente
-            #     updates["cliente_nif"] = parsed["nif"]
+            if parsed.get("sexo"):
+                dados_para_mobile["sexo"] = parsed["sexo"]
+            if parsed.get("nacionalidade"):
+                dados_para_mobile["nacionalidade"] = parsed["nacionalidade"]
+            # NIF do CC: usar se não houver NIF da Caderneta
+            if parsed.get("nif"):
+                # Só preencher NIF se ainda não tiver (Caderneta tem prioridade)
+                if not item.cliente_nif:
+                    updates["cliente_nif"] = parsed["nif"]
+                dados_para_mobile["nif"] = parsed["nif"]
+                logger.info(f"[OCR CC] NIF extraído: {parsed['nif']}")
         
         # CADERNETA PREDIAL (FONTE DO NIF!)
         elif doc_tipo == "caderneta_predial":
