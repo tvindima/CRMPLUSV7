@@ -128,6 +128,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   // === MODAIS ===
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [showDocsModal, setShowDocsModal] = useState(false);  // Modal para gerir documentos
   const [currentDocType, setCurrentDocType] = useState('');
 
   // === ASSINATURAS ===
@@ -167,6 +168,44 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     } catch (e) {
       console.warn('Não foi possível carregar documentos da pré-angariação', e);
     }
+  };
+
+  // Remover documento guardado
+  const handleRemoveDocument = async (docIndex: number, docName: string) => {
+    if (!preAngariacaoId) {
+      Alert.alert('Erro', 'Pré-angariação não encontrada');
+      return;
+    }
+
+    const confirmDelete = Platform.OS === 'web' 
+      ? window.confirm(`Eliminar "${docName}"?`)
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Eliminar Documento',
+            `Tem a certeza que quer eliminar "${docName}"?`,
+            [
+              { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Eliminar', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmDelete) return;
+
+    try {
+      await preAngariacaoService.removeDocumento(preAngariacaoId, docIndex);
+      // Recarregar lista de documentos
+      await loadPreAngariacaoDocs(preAngariacaoId);
+      Alert.alert('Sucesso', 'Documento eliminado');
+    } catch (error: any) {
+      console.error('Erro ao eliminar documento:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível eliminar o documento');
+    }
+  };
+
+  // Remover documento pendente (ainda não guardado)
+  const handleRemovePendingDoc = (index: number) => {
+    setPendingDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
   const ensurePreAngariacao = async () => {
@@ -732,7 +771,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
         {/* SCAN DOCUMENTOS */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📷 Digitalizar Documentos</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📷 Digitalizar Documentos</Text>
+            {savedDocs.length > 0 && (
+              <TouchableOpacity onPress={() => setShowDocsModal(true)}>
+                <Text style={styles.manageDocsLink}>Gerir ({savedDocs.length})</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <Text style={styles.hint}>Fotografe ou anexe da galeria/ficheiros para preencher automaticamente</Text>
           
           <View style={styles.docList}>
@@ -772,6 +818,20 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                     <Text style={styles.docButtonText}>Anexar</Text>
                   </TouchableOpacity>
                 </View>
+                
+                {/* Mostrar documentos pendentes para este tipo */}
+                {pendingDocs.filter((d) => d.docType === doc.id).map((pendingDoc, idx) => {
+                  const globalIdx = pendingDocs.findIndex((d) => d === pendingDoc);
+                  return (
+                    <View key={idx} style={styles.pendingDocItem}>
+                      <Ionicons name="time-outline" size={14} color="#fbbf24" />
+                      <Text style={styles.pendingDocName} numberOfLines={1}>{pendingDoc.name}</Text>
+                      <TouchableOpacity onPress={() => handleRemovePendingDoc(globalIdx)}>
+                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
               </View>
             ))}
           </View>
@@ -1265,6 +1325,55 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
       </ScrollView>
 
+      {/* MODAL GERIR DOCUMENTOS */}
+      <Modal visible={showDocsModal} animationType="slide" transparent>
+        <View style={styles.docsModalOverlay}>
+          <View style={styles.docsModalContent}>
+            <View style={styles.docsModalHeader}>
+              <Text style={styles.docsModalTitle}>Documentos Carregados</Text>
+              <TouchableOpacity onPress={() => setShowDocsModal(false)}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.docsModalList}>
+              {savedDocs.length === 0 ? (
+                <Text style={styles.docsModalEmpty}>Nenhum documento carregado</Text>
+              ) : (
+                savedDocs.map((doc, index) => (
+                  <View key={index} style={styles.docsModalItem}>
+                    <View style={styles.docsModalItemInfo}>
+                      <Ionicons name="document-text" size={20} color="#00d9ff" />
+                      <View style={styles.docsModalItemText}>
+                        <Text style={styles.docsModalItemName} numberOfLines={1}>
+                          {doc.name || `Documento ${index + 1}`}
+                        </Text>
+                        <Text style={styles.docsModalItemType}>
+                          {doc.type || 'Tipo desconhecido'}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.docsModalDeleteBtn}
+                      onPress={() => handleRemoveDocument(index, doc.name || `Documento ${index + 1}`)}
+                    >
+                      <Ionicons name="trash" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.docsModalCloseBtn}
+              onPress={() => setShowDocsModal(false)}
+            >
+              <Text style={styles.docsModalCloseBtnText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* MODAL ASSINATURA - Fullscreen como entregas de estafetas */}
       <Modal visible={showSignatureModal} animationType="slide">
         <View style={styles.signatureModal}>
@@ -1589,6 +1698,103 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 12,
+  },
+  manageDocsLink: {
+    color: '#00d9ff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  pendingDocItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1a1f2e',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 8,
+  },
+  pendingDocName: {
+    flex: 1,
+    color: '#fbbf24',
+    fontSize: 12,
+  },
+  // Modal Gerir Documentos
+  docsModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  docsModalContent: {
+    backgroundColor: '#1a1f2e',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    padding: 20,
+  },
+  docsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  docsModalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  docsModalList: {
+    maxHeight: 400,
+  },
+  docsModalEmpty: {
+    color: '#888',
+    textAlign: 'center',
+    padding: 20,
+  },
+  docsModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0a0e1a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  docsModalItemInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  docsModalItemText: {
+    flex: 1,
+  },
+  docsModalItemName: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  docsModalItemType: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  docsModalDeleteBtn: {
+    padding: 8,
+  },
+  docsModalCloseBtn: {
+    backgroundColor: '#00d9ff',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  docsModalCloseBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
   signatureRow: {
     flexDirection: 'row',

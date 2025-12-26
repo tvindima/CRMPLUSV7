@@ -73,4 +73,7 @@ export const preAngariacaoService = {
     }
     return apiService.post(`/pre-angariacoes/${preAngariacaoId}/documentos`, payload);
   },
+  removeDocumento: async (preAngariacaoId: number, docIndex: number) => {
+    return apiService.delete(`/pre-angariacoes/${preAngariacaoId}/documentos/${docIndex}`);
+  },
 };
