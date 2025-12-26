@@ -81,7 +81,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [agenteNome, setAgenteNome] = useState('');
   const [agenteNif, setAgenteNif] = useState('');
 
-  // === SECÇÃO 1: CLIENTE ===
+  // === SECÇÃO 1: CLIENTE (1º Outorgante) ===
   const [clienteNome, setClienteNome] = useState('');
   const [clienteEstadoCivil, setClienteEstadoCivil] = useState('');
   const [clienteNif, setClienteNif] = useState('');
@@ -92,6 +92,19 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [clienteLocalidade, setClienteLocalidade] = useState('');
   const [clienteTelefone, setClienteTelefone] = useState('');
   const [clienteEmail, setClienteEmail] = useState('');
+
+  // === SECÇÃO 1B: SEGUNDO OUTORGANTE (co-proprietário, herdeiro, cônjuge) ===
+  const [showCliente2, setShowCliente2] = useState(false);
+  const [cliente2Nome, setCliente2Nome] = useState('');
+  const [cliente2Nif, setCliente2Nif] = useState('');
+  const [cliente2Cc, setCliente2Cc] = useState('');
+  const [cliente2CcValidade, setCliente2CcValidade] = useState('');
+  const [cliente2Morada, setCliente2Morada] = useState('');
+  const [cliente2Telefone, setCliente2Telefone] = useState('');
+  const [cliente2Email, setCliente2Email] = useState('');
+
+  // Qual cliente está a ser preenchido pelo OCR (1 ou 2)
+  const [ocrTargetCliente, setOcrTargetCliente] = useState<1 | 2>(1);
 
   // === SECÇÃO 2: IMÓVEL ===
   const [imovelTipo, setImovelTipo] = useState('Apartamento');
@@ -227,7 +240,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   const populateFields = (data: CMI) => {
-    // Cliente
+    // Cliente 1 (Primeiro Outorgante)
     setClienteNome(data.cliente_nome || '');
     setClienteEstadoCivil(data.cliente_estado_civil || '');
     setClienteNif(data.cliente_nif || '');
@@ -238,6 +251,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setClienteLocalidade(data.cliente_localidade || '');
     setClienteTelefone(data.cliente_telefone || '');
     setClienteEmail(data.cliente_email || '');
+
+    // Cliente 2 (Segundo Outorgante - se existir)
+    if (data.cliente2_nome || data.cliente2_nif || data.cliente2_cc) {
+      setShowCliente2(true);
+      setCliente2Nome(data.cliente2_nome || '');
+      setCliente2Nif(data.cliente2_nif || '');
+      setCliente2Cc(data.cliente2_cc || '');
+    }
 
     // Imóvel
     setImovelTipo(data.imovel_tipo || 'Apartamento');
@@ -314,6 +335,10 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         cliente_localidade: clienteLocalidade || undefined,
         cliente_telefone: clienteTelefone || undefined,
         cliente_email: clienteEmail || undefined,
+        // Segundo outorgante (co-proprietário, herdeiro, cônjuge)
+        cliente2_nome: cliente2Nome || undefined,
+        cliente2_nif: cliente2Nif || undefined,
+        cliente2_cc: cliente2Cc || undefined,
         imovel_tipo: imovelTipo || undefined,
         imovel_tipologia: imovelTipologia || undefined,
         imovel_morada: imovelMorada || undefined,
@@ -399,8 +424,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   // === CÂMARA / OCR ===
-  const openDocumentScanner = (docType: string) => {
+  const openDocumentScanner = (docType: string, targetCliente: 1 | 2 = 1) => {
     setCurrentDocType(docType);
+    setOcrTargetCliente(targetCliente);  // Define qual cliente preencher
     setShowCameraModal(true);
   };
 
@@ -465,23 +491,45 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         const dados = ocrResult.dados_extraidos;
         let camposPreenchidos = 0;
         
-        // Preencher campos automaticamente
+        // Preencher campos automaticamente baseado no tipo de documento
         if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
-          if (dados.nome) {
-            setClienteNome(dados.nome);
-            camposPreenchidos++;
-          }
-          if (dados.nif) {
-            setClienteNif(dados.nif);
-            camposPreenchidos++;
-          }
-          if (dados.numero_documento) {
-            setClienteCc(dados.numero_documento);
-            camposPreenchidos++;
-          }
-          if (dados.validade) {
-            // Se tiver campo de validade, setar aqui
-            camposPreenchidos++;
+          // Decidir qual cliente preencher baseado em ocrTargetCliente
+          if (ocrTargetCliente === 2) {
+            // SEGUNDO OUTORGANTE
+            if (dados.nome) {
+              setCliente2Nome(dados.nome);
+              camposPreenchidos++;
+            }
+            if (dados.nif) {
+              setCliente2Nif(dados.nif);
+              camposPreenchidos++;
+            }
+            if (dados.numero_documento) {
+              setCliente2Cc(dados.numero_documento);
+              camposPreenchidos++;
+            }
+            if (dados.validade) {
+              setCliente2CcValidade(dados.validade);
+              camposPreenchidos++;
+            }
+          } else {
+            // PRIMEIRO OUTORGANTE (default)
+            if (dados.nome) {
+              setClienteNome(dados.nome);
+              camposPreenchidos++;
+            }
+            if (dados.nif) {
+              setClienteNif(dados.nif);
+              camposPreenchidos++;
+            }
+            if (dados.numero_documento) {
+              setClienteCc(dados.numero_documento);
+              camposPreenchidos++;
+            }
+            if (dados.validade) {
+              setClienteCcValidade(dados.validade);
+              camposPreenchidos++;
+            }
           }
         } else if (currentDocType === 'caderneta_predial') {
           if (dados.artigo_matricial) {
@@ -844,7 +892,103 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               />
             </View>
           </View>
+
+          {/* Botão para adicionar segundo outorgante */}
+          {!showCliente2 && (
+            <TouchableOpacity
+              style={styles.addOutorganteButton}
+              onPress={() => setShowCliente2(true)}
+            >
+              <Ionicons name="person-add" size={20} color="#007AFF" />
+              <Text style={styles.addOutorganteText}>Adicionar 2º Outorgante (co-proprietário, herdeiro, cônjuge)</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* SECÇÃO 1B: SEGUNDO OUTORGANTE (se existir) */}
+        {showCliente2 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>👥 SEGUNDO OUTORGANTE</Text>
+              <TouchableOpacity onPress={() => setShowCliente2(false)}>
+                <Ionicons name="close-circle" size={24} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Botão para scan CC do 2º outorgante */}
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => openDocumentScanner('cc_frente', 2)}
+            >
+              <Ionicons name="camera" size={20} color="#FFF" />
+              <Text style={styles.scanButtonText}>Scan CC do 2º Outorgante</Text>
+            </TouchableOpacity>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Nome Completo</Text>
+              <TextInput
+                style={styles.input}
+                value={cliente2Nome}
+                onChangeText={setCliente2Nome}
+                placeholder="Nome completo"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>NIF</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cliente2Nif}
+                  onChangeText={setCliente2Nif}
+                  placeholder="123456789"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                  maxLength={9}
+                />
+              </View>
+
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>CC/BI</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cliente2Cc}
+                  onChangeText={setCliente2Cc}
+                  placeholder="12345678"
+                  placeholderTextColor="#666"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>Telefone</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cliente2Telefone}
+                  onChangeText={setCliente2Telefone}
+                  placeholder="912 345 678"
+                  placeholderTextColor="#666"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={[styles.inputContainer, styles.halfWidth]}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cliente2Email}
+                  onChangeText={setCliente2Email}
+                  placeholder="email@exemplo.com"
+                  placeholderTextColor="#666"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* SECÇÃO 2: DADOS DO IMÓVEL */}
         <View style={styles.section}>
@@ -1282,6 +1426,43 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addOutorganteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  addOutorganteText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#00d9ff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  scanButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   hint: {
     color: '#888',
