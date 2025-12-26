@@ -128,11 +128,17 @@ def get_effective_agent_id(req: Request, db: Session = Depends(lambda: None)) ->
     Para agentes normais, retorna o próprio agent_id.
     """
     token = extract_token(req)
+    print(f"[GET_EFFECTIVE_AGENT_ID] Token extracted: {token[:50] if token else 'None'}...")
+    
     if not token:
+        print("[GET_EFFECTIVE_AGENT_ID] No token found!")
         return None
     
     try:
         payload = decode_token(token)
-        return payload.get("agent_id")
-    except:
+        agent_id = payload.get("agent_id")
+        print(f"[GET_EFFECTIVE_AGENT_ID] Payload: {payload}, agent_id: {agent_id}")
+        return agent_id
+    except Exception as e:
+        print(f"[GET_EFFECTIVE_AGENT_ID] Error decoding token: {e}")
         return None
