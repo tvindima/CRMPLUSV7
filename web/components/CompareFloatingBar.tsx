@@ -1,59 +1,91 @@
 "use client";
 
+import { useState } from "react";
 import { useCompare } from "@/contexts/CompareContext";
 import Link from "next/link";
 import Image from "next/image";
+import { AddExternalPropertyModal } from "./AddExternalPropertyModal";
 
 export function CompareFloatingBar() {
-  const { compareList, removeFromCompare, clearCompare } = useCompare();
+  const { compareList, removeFromCompare, clearCompare, canAddMore } = useCompare();
+  const [showExternalModal, setShowExternalModal] = useState(false);
 
   if (compareList.length === 0) return null;
 
+  // Verificar se é imóvel externo (imagem começa com "external:")
+  const isExternal = (imagem?: string) => imagem?.startsWith("external:");
+  const getExternalUrl = (imagem?: string) => imagem?.replace("external:", "") || "";
+
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl rounded-2xl border border-[#2A2A2E] bg-[#151518]/95 p-4 shadow-2xl backdrop-blur">
-      <div className="flex items-center gap-4">
-        {/* Imóveis selecionados */}
-        <div className="flex flex-1 items-center gap-2 overflow-x-auto">
-          {compareList.map((property) => (
-            <div
-              key={property.id}
-              className="group relative flex-shrink-0"
-            >
-              <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-[#2A2A2E]">
-                {property.imagem ? (
-                  <Image
-                    src={property.imagem}
-                    alt={property.referencia}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-[#7A7A7A]">
-                    {property.referencia.slice(0, 3)}
+    <>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl rounded-2xl border border-[#2A2A2E] bg-[#151518]/95 p-4 shadow-2xl backdrop-blur">
+        <div className="flex items-center gap-4">
+          {/* Imóveis selecionados */}
+          <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+            {compareList.map((property) => (
+              <div
+                key={property.id}
+                className="group relative flex-shrink-0"
+              >
+                <div className={`relative h-12 w-12 overflow-hidden rounded-lg bg-[#2A2A2E] ${isExternal(property.imagem) ? "ring-2 ring-blue-500" : ""}`}>
+                  {property.imagem && !isExternal(property.imagem) ? (
+                    <Image
+                      src={property.imagem}
+                      alt={property.referencia}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : isExternal(property.imagem) ? (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-[#7A7A7A]">
+                      {property.referencia.slice(0, 3)}
+                    </div>
+                  )}
+                </div>
+                {/* Tooltip para externos */}
+                {isExternal(property.imagem) && (
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                    Externo
                   </div>
                 )}
+                <button
+                  onClick={() => removeFromCompare(property.id)}
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => removeFromCompare(property.id)}
-                className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition group-hover:opacity-100"
-              >
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
+            ))}
 
-          {/* Slots vazios */}
-          {Array.from({ length: 5 - compareList.length }).map((_, i) => (
-            <div
-              key={`empty-${i}`}
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-[#2A2A2E]"
-            >
-              <span className="text-xs text-[#7A7A7A]">+</span>
-            </div>
-          ))}
-        </div>
+            {/* Slots vazios com botão de adicionar externo no primeiro */}
+            {Array.from({ length: 5 - compareList.length }).map((_, i) => (
+              <button
+                key={`empty-${i}`}
+                onClick={() => i === 0 && canAddMore && setShowExternalModal(true)}
+                className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition ${
+                  i === 0 && canAddMore
+                    ? "border-blue-500/50 hover:border-blue-500 hover:bg-blue-500/10 cursor-pointer"
+                    : "border-[#2A2A2E] cursor-default"
+                }`}
+                title={i === 0 ? "Adicionar imóvel externo" : undefined}
+              >
+                {i === 0 ? (
+                  <svg className="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                ) : (
+                  <span className="text-xs text-[#7A7A7A]">+</span>
+                )}
+              </button>
+            ))}
+          </div>
 
         {/* Contador */}
         <div className="hidden sm:block text-center">
@@ -84,5 +116,12 @@ export function CompareFloatingBar() {
         </div>
       </div>
     </div>
+
+    {/* Modal para adicionar imóvel externo */}
+    <AddExternalPropertyModal
+      isOpen={showExternalModal}
+      onClose={() => setShowExternalModal(false)}
+    />
+    </>
   );
 }

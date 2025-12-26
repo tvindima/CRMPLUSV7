@@ -6,12 +6,18 @@ import Image from "next/image";
 import { useState } from "react";
 import { MortgageSimulator } from "@/components/MortgageSimulator";
 import { TaxCalculator } from "@/components/TaxCalculator";
+import { AddExternalPropertyModal } from "@/components/AddExternalPropertyModal";
 import { createPortal } from "react-dom";
 
+// Helper para verificar se é imóvel externo
+const isExternal = (imagem?: string) => imagem?.startsWith("external:");
+const getExternalUrl = (imagem?: string) => imagem?.replace("external:", "") || "";
+
 export default function CompararPage() {
-  const { compareList, removeFromCompare, clearCompare } = useCompare();
+  const { compareList, removeFromCompare, clearCompare, canAddMore } = useCompare();
   const [showSimulator, setShowSimulator] = useState<number | null>(null);
   const [showTaxCalc, setShowTaxCalc] = useState<number | null>(null);
+  const [showExternalModal, setShowExternalModal] = useState(false);
 
   if (compareList.length === 0) {
     return (
@@ -23,12 +29,29 @@ export default function CompararPage() {
         </div>
         <h1 className="mb-2 text-2xl font-bold text-white">Nenhum imóvel para comparar</h1>
         <p className="mb-6 text-[#7A7A7A]">Adicione até 5 imóveis para comparar as suas características.</p>
-        <Link
-          href="/imoveis"
-          className="rounded-full bg-[#E10600] px-6 py-3 font-semibold text-white transition hover:bg-[#C10500]"
-        >
-          Explorar Imóveis
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            href="/imoveis"
+            className="rounded-full bg-[#E10600] px-6 py-3 font-semibold text-white transition hover:bg-[#C10500]"
+          >
+            Explorar Imóveis
+          </Link>
+          <button
+            onClick={() => setShowExternalModal(true)}
+            className="flex items-center justify-center gap-2 rounded-full border border-blue-500 px-6 py-3 font-semibold text-blue-400 transition hover:bg-blue-500 hover:text-white"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Adicionar Imóvel Externo
+          </button>
+        </div>
+        
+        {/* Modal para adicionar externo mesmo sem imóveis */}
+        <AddExternalPropertyModal
+          isOpen={showExternalModal}
+          onClose={() => setShowExternalModal(false)}
+        />
       </div>
     );
   }
@@ -70,15 +93,28 @@ export default function CompararPage() {
           <h1 className="text-2xl font-bold text-white sm:text-3xl">Comparar Imóveis</h1>
           <p className="text-[#7A7A7A]">{compareList.length} de 5 imóveis selecionados</p>
         </div>
-        <button
-          onClick={clearCompare}
-          className="flex items-center gap-2 rounded-lg border border-[#2A2A2E] px-4 py-2 text-sm text-[#C5C5C5] transition hover:border-red-500 hover:text-red-500"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Limpar tudo
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {canAddMore && (
+            <button
+              onClick={() => setShowExternalModal(true)}
+              className="flex items-center gap-2 rounded-lg border border-blue-500 px-4 py-2 text-sm text-blue-400 transition hover:bg-blue-500 hover:text-white"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Adicionar Externo
+            </button>
+          )}
+          <button
+            onClick={clearCompare}
+            className="flex items-center gap-2 rounded-lg border border-[#2A2A2E] px-4 py-2 text-sm text-[#C5C5C5] transition hover:border-red-500 hover:text-red-500"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Limpar tudo
+          </button>
+        </div>
       </div>
 
       {/* Tabela de Comparação */}
@@ -87,28 +123,46 @@ export default function CompararPage() {
           <thead>
             <tr className="border-b border-[#2A2A2E]">
               <th className="p-4 text-left text-sm font-medium text-[#7A7A7A] w-40"></th>
-              {compareList.map((property) => (
+              {compareList.map((property) => {
+                const external = isExternal(property.imagem);
+                const externalUrl = getExternalUrl(property.imagem);
+                
+                return (
                 <th key={property.id} className="p-4 text-center min-w-[200px]">
                   <div className="relative">
                     {/* Botão remover */}
                     <button
                       onClick={() => removeFromCompare(property.id)}
-                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#2A2A2E] text-[#7A7A7A] hover:bg-red-500 hover:text-white transition"
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#2A2A2E] text-[#7A7A7A] hover:bg-red-500 hover:text-white transition z-10"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                     
+                    {/* Badge Externo */}
+                    {external && (
+                      <div className="absolute left-0 top-0 z-10 rounded-br-lg bg-blue-500 px-2 py-1 text-[10px] font-bold text-white">
+                        EXTERNO
+                      </div>
+                    )}
+                    
                     {/* Imagem */}
-                    <div className="relative mb-3 h-32 w-full overflow-hidden rounded-lg bg-[#2A2A2E]">
-                      {property.imagem ? (
+                    <div className={`relative mb-3 h-32 w-full overflow-hidden rounded-lg bg-[#2A2A2E] ${external ? "ring-2 ring-blue-500" : ""}`}>
+                      {property.imagem && !external ? (
                         <Image
                           src={property.imagem}
                           alt={property.referencia}
                           fill
                           className="object-cover"
                         />
+                      ) : external ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-2">
+                          <svg className="h-10 w-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          <span className="text-xs text-blue-400">Imóvel Externo</span>
+                        </div>
                       ) : (
                         <div className="flex h-full items-center justify-center">
                           <svg className="h-10 w-10 text-[#7A7A7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,16 +172,33 @@ export default function CompararPage() {
                       )}
                     </div>
 
-                    {/* Referência */}
-                    <Link href={`/imovel/${property.referencia}`} className="block">
-                      <span className="text-xs text-[#E10600]">{property.referencia}</span>
-                      <p className="text-sm font-semibold text-white hover:text-[#E10600] transition line-clamp-2">
-                        {property.titulo || property.referencia}
-                      </p>
-                    </Link>
+                    {/* Referência / Link */}
+                    {external ? (
+                      <a 
+                        href={externalUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <span className="text-xs text-blue-400">{property.referencia}</span>
+                        <p className="text-sm font-semibold text-white hover:text-blue-400 transition line-clamp-2 flex items-center justify-center gap-1">
+                          {property.titulo || "Imóvel Externo"}
+                          <svg className="h-3 w-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </p>
+                      </a>
+                    ) : (
+                      <Link href={`/imovel/${property.referencia}`} className="block">
+                        <span className="text-xs text-[#E10600]">{property.referencia}</span>
+                        <p className="text-sm font-semibold text-white hover:text-[#E10600] transition line-clamp-2">
+                          {property.titulo || property.referencia}
+                        </p>
+                      </Link>
+                    )}
                   </div>
                 </th>
-              ))}
+              )})}
             </tr>
           </thead>
           <tbody>
@@ -145,7 +216,11 @@ export default function CompararPage() {
             {/* Ações */}
             <tr>
               <td className="py-4 pr-4 text-sm font-medium text-[#C5C5C5]">Ferramentas</td>
-              {compareList.map((property) => (
+              {compareList.map((property) => {
+                const external = isExternal(property.imagem);
+                const externalUrl = getExternalUrl(property.imagem);
+                
+                return (
                 <td key={property.id} className="py-4 px-4">
                   <div className="flex flex-col gap-2">
                     <button
@@ -166,15 +241,29 @@ export default function CompararPage() {
                       </svg>
                       Calcular IMT
                     </button>
-                    <Link
-                      href={`/imovel/${property.referencia}`}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-[#E10600] px-3 py-2 text-xs text-[#E10600] transition hover:bg-[#E10600] hover:text-white"
-                    >
-                      Ver Detalhes
-                    </Link>
+                    {external ? (
+                      <a
+                        href={externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-blue-500 px-3 py-2 text-xs text-blue-400 transition hover:bg-blue-500 hover:text-white"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Ver no Site Original
+                      </a>
+                    ) : (
+                      <Link
+                        href={`/imovel/${property.referencia}`}
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[#E10600] px-3 py-2 text-xs text-[#E10600] transition hover:bg-[#E10600] hover:text-white"
+                      >
+                        Ver Detalhes
+                      </Link>
+                    )}
                   </div>
                 </td>
-              ))}
+              )})}
             </tr>
           </tbody>
         </table>
@@ -229,6 +318,12 @@ export default function CompararPage() {
         </div>,
         document.body
       )}
+
+      {/* Modal para adicionar imóvel externo */}
+      <AddExternalPropertyModal
+        isOpen={showExternalModal}
+        onClose={() => setShowExternalModal(false)}
+      />
     </div>
   );
 }
