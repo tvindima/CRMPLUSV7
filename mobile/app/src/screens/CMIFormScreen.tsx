@@ -491,8 +491,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         const dados = ocrResult.dados_extraidos;
         let camposPreenchidos = 0;
         
-        // Preencher campos automaticamente baseado no tipo de documento
-        if (currentDocType === 'cc_frente' || currentDocType === 'cc_verso') {
+        // IMPORTANTE: Usar o tipo detectado pelo backend, não o tipo enviado pelo utilizador
+        // O backend faz classificação automática e pode corrigir o tipo
+        const tipoDocumento = ocrResult.tipo || currentDocType;
+        console.log('[OCR] Tipo detectado pelo backend:', tipoDocumento);
+        
+        // Preencher campos automaticamente baseado no tipo de documento DETECTADO
+        if (tipoDocumento === 'cc_frente' || tipoDocumento === 'cc_verso') {
           // Decidir qual cliente preencher baseado em ocrTargetCliente
           if (ocrTargetCliente === 2) {
             // SEGUNDO OUTORGANTE
@@ -531,7 +536,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               camposPreenchidos++;
             }
           }
-        } else if (currentDocType === 'caderneta_predial') {
+        } else if (tipoDocumento === 'caderneta_predial') {
           if (dados.artigo_matricial) {
             setImovelArtigoMatricial(dados.artigo_matricial);
             camposPreenchidos++;
@@ -560,7 +565,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             setImovelConcelho(dados.concelho);
             camposPreenchidos++;
           }
-        } else if (currentDocType === 'certidao_permanente') {
+        } else if (tipoDocumento === 'certidao_permanente') {
           if (dados.artigo_matricial) {
             setImovelArtigoMatricial(dados.artigo_matricial);
             camposPreenchidos++;
@@ -585,7 +590,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             setImovelConcelho(dados.concelho);
             camposPreenchidos++;
           }
-        } else if (currentDocType === 'certificado_energetico') {
+        } else if (tipoDocumento === 'certificado_energetico') {
           if (dados.classe_energetica) {
             setImovelCertificadoEnergetico(dados.classe_energetica);
             camposPreenchidos++;

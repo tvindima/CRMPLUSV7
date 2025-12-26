@@ -1111,12 +1111,13 @@ def processar_documento_ocr(
     if full_text:  # Só extrair se tivermos texto
         logger.info(f"[OCR] Extraindo dados do documento tipo: {doc_tipo}")
         
-        # CARTÃO DE CIDADÃO - DADOS DO CLIENTE (quem assina o CMI)
-        # IMPORTANTE: O NIF do CC é de quem ASSINA o contrato
-        # O NIF da Caderneta pode ser de outra pessoa (ex: falecido, empresa)
-        if doc_tipo in ("cc_frente", "cc_verso"):
-            parsed = extrair_cc(full_text)
-            logger.info(f"[OCR CC] Resultado: {parsed}")
+        try:
+            # CARTÃO DE CIDADÃO - DADOS DO CLIENTE (quem assina o CMI)
+            # IMPORTANTE: O NIF do CC é de quem ASSINA o contrato
+            # O NIF da Caderneta pode ser de outra pessoa (ex: falecido, empresa)
+            if doc_tipo in ("cc_frente", "cc_verso"):
+                parsed = extrair_cc(full_text)
+                logger.info(f"[OCR CC] Resultado: {parsed}")
             
             if parsed.get("nome_completo"):
                 updates["cliente_nome"] = parsed["nome_completo"]
@@ -1250,6 +1251,10 @@ def processar_documento_ocr(
             if parsed.get("validade"):
                 updates["imovel_certificado_validade"] = parsed["validade"]
                 dados_para_mobile["validade_ce"] = parsed["validade"]
+        
+        except Exception as e:
+            logger.error(f"[OCR] Erro na extração de dados: {e}", exc_info=True)
+            # Continua sem dados extraídos mas não crashar
 
     # Persistir updates no CMI
     logger.info(f"[OCR] Aplicando {len(updates)} updates ao CMI")
