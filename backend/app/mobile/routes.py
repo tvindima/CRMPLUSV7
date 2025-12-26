@@ -1071,6 +1071,7 @@ def get_mobile_recent_activity(
 
 @router.get("/visits", response_model=visit_schemas.VisitListResponse)
 def list_mobile_visits(
+    request: Request,
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     status: Optional[str] = None,
@@ -1084,20 +1085,14 @@ def list_mobile_visits(
     """
     Listar visitas do agente com filtros e paginação
     
-    Query params:
-    - page: Página atual (default: 1)
-    - per_page: Items por página (default: 50, max: 100)
-    - status: Filtrar por status (scheduled, confirmed, completed, etc)
-    - date_from: Data inicial (ISO 8601)
-    - date_to: Data final (ISO 8601)
-    - property_id: Filtrar por propriedade
-    - lead_id: Filtrar por lead
+    IMPORTANTE: Usa agent_id do token JWT para suportar assistentes
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     # Query base - apenas visitas do agente
-    query = db.query(Visit).filter(Visit.agent_id == current_user.agent_id)
+    query = db.query(Visit).filter(Visit.agent_id == effective_agent_id)
     
     # Aplicar filtros
     if status:
@@ -1135,14 +1130,15 @@ def list_mobile_visits(
 
 @router.get("/visits/today", response_model=visit_schemas.VisitTodayResponse)
 def get_visits_today_mobile(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Widget de visitas de hoje
-    Otimizado para mostrar em dashboard mobile
+    Widget de visitas de hoje - suporta assistentes
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         return visit_schemas.VisitTodayResponse(visits=[], count=0, next_visit=None)
     
     today = datetime.utcnow().date()
@@ -1151,7 +1147,7 @@ def get_visits_today_mobile(
     
     visits = db.query(Visit).filter(
         and_(
-            Visit.agent_id == current_user.agent_id,
+            Visit.agent_id == effective_agent_id,
             Visit.scheduled_date >= today_start,
             Visit.scheduled_date <= today_end,
             Visit.status.in_([
@@ -1203,27 +1199,21 @@ def get_visits_today_mobile(
 
 @router.get("/visits/upcoming")
 def get_upcoming_visits_mobile(
+    request: Request,
     limit: int = Query(5, ge=1, le=20),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Widget "Próximas Visitas" para HomeScreen
-    
-    - Filtro automático por agent_id
-    - Apenas visitas futuras (scheduled_date >= now)
-    - Apenas status: SCHEDULED ou CONFIRMED
-    - Ordenar por scheduled_date ASC (mais próxima primeiro)
-    - Aceita query param 'limit' (default 5, max 20)
-    - Retorna array simplificado
+    Widget "Próximas Visitas" para HomeScreen - suporta assistentes
     """
-    # Se user não tem agent_id, retornar array vazio
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         return []
     
     # Query com todos os filtros
     upcoming_visits = db.query(Visit).filter(
-        Visit.agent_id == current_user.agent_id,
+        Visit.agent_id == effective_agent_id,
         Visit.scheduled_date >= datetime.utcnow(),
         Visit.status.in_([VisitStatus.SCHEDULED.value, VisitStatus.CONFIRMED.value])
     ).order_by(
@@ -1276,14 +1266,16 @@ def get_mobile_visit(
 
 @router.post("/visits", response_model=visit_schemas.VisitOut, status_code=201)
 async def create_mobile_visit(
+    request: Request,
     visit: visit_schemas.VisitCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Agendar nova visita
+    Agendar nova visita - suporta assistentes (cria para o agente responsável)
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     try:
@@ -1307,7 +1299,7 @@ async def create_mobile_visit(
         new_visit = Visit(
             property_id=visit.property_id,
             lead_id=visit.lead_id,
-            agent_id=current_user.agent_id,
+            agent_id=effective_agent_id,
             scheduled_date=visit.scheduled_date,
             duration_minutes=visit.duration_minutes,
             notes=visit.notes,
@@ -1326,7 +1318,7 @@ async def create_mobile_visit(
                 title=task_title,
                 description=visit.notes or f"Visita agendada para {property_obj.location}",
                 due_date=visit.scheduled_date,
-                assigned_agent_id=current_user.agent_id,  # Corrigido: era agent_id
+                assigned_agent_id=effective_agent_id,
                 property_id=visit.property_id,
                 lead_id=visit.lead_id,
                 status=TaskStatus.PENDING,
@@ -2024,25 +2016,16 @@ def update_user_preferences(
 
 @router.post("/events", response_model=event_schemas.EventOut, status_code=201)
 async def create_mobile_event(
+    request: Request,
     event: event_schemas.EventCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Criar evento genérico na agenda
-    
-    Tipos suportados:
-    - visit: Visita a imóvel (requer property_id)
-    - meeting: Reunião (cliente, equipa, online)
-    - task: Tarefa (preparar docs, follow-up)
-    - personal: Pessoal (almoço, dentista)
-    - call: Chamada telefónica
-    - other: Outro
-    
-    Campos obrigatórios: title, event_type, scheduled_date
-    Campos opcionais: property_id, lead_id, location, notes, duration_minutes
+    Criar evento na agenda - suporta assistentes (cria para o agente responsável)
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     # Validar property se for visita
@@ -2062,7 +2045,7 @@ async def create_mobile_event(
     
     # Criar evento
     event_data = event.dict()
-    event_data['agent_id'] = current_user.agent_id
+    event_data['agent_id'] = effective_agent_id
     event_data['status'] = event_schemas.EventStatus.SCHEDULED.value
     
     new_event = Event(**event_data)
@@ -2071,13 +2054,14 @@ async def create_mobile_event(
     db.refresh(new_event)
     
     # Log
-    logger.info(f"✅ Evento criado: #{new_event.id} ({new_event.event_type}) por agente {current_user.agent_id}")
+    logger.info(f"✅ Evento criado: #{new_event.id} ({new_event.event_type}) por agente {effective_agent_id}")
     
     return new_event
 
 
 @router.get("/events", response_model=List[event_schemas.EventOut])
 def list_mobile_events(
+    request: Request,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     event_type: Optional[str] = None,
@@ -2086,7 +2070,7 @@ def list_mobile_events(
     db: Session = Depends(get_db)
 ):
     """
-    Listar eventos do agente
+    Listar eventos do agente - suporta assistentes (vê agenda do agente responsável)
     
     Filtros (todos opcionais):
     - start_date: Data início (default: início do mês atual)
@@ -2096,10 +2080,11 @@ def list_mobile_events(
     
     Retorna eventos ordenados por data (mais próximos primeiro)
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         return []
     
-    query = db.query(Event).filter(Event.agent_id == current_user.agent_id)
+    query = db.query(Event).filter(Event.agent_id == effective_agent_id)
     
     # Filtro de datas (default: mês atual)
     if not start_date:
@@ -2129,11 +2114,13 @@ def list_mobile_events(
 
 @router.get("/events/today", response_model=List[event_schemas.EventOut])
 def get_today_events(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obter eventos de hoje (atalho útil para dashboard)"""
-    if not current_user.agent_id:
+    """Obter eventos de hoje - suporta assistentes"""
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         return []
     
     now = datetime.now(timezone.utc)
@@ -2141,7 +2128,7 @@ def get_today_events(
     end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
     
     events = db.query(Event).filter(
-        Event.agent_id == current_user.agent_id,
+        Event.agent_id == effective_agent_id,
         Event.scheduled_date.between(start_of_day, end_of_day),
         Event.status == 'scheduled'
     ).order_by(Event.scheduled_date).all()
@@ -2151,17 +2138,19 @@ def get_today_events(
 
 @router.get("/events/{event_id}", response_model=event_schemas.EventOut)
 def get_mobile_event(
+    request: Request,
     event_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obter detalhes de um evento"""
+    """Obter detalhes de um evento - suporta assistentes"""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     
-    # Verificar permissões
-    if event.agent_id != current_user.agent_id:
+    # Verificar permissões (assistentes podem ver eventos do agente responsável)
+    effective_agent_id = get_effective_agent_id(request, db)
+    if event.agent_id != effective_agent_id:
         raise HTTPException(status_code=403, detail="Sem permissão para aceder a este evento")
     
     return event
@@ -2169,17 +2158,19 @@ def get_mobile_event(
 
 @router.put("/events/{event_id}", response_model=event_schemas.EventOut)
 def update_mobile_event(
+    request: Request,
     event_id: int,
     event_update: event_schemas.EventUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Atualizar evento"""
+    """Atualizar evento - suporta assistentes"""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     
-    if event.agent_id != current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if event.agent_id != effective_agent_id:
         raise HTTPException(status_code=403, detail="Sem permissão")
     
     # Atualizar campos fornecidos
@@ -2195,16 +2186,18 @@ def update_mobile_event(
 
 @router.delete("/events/{event_id}", status_code=204)
 def delete_mobile_event(
+    request: Request,
     event_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Deletar evento"""
+    """Deletar evento - suporta assistentes"""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     
-    if event.agent_id != current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if event.agent_id != effective_agent_id:
         raise HTTPException(status_code=403, detail="Sem permissão")
     
     db.delete(event)
