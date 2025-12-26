@@ -1009,14 +1009,17 @@ def extrair_cc(text: str) -> dict:
                     apelido_frente = next_line
                     logger.info(f"[OCR CC] Apelido frente: {apelido_frente}")
     
-    # Procurar NOME (GIVEN NAME)
+    # Procurar NOME (GIVEN NAME) - vários formatos
     for i, line in enumerate(lines):
-        if re.search(r'NOME\(?S?\)?.*GIVEN|GIVEN\s*NAME', line, re.IGNORECASE):
+        # Match "NOME(S)" seguido ou não de "GIVEN NAME"
+        if re.search(r'NOME\(?S?\)?|GIVEN\s*NAME', line, re.IGNORECASE) and not re.search(r'APELIDO|SURNAME', line, re.IGNORECASE):
             if i + 1 < len(lines):
                 next_line = lines[i + 1].strip()
-                if next_line and not re.search(r'SEXO|ALTURA|HEIGHT|DATA|DOCUMENT', next_line, re.IGNORECASE):
+                # Verificar se é um nome válido (não é outro label e tem caracteres)
+                if next_line and len(next_line) > 2 and not re.search(r'SEXO|ALTURA|HEIGHT|DATA|DOCUMENT|APELIDO|SURNAME|^M$|^F$|^\d', next_line, re.IGNORECASE):
                     nome_frente = next_line
                     logger.info(f"[OCR CC] Nome frente: {nome_frente}")
+                    break
     
     # Se temos ambos da frente, usar (é o nome completo)
     if apelido_frente and nome_frente:
@@ -1255,11 +1258,16 @@ def extrair_caderneta(text: str) -> dict:
     # Formato caderneta urbana: "DISTRITO: 10 - LEIRIA" ou "DISTRITO: LEIRIA"
     
     # Primeiro tentar formato de caderneta rústica (tudo numa linha)
-    m = re.search(r'DISTRITO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*CONCELHO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*FREGUESIA[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)(?:\s+SEC|$)', text, re.IGNORECASE)
+    # Formato: "DISTRITO: 05 - C BRANCO CONCELHO: 02 - CASTELO BRANCO FREGUESIA: 21 - SANTO ANDRE DAS TOJEIRAS"
+    m = re.search(r'DISTRITO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*CONCELHO[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú\s]+?)\s*FREGUESIA[:\s]+(?:\d+\s*-?\s*)?([A-ZÀ-Ú][A-ZÀ-Úa-zà-ÿ\s]+?)(?:\s*\n|\s+SEC[CÇ]|$)', text, re.IGNORECASE)
     if m:
         result["distrito"] = m.group(1).strip().title()
         result["concelho"] = m.group(2).strip().title()
-        result["freguesia"] = m.group(3).strip().title()
+        # Limpar freguesia - pode ter "DAS TOJEIRAS" ou similar
+        freguesia_raw = m.group(3).strip()
+        # Remover possíveis prefixos numéricos residuais
+        freguesia_clean = re.sub(r'^\d+\s*-?\s*', '', freguesia_raw).title()
+        result["freguesia"] = freguesia_clean
         logger.info(f"[OCR CADERNETA] Localização (rústica): {result['distrito']}, {result['concelho']}, {result['freguesia']}")
     else:
         # Fallback: formato caderneta urbana (campos separados)
@@ -1416,21 +1424,31 @@ def extrair_certidao(text: str) -> dict:
         logger.info(f"[OCR CERTIDÃO] Conservatória: {result['conservatoria']}")
     
     # Freguesia - formato: "Freguesia Santo André das Tojeiras" ou no cabeçalho
-    m = re.search(r'Freguesia\s+([A-Za-zÀ-ÿ\s]+?)(?:\s+\d|$)', text, re.IGNORECASE)
+    # Pode aparecer como "Freguesia Santo André das Tojeiras" no topo
+    m = re.search(r'Freguesia\s+([A-Za-zÀ-ÿ\s]+?)(?:\s*\n|\s+\d{4}|$)', text, re.IGNORECASE)
     if m:
-        result["freguesia"] = m.group(1).strip().title()
+        # Limpar espaços extras
+        freguesia_raw = re.sub(r'\s+', ' ', m.group(1).strip())
+        result["freguesia"] = freguesia_raw.title()
         logger.info(f"[OCR CERTIDÃO] Freguesia: {result['freguesia']}")
     
-    # Número descrição - formato: "3177/20090225"
+    # Número descrição - formato: "3177/20090225" (aparece no cabeçalho da certidão)
+    # Tentar formato completo primeiro
     m = re.search(r'(\d{4}/\d{8})', text)
     if m:
         result["descricao_numero"] = m.group(1)
         logger.info(f"[OCR CERTIDÃO] Descrição: {result['descricao_numero']}")
     else:
-        # Fallback: "Descrição nº 1234"
-        m = re.search(r'Descri[çc][ãa]o[^:]*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+        # Formato alternativo: só números separados por /
+        m = re.search(r'(\d{3,5})[/\\](\d{6,10})', text)
         if m:
-            result["descricao_numero"] = m.group(1)
+            result["descricao_numero"] = f"{m.group(1)}/{m.group(2)}"
+            logger.info(f"[OCR CERTIDÃO] Descrição (alt): {result['descricao_numero']}")
+        else:
+            # Fallback: "Descrição nº 1234"
+            m = re.search(r'Descri[çc][ãa]o[^:]*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
+            if m:
+                result["descricao_numero"] = m.group(1)
     
     # Matriz - formato: "MATRIZ nº: 96"
     m = re.search(r'MATRIZ\s*n[ºo°]?\s*[:\s]*(\d+)', text, re.IGNORECASE)
@@ -1445,13 +1463,23 @@ def extrair_certidao(text: str) -> dict:
         logger.info(f"[OCR CERTIDÃO] Morada: {result['morada']}")
     
     # Área total - vários formatos
-    m = re.search(r'[ÁA]REA\s+TOTAL[:\s]+([\d\.,]+)\s*M2', text, re.IGNORECASE)
-    if m:
-        val = m.group(1).replace(".", "").replace(",", ".")
-        try:
-            result["area_total"] = float(val)
-        except:
-            pass
+    # Formato certidão: "ÁREA TOTAL: 15880 M2" ou "ÁREA DESCOBERTA: 15880 M2"
+    area_patterns = [
+        r'[ÁA]REA\s+TOTAL[:\s]+([\d\.,\s]+)\s*M2',
+        r'[ÁA]REA\s+DESCOBERTA[:\s]+([\d\.,\s]+)\s*M2',
+        r'[ÁA]REA[:\s]+([\d\.,\s]+)\s*M2',
+    ]
+    for pattern in area_patterns:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            # Remover espaços e converter
+            val = m.group(1).replace(" ", "").replace(".", "").replace(",", ".")
+            try:
+                result["area_total"] = float(val)
+                logger.info(f"[OCR CERTIDÃO] Área total: {result['area_total']} m²")
+                break
+            except:
+                pass
     
     # ===== BLOCO CRÍTICO: SUJEITO(S) ATIVO(S) =====
     # Só quem está aqui é proprietário legal!
