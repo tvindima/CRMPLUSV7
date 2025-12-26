@@ -18,6 +18,7 @@ interface AgentProfile {
 interface DashboardStats {
   agent_id: number;
   events_today?: number;
+  events_future?: number;
   visits_today?: number;
   tasks_today?: number;
   new_leads?: number;

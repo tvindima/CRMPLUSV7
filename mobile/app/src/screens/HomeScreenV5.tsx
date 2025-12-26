@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface DashboardStats {
   events_today?: number;
+  events_future?: number;
   visits_today?: number;
   tasks_today?: number;
   new_leads?: number;
@@ -55,13 +56,13 @@ const ALL_SHORTCUTS: Shortcut[] = [
   { id: 'site-editor', label: 'Editor Montra', icon: 'globe', color: '#ec4899', route: 'SiteEditor', enabled: true },
   { id: 'tax-calculator', label: 'Calculadora Impostos', icon: 'calculator', color: '#06b6d4', route: 'TaxCalculator', enabled: true },
   { id: 'mortgage-simulator', label: 'Simulador Prestação', icon: 'trending-up', color: '#10b981', route: 'MortgageSimulator', enabled: true },
-  { id: 'messages', label: 'Mensagens', icon: 'chatbubbles', color: '#3b82f6', route: 'Messages', enabled: false },
-  { id: 'reports', label: 'Relatórios', icon: 'stats-chart', color: '#84cc16', route: 'Reports', enabled: false },
+  { id: 'messages', label: 'Mensagens', icon: 'chatbubbles', color: '#3b82f6', route: 'Messages', enabled: true },
+  { id: 'reports', label: 'Relatórios', icon: 'stats-chart', color: '#84cc16', route: 'Reports', enabled: true },
   { id: 'first-impression', label: 'Pré-Angariações', icon: 'folder', color: '#8b5cf6', route: 'FirstImpressionList', enabled: true },
-  { id: 'documents', label: 'Documentos', icon: 'folder', color: '#f97316', route: 'Documents', enabled: false },
-  { id: 'contacts', label: 'Contactos', icon: 'call', color: '#14b8a6', route: 'Contacts', enabled: false },
-  { id: 'notifications', label: 'Alertas', icon: 'notifications', color: '#ef4444', route: 'Notifications', enabled: false },
-  { id: 'settings', label: 'Definições', icon: 'settings', color: '#6b7280', route: 'Perfil', enabled: false },
+  { id: 'documents', label: 'Documentos', icon: 'folder', color: '#f97316', route: 'Documents', enabled: true },
+  { id: 'contacts', label: 'Contactos', icon: 'call', color: '#14b8a6', route: 'Contacts', enabled: true },
+  { id: 'notifications', label: 'Alertas', icon: 'notifications', color: '#ef4444', route: 'Notifications', enabled: true },
+  { id: 'settings', label: 'Definições', icon: 'settings', color: '#6b7280', route: 'Perfil', enabled: true },
 ];
 
 const STORAGE_KEY = '@crm_plus_shortcuts';
@@ -73,6 +74,7 @@ export default function HomeScreenV5({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     events_today: 0,
+    events_future: 0,
     new_leads: 0,
     properties: 0,
   });
@@ -98,6 +100,8 @@ export default function HomeScreenV5({ navigation }: any) {
       setStats({
         ...agentStats,
         events_today: (agentStats.visits_today || 0) + (agentStats.tasks_today || 0),
+        events_future: agentStats.events_future || 0,
+      });
       });
     }
   }, [agentStats]);
@@ -287,7 +291,7 @@ export default function HomeScreenV5({ navigation }: any) {
 
         {/* Stats Cards with Quick Actions */}
         <View style={styles.statsContainer}>
-          {/* Events Today */}
+          {/* Events Today + Future */}
           <TouchableOpacity 
             style={styles.statCard}
             onPress={() => navigation.navigate('Agenda')}
@@ -297,7 +301,7 @@ export default function HomeScreenV5({ navigation }: any) {
               style={styles.statGradient}
             >
               <Text style={styles.statValue}>{stats.events_today || 0}</Text>
-              <Text style={styles.statLabel}>Eventos{'\n'}Hoje</Text>
+              <Text style={styles.statLabel}>eventos hoje{'\n'}futuros {stats.events_future || 0}</Text>
               <TouchableOpacity 
                 style={styles.quickAction}
                 onPress={(e) => {

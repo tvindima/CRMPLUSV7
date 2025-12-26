@@ -841,6 +841,7 @@ def get_mobile_dashboard_stats(
     leads_count = 0
     tasks_pending = 0
     tasks_today = 0
+    tasks_future = 0
     
     try:
         # Contar propriedades
@@ -884,11 +885,25 @@ def get_mobile_dashboard_stats(
     except Exception as e:
         print(f"[STATS] Error counting today tasks: {e}")
     
+    try:
+        # Contar tarefas futuras (após hoje)
+        if current_user.agent_id:
+            today = datetime.utcnow().date()
+            tasks_future = db.query(Task).filter(
+                and_(
+                    Task.assigned_agent_id == current_user.agent_id,
+                    func.date(Task.due_date) > today
+                )
+            ).count()
+    except Exception as e:
+        print(f"[STATS] Error counting future tasks: {e}")
+    
     return {
         "properties": properties_count,
         "leads": leads_count,
         "tasks_pending": tasks_pending,
         "tasks_today": tasks_today,
+        "events_future": tasks_future,
         "agent_id": current_user.agent_id,
     }
 
