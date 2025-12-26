@@ -857,13 +857,16 @@ def get_mobile_dashboard_stats(
         print(f"[STATS] Error counting properties: {e}")
     
     try:
-        # Contar pré-angariações activas
+        # Contar pré-angariações activas (excluir canceladas e activadas)
         if current_user.agent_id:
             pre_angariacoes_count = db.query(PreAngariacao).filter(
-                PreAngariacao.agent_id == current_user.agent_id
+                PreAngariacao.agent_id == current_user.agent_id,
+                PreAngariacao.status.notin_(['cancelado', 'activado'])
             ).count()
         else:
-            pre_angariacoes_count = db.query(PreAngariacao).count()
+            pre_angariacoes_count = db.query(PreAngariacao).filter(
+                PreAngariacao.status.notin_(['cancelado', 'activado'])
+            ).count()
     except Exception as e:
         print(f"[STATS] Error counting pre_angariacoes: {e}")
     
