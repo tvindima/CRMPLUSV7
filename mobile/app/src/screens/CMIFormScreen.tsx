@@ -751,7 +751,23 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         return;
       }
 
-      setCurrentDocType(docType);
+      // Configurar target correto para documentos do 2º proprietário
+      let actualDocType = docType;
+      let targetCliente: 1 | 2 = 1;
+      
+      if (docType === 'cc2_frente') {
+        targetCliente = 2;
+        actualDocType = 'cc_frente';
+        setShowCliente2(true);
+      } else if (docType === 'cc2_verso') {
+        targetCliente = 2;
+        actualDocType = 'cc_verso';
+        setShowCliente2(true);
+      }
+      
+      setCurrentDocType(actualDocType);
+      setOcrTargetCliente(targetCliente);
+      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: false,
@@ -763,10 +779,10 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         setPendingDocs((prev) => [
           ...prev,
           {
-            docType,
+            docType: actualDocType,
             uri: result.assets[0].uri,
             mime: result.assets[0].mimeType || 'image/jpeg',
-            name: result.assets[0].fileName || `${docType}-${Date.now()}.jpg`,
+            name: result.assets[0].fileName || `${actualDocType}-${Date.now()}.jpg`,
             base64: result.assets[0].base64,
           },
         ]);
