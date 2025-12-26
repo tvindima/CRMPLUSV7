@@ -53,6 +53,7 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
         phone=user.phone,
         avatar_url=user.avatar_url,
         agent_id=user.agent_id,
+        works_for_agent_id=user.works_for_agent_id,  # Para assistentes: agente responsável
     )
     db.add(db_user)
     db.commit()

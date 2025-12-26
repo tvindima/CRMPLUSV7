@@ -107,45 +107,101 @@ function NewAgentInner() {
       return;
     }
 
+    // Se for staff, validar responsável
+    if (formData.employee_type === 'staff' && !formData.team_leader_id) {
+      toast?.push('Selecione o agente responsável', 'error');
+      return;
+    }
+
     try {
       setLoading(true);
-      
-      // Mapear campos do formulário para o schema do backend
-      const agentData = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        license_ami: formData.license_number || null,
-        bio: null,
-        instagram: formData.instagram_url || null,
-        facebook: formData.facebook_url || null,
-        linkedin: formData.linkedin_url || null,
-        whatsapp: formData.phone || null,
-        team_id: formData.team_id || null,
-        agency_id: null,
-      };
-      
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/`,
-        {
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
+
+      let agentId: number | null = null;
+
+      // PASSO 1: Se for comercial, criar o agente primeiro
+      if (formData.employee_type === 'comercial') {
+        const agentData = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          license_ami: formData.license_number || null,
+          bio: null,
+          instagram: formData.instagram_url || null,
+          facebook: formData.facebook_url || null,
+          linkedin: formData.linkedin_url || null,
+          whatsapp: formData.phone || null,
+          team_id: formData.team_id || null,
+          agency_id: null,
+        };
+        
+        const agentResponse = await fetch(`${API_BASE}/agents/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(agentData),
-        }
-      );
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Erro ao criar agente');
+        if (!agentResponse.ok) {
+          const errorData = await agentResponse.json().catch(() => ({}));
+          throw new Error(errorData.detail || 'Erro ao criar agente');
+        }
+
+        const createdAgent = await agentResponse.json();
+        agentId = createdAgent.id;
       }
 
-      toast?.push('Agente criado com sucesso!', 'success');
+      // PASSO 2: Criar user com credenciais
+      // Gerar password temporária
+      const tempPassword = `CRM${Math.random().toString(36).substring(2, 8)}!`;
+      
+      const userData = {
+        email: formData.email,
+        full_name: formData.name,
+        phone: formData.phone,
+        password: tempPassword,
+        role: formData.employee_type === 'staff' ? 'assistant' : 'agent',
+        // Se for comercial, associa ao próprio agente criado
+        // Se for staff, não precisa de agent_id próprio
+        agent_id: agentId,
+        // Se for staff/assistente, associa ao agente responsável
+        works_for_agent_id: formData.employee_type === 'staff' ? formData.team_leader_id : null,
+      };
+      
+      // Usar endpoint temporário sem autenticação
+      const userResponse = await fetch(`${API_BASE}/admin/setup/create-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      if (!userResponse.ok) {
+        const errorData = await userResponse.json().catch(() => ({}));
+        // Se falhou criar user mas criou agente, mostrar aviso
+        if (agentId) {
+          throw new Error(`Agente criado mas erro nas credenciais: ${errorData.detail || 'Erro desconhecido'}`);
+        }
+        throw new Error(errorData.detail || 'Erro ao criar credenciais');
+      }
+
+      // Mostrar credenciais criadas
+      const successMsg = formData.employee_type === 'staff' 
+        ? `Assistente criado! Email: ${formData.email} | Password temporária: ${tempPassword}`
+        : `Agente criado! Email: ${formData.email} | Password temporária: ${tempPassword}`;
+      
+      toast?.push(successMsg, 'success');
+      
+      // Copiar password para clipboard
+      try {
+        await navigator.clipboard.writeText(tempPassword);
+        toast?.push('Password copiada para a área de transferência', 'success');
+      } catch {}
+
       setTimeout(() => {
         window.location.href = '/backoffice/agents';
-      }, 1500);
+      }, 3000);
     } catch (error) {
-      console.error('Erro ao criar agente:', error);
-      toast?.push(error instanceof Error ? error.message : 'Erro ao criar agente', 'error');
+      console.error('Erro ao criar:', error);
+      toast?.push(error instanceof Error ? error.message : 'Erro ao criar', 'error');
     } finally {
       setLoading(false);
     }

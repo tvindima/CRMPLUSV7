@@ -28,6 +28,11 @@ class User(Base):
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
     agent = relationship("Agent", foreign_keys=[agent_id])
     
+    # Para assistentes: ID do agente para quem trabalham
+    # Quando o assistente faz login, a app mobile carrega os dados deste agente
+    works_for_agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
+    works_for_agent = relationship("Agent", foreign_keys=[works_for_agent_id])
+    
     # Relacionamento com Refresh Tokens
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     

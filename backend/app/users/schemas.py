@@ -15,6 +15,7 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
     role: UserRole = UserRole.AGENT
     agent_id: Optional[int] = None
+    works_for_agent_id: Optional[int] = None  # Para assistentes: agente responsável
 
 
 class UserUpdate(BaseModel):
@@ -25,6 +26,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     agent_id: Optional[int] = None
+    works_for_agent_id: Optional[int] = None
 
 
 class UserUpdatePassword(BaseModel):
@@ -37,6 +39,7 @@ class UserOut(UserBase):
     role: UserRole
     is_active: bool
     agent_id: Optional[int]
+    works_for_agent_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -47,3 +50,4 @@ class UserWithAgent(UserOut):
     """User com informações do agente associado"""
     agent_name: Optional[str] = None
     agent_email: Optional[str] = None
+    works_for_agent_name: Optional[str] = None  # Nome do agente para quem trabalha

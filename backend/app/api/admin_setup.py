@@ -173,3 +173,72 @@ def test_agent_logins():
             "agent_id": agent["id"]
         })
     return {"logins": logins}
+
+
+# =====================================================
+# ENDPOINT TEMPORÁRIO PARA CRIAR USERS SEM AUTH
+# TODO: Remover quando backoffice tiver autenticação
+# =====================================================
+
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    full_name: str
+    phone: Optional[str] = None
+    password: str
+    role: str = "agent"  # agent, assistant, admin, coordinator
+    agent_id: Optional[int] = None
+    works_for_agent_id: Optional[int] = None
+
+
+@setup_router.post("/create-user")
+def create_user_no_auth(data: CreateUserRequest, db: Session = Depends(get_db)):
+    """
+    Criar user sem autenticação - TEMPORÁRIO para setup backoffice
+    ⚠️ REMOVER quando implementar auth no backoffice
+    """
+    # Verificar se email já existe
+    existing = db.query(User).filter(User.email == data.email.lower()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já registado")
+    
+    # Verificar se agent_id existe (se fornecido)
+    if data.agent_id:
+        agent = db.query(Agent).filter(Agent.id == data.agent_id).first()
+        if not agent:
+            raise HTTPException(status_code=400, detail=f"Agent ID {data.agent_id} não existe")
+    
+    # Verificar se works_for_agent_id existe (se fornecido)
+    if data.works_for_agent_id:
+        works_for = db.query(Agent).filter(Agent.id == data.works_for_agent_id).first()
+        if not works_for:
+            raise HTTPException(status_code=400, detail=f"Agent responsável ID {data.works_for_agent_id} não existe")
+    
+    # Criar user
+    hashed = hash_password(data.password)
+    user = User(
+        email=data.email.lower(),
+        hashed_password=hashed,
+        full_name=data.full_name,
+        phone=data.phone,
+        role=data.role,
+        agent_id=data.agent_id,
+        works_for_agent_id=data.works_for_agent_id,
+        is_active=True
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "success": True,
+        "user_id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "agent_id": user.agent_id,
+        "works_for_agent_id": user.works_for_agent_id,
+        "message": "User criado com sucesso"
+    }
+

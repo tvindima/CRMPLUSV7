@@ -121,9 +121,9 @@ def mobile_login(
     """
     Login para mobile app - retorna access_token + refresh_token
     Requisitos:
-    - User deve ter agent_id (ser agente, não apenas admin)
+    - User deve ter agent_id OU works_for_agent_id (agente ou assistente)
     - Tokens:  access_token (24h), refresh_token (7 dias)
-    - JWT inclui agent_id no payload
+    - JWT inclui agent_id no payload (do próprio ou do agente para quem trabalha)
     - Rastreia dispositivo e IP para multi-device management
     """
     # Buscar user por email
@@ -140,19 +140,24 @@ def mobile_login(
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Conta inativa")
     
-    # Verificar se user tem agent_id (mobile app é só para agentes)
-    if not user.agent_id:
+    # Determinar agent_id para o token:
+    # - Se é assistente (works_for_agent_id), usa o ID do agente para quem trabalha
+    # - Se é agente normal (agent_id), usa o próprio ID
+    effective_agent_id = user.works_for_agent_id or user.agent_id
+    
+    if not effective_agent_id:
         raise HTTPException(
             status_code=403,
-            detail="Esta app é exclusiva para agentes imobiliários. Contacte o administrador."
+            detail="Esta app é exclusiva para agentes imobiliários e assistentes. Contacte o administrador."
         )
     
-    # Criar access token (24h) com agent_id
+    # Criar access token (24h) com agent_id efetivo
+    # O assistente opera "em nome do" agente
     access_token = create_access_token(
         user_id=user.id,
         email=user.email,
         role=user.role,
-        agent_id=user.agent_id
+        agent_id=effective_agent_id
     )
     
     # Parse device info
