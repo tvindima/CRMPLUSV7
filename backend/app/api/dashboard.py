@@ -45,16 +45,14 @@ def get_dashboard_kpis(
         else:
             prop_trend = 0
         
-        # Novas leads (últimos 7 dias) - apenas com created_at definido
+        # Novas leads (últimos 7 dias)
         novas_leads_7d = db.query(Lead).filter(
-            Lead.created_at.isnot(None),
             Lead.created_at >= seven_days_ago
         ).count()
         
         # Leads há 14 dias (para calcular trend)
         fourteen_days_ago = datetime.now() - timedelta(days=14)
         seven_to_fourteen_days_ago = db.query(Lead).filter(
-            Lead.created_at.isnot(None),
             Lead.created_at >= fourteen_days_ago,
             Lead.created_at < seven_days_ago
         ).count()
@@ -216,10 +214,9 @@ def get_agents_ranking(
         
         ranking = []
         for agent in agents:
-            # Contar leads atribuídas ao agente (últimos 7 dias) - apenas com created_at
+            # Contar leads atribuídas ao agente (últimos 7 dias)
             leads_count = db.query(Lead).filter(
                 Lead.assigned_agent_id == agent.id,
-                Lead.created_at.isnot(None),
                 Lead.created_at >= seven_days_ago
             ).count()
             
@@ -264,44 +261,31 @@ def get_recent_leads(
 ):
     """Retorna as leads mais recentes com informação do agente responsável"""
     try:
-        # Apenas leads com created_at definido
-        leads = db.query(Lead).filter(
-            Lead.created_at.isnot(None)
-        ).order_by(Lead.created_at.desc()).limit(limit).all()
+        leads = db.query(Lead).order_by(Lead.created_at.desc()).limit(limit).all()
         
         result = []
         for lead in leads:
             # Buscar agente responsável
             agent = db.query(Agent).filter(Agent.id == lead.assigned_agent_id).first() if lead.assigned_agent_id else None
             
-            # Buscar propriedade associada se existir
-            property_info = None
-            if lead.property_id:
-                prop = db.query(Property).filter(Property.id == lead.property_id).first()
-                if prop:
-                    property_info = f"{prop.property_type or 'Imóvel'} - {prop.location or 'N/A'}"
-            
             # Calcular tempo desde criação
-            if lead.created_at:
-                time_diff = datetime.now() - lead.created_at
-                if time_diff.days > 0:
-                    tempo = f"{time_diff.days}d" if time_diff.days > 1 else "Ontem"
-                elif time_diff.seconds // 3600 > 0:
-                    tempo = f"{time_diff.seconds // 3600}h"
-                else:
-                    tempo = f"{time_diff.seconds // 60}min"
+            time_diff = datetime.now() - lead.created_at
+            if time_diff.days > 0:
+                tempo = f"{time_diff.days}d" if time_diff.days > 1 else "Ontem"
+            elif time_diff.seconds // 3600 > 0:
+                tempo = f"{time_diff.seconds // 3600}h"
             else:
-                tempo = "N/A"
+                tempo = f"{time_diff.seconds // 60}min"
             
             result.append({
                 "id": lead.id,
                 "cliente": lead.name,
-                "tipo": property_info or f"{lead.source.value if lead.source else 'Lead'} - {lead.action_type or 'Contacto'}",
-                "status": lead.status.value if lead.status else "new",
+                "tipo": f"{lead.property_type or 'Propriedade'} - {lead.location or 'N/A'}",
+                "status": lead.status or "pendente",
                 "responsavel": agent.name.split()[0] if agent else None,
                 "responsavel_id": agent.id if agent else None,
                 "tempo": tempo,
-                "timestamp": lead.created_at.isoformat() if lead.created_at else None
+                "timestamp": lead.created_at.isoformat()
             })
         
         return result
@@ -478,16 +462,14 @@ def get_recent_activities(
 ):
     """Retorna atividades recentes da equipa (baseado em logs de alterações)"""
     try:
-        # Buscar propriedades recentemente criadas/atualizadas (apenas com datas válidas)
+        # Buscar propriedades recentemente criadas/atualizadas
         recent_props = db.query(Property).filter(
-            Property.updated_at.isnot(None),
-            Property.created_at.isnot(None)
+            Property.updated_at.isnot(None)
         ).order_by(Property.updated_at.desc()).limit(5).all()
         
-        # Buscar leads recentemente criadas/atualizadas (apenas com datas válidas)
+        # Buscar leads recentemente criadas/atualizadas
         recent_leads = db.query(Lead).filter(
-            Lead.updated_at.isnot(None),
-            Lead.created_at.isnot(None)
+            Lead.updated_at.isnot(None)
         ).order_by(Lead.updated_at.desc()).limit(5).all()
         
         activities = []
