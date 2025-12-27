@@ -32,7 +32,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30  # Token válido por 30 dias para clientes
 
 # ID da Marisa Barosa (agente de arrendamento)
-RENTAL_AGENT_ID = 39  # Marisa Barosa
+RENTAL_AGENT_ID = 26  # Marisa Barosa - arrendamentosleiria@imoveismais.pt
 
 
 def create_client_token(client_id: int, email: str) -> str:
