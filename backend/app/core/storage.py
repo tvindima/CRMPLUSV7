@@ -68,16 +68,13 @@ class CloudinaryStorage(StorageProvider):
             secure=True
         )
         
-        # Validar configuração
+        # Log de configuração (sem raise para evitar crash)
         if not all([
             os.getenv("CLOUDINARY_CLOUD_NAME"),
             os.getenv("CLOUDINARY_API_KEY"),
             os.getenv("CLOUDINARY_API_SECRET")
         ]):
-            raise ValueError(
-                "Cloudinary não configurado! Defina: "
-                "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET"
-            )
+            print("[CloudinaryStorage] ⚠️ Configuração incompleta - alguns uploads podem falhar")
     
     async def upload_file(
         self, 
@@ -220,7 +217,16 @@ def get_storage_provider() -> StorageProvider:
     provider = os.getenv("STORAGE_PROVIDER", "cloudinary").lower()
     
     if provider == "cloudinary":
-        return CloudinaryStorage()
+        # Verificar se Cloudinary está configurado antes de instanciar
+        if all([
+            os.getenv("CLOUDINARY_CLOUD_NAME"),
+            os.getenv("CLOUDINARY_API_KEY"),
+            os.getenv("CLOUDINARY_API_SECRET")
+        ]):
+            return CloudinaryStorage()
+        else:
+            print("[Storage] ⚠️ Cloudinary não configurado, usando LocalStorage como fallback")
+            return LocalStorage()
     elif provider == "s3":
         return S3Storage()
     elif provider == "local":
