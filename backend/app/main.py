@@ -74,42 +74,25 @@ app = FastAPI(
 # CORS CONFIGURATION
 # ========================================
 
-# Ler de environment variable Railway (CORS_ORIGINS ou CRMPLUS_CORS_ORIGINS)
-CORS_ORIGINS_ENV = os.environ.get("CORS_ORIGINS", os.environ.get("CRMPLUS_CORS_ORIGINS", ""))
-# Fallback seguro para desenvolvimento e pré-visualizações Vercel
-DEFAULT_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:4173",
-    "http://localhost:5173",
-    # Mobile web (Vercel)
-    "https://crmplusv7-mobile.vercel.app",
-    "https://crmplusv7-mobile-picdp19if-toinos-projects.vercel.app",
-    "https://crmplusv7-mobile-bapejk48k-toinos-projects.vercel.app",
-    "https://crmplusv7-mobile-fzh70hl4x-toinos-projects.vercel.app",
-    # Backoffice (Vercel)
-    "https://crmplusv7.vercel.app",
-    "https://backoffice-git-main-toinos-projects.vercel.app",
-    "https://backoffice-toinos-projects.vercel.app",
-    # Web site-montra (Vercel)
-    "https://web-steel-gamma-66.vercel.app",
-]
+# Em produção, permitir todas as origens para evitar problemas com Vercel previews
+# A autenticação é feita via Bearer tokens, não cookies, por isso é seguro
+CORS_ORIGINS_ENV = os.environ.get("CORS_ORIGINS", "")
 
-if CORS_ORIGINS_ENV == "*":
-    # Permitir todas origens (para evitar bloqueios de CORS em produção; tokens são Bearer)
+if CORS_ORIGINS_ENV == "*" or os.environ.get("RAILWAY_ENVIRONMENT"):
+    # Em Railway/produção: permitir todas origens (Bearer auth é seguro)
     ALLOWED_ORIGINS = ["*"]
     ALLOW_CREDENTIALS = False  # Obrigatório com "*"
-elif CORS_ORIGINS_ENV:
-    # Usar origens específicas da env var
-    ALLOWED_ORIGINS = [o.strip() for o in CORS_ORIGINS_ENV.split(",") if o.strip()]
-    ALLOW_CREDENTIALS = True
+    ALLOW_ORIGIN_REGEX = None
 else:
-    # Fallback seguro: usar defaults + regex para Vercel previews
-    ALLOWED_ORIGINS = DEFAULT_ALLOWED_ORIGINS
+    # Desenvolvimento local
+    ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:4173",
+        "http://localhost:5173",
+    ]
     ALLOW_CREDENTIALS = True
-
-# Regex para aceitar todos deployments Vercel (previews + produção) ou override via env
-ALLOW_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app|https://.*")
+    ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
