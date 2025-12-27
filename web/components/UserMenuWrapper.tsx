@@ -4,9 +4,13 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+
 interface UserData {
+  id?: number;
   email: string;
   name: string;
+  phone?: string;
 }
 
 export function UserMenuWrapper() {
@@ -24,15 +28,35 @@ export function UserMenuWrapper() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
+    // Verificar se há cliente guardado (migrar de "user" para "client_user")
+    let clientData = localStorage.getItem("client_user");
+    if (!clientData) {
+      // Migrar dados antigos se existirem
+      const oldUserData = localStorage.getItem("user");
+      if (oldUserData) {
+        localStorage.setItem("client_user", oldUserData);
+        localStorage.removeItem("user");
+        clientData = oldUserData;
+      }
+    }
+    
+    if (clientData) {
+      try {
+        setUser(JSON.parse(clientData));
+      } catch (e) {
+        localStorage.removeItem("client_user");
+        localStorage.removeItem("client_token");
+      }
     }
 
     const handleStorageChange = () => {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        setUser(JSON.parse(userData));
+      const clientData = localStorage.getItem("client_user");
+      if (clientData) {
+        try {
+          setUser(JSON.parse(clientData));
+        } catch (e) {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -54,7 +78,9 @@ export function UserMenuWrapper() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("client_user");
+    localStorage.removeItem("client_token");
+    localStorage.removeItem("user"); // limpar dados antigos também
     setUser(null);
     setShowDropdown(false);
     window.dispatchEvent(new Event("authChange"));
@@ -66,24 +92,52 @@ export function UserMenuWrapper() {
     setError("");
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       if (mode === "register") {
-        const newUser = {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          createdAt: new Date().toISOString(),
-        };
-        localStorage.setItem("user", JSON.stringify(newUser));
-        setUser({ name: newUser.name, email: newUser.email });
-      } else {
-        const savedUser = localStorage.getItem("user");
-        if (!savedUser) {
-          throw new Error("Utilizador não encontrado. Registe-se primeiro.");
+        // Registar novo cliente via API
+        const response = await fetch(`${API_BASE}/website/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            phone: formData.phone || undefined,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erro ao registar");
         }
-        const parsed = JSON.parse(savedUser);
-        setUser({ name: parsed.name, email: parsed.email });
+
+        const data = await response.json();
+        
+        // Guardar token e dados do cliente
+        localStorage.setItem("client_token", data.access_token);
+        localStorage.setItem("client_user", JSON.stringify(data.client));
+        setUser(data.client);
+      } else {
+        // Login via API
+        const response = await fetch(`${API_BASE}/website/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Email ou password incorretos");
+        }
+
+        const data = await response.json();
+        
+        // Guardar token e dados do cliente
+        localStorage.setItem("client_token", data.access_token);
+        localStorage.setItem("client_user", JSON.stringify(data.client));
+        setUser(data.client);
       }
 
       setShowAuthModal(false);
