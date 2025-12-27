@@ -23,8 +23,8 @@ class WebsiteClient(Base):
     client_type = Column(String, default="pontual")  # "investidor", "pontual", "arrendamento"
     interest_type = Column(String, default="compra")  # "compra", "arrendamento"
     
-    # Agente atribuído
-    assigned_agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # Agente atribuído (da tabela agents, não users)
+    assigned_agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
     agent_selected_by_client = Column(Boolean, default=False)  # True se cliente escolheu o agente
     
     # Estado da conta
