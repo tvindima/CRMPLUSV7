@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { MortgageSimulator } from "./MortgageSimulator";
+import { TaxCalculator } from "./TaxCalculator";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
@@ -26,6 +28,8 @@ export function UserMenuWrapper() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showMortgageSimulator, setShowMortgageSimulator] = useState(false);
+  const [showTaxCalculator, setShowTaxCalculator] = useState(false);
 
   useEffect(() => {
     // Verificar se há cliente guardado (migrar de "user" para "client_user")
@@ -215,6 +219,32 @@ export function UserMenuWrapper() {
                 Alertas de imóveis
               </Link>
               <hr className="my-2 border-[#2A2A2E]" />
+              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#7A7A7A]">Ferramentas</p>
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  setShowMortgageSimulator(true);
+                }}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Simulador de Prestação
+              </button>
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  setShowTaxCalculator(true);
+                }}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Calculadora de IMT
+              </button>
+              <hr className="my-2 border-[#2A2A2E]" />
               <button
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-400 transition hover:bg-[#2A2A2E]"
@@ -357,6 +387,40 @@ export function UserMenuWrapper() {
               </Link>
               .
             </p>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal Simulador de Prestação */}
+      {showMortgageSimulator && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+          style={{ zIndex: 99999 }}
+          onClick={() => setShowMortgageSimulator(false)}
+        >
+          <div 
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MortgageSimulator onClose={() => setShowMortgageSimulator(false)} />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal Calculadora IMT */}
+      {showTaxCalculator && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+          style={{ zIndex: 99999 }}
+          onClick={() => setShowTaxCalculator(false)}
+        >
+          <div 
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TaxCalculator onClose={() => setShowTaxCalculator(false)} />
           </div>
         </div>,
         document.body
