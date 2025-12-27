@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
-import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
+import { ToastProvider } from "../../../backoffice/components/ToastProvider";
+import { BellIcon } from "@heroicons/react/24/outline";
 
 type FeedItem = {
   id: number;
@@ -13,25 +14,6 @@ type FeedItem = {
   reference?: string | null;
   created_at: string;
 };
-
-const mockFeed: FeedItem[] = [
-  {
-    id: 1,
-    actor: "Pedro Olaio",
-    avatar: "/renders/avatars/pedro.png",
-    action: "editou o imóvel JR1044",
-    reference: "JR1044",
-    created_at: "há 3 min",
-  },
-  {
-    id: 2,
-    actor: "Pedro Olaio",
-    avatar: null,
-    action: "adicionou JR1050 — Nova lead atribuída",
-    reference: "JR1050",
-    created_at: "Ontem às 14:02",
-  },
-];
 
 function FeedRow({ item }: { item: FeedItem }) {
   return (
@@ -63,29 +45,47 @@ export default function FeedsPage() {
 }
 
 function FeedsInner() {
-  const toast = useToast();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: substituir mockFeed pela resposta real do endpoint /feed quando estiver disponível
-    setItems(mockFeed);
-    setLoading(false);
+    loadFeed();
   }, []);
+
+  const loadFeed = async () => {
+    try {
+      // TODO: Implementar quando endpoint /api/feed estiver disponível
+      // const response = await fetch('/api/feed');
+      // const data = await response.json();
+      // setItems(data);
+      setItems([]);
+    } catch (error) {
+      console.error("Erro ao carregar feed:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <BackofficeLayout title="Activity Feed">
-      {loading && <p className="text-sm text-[#C5C5C5]">A carregar feed...</p>}
-      {!loading && (
+      {loading ? (
+        <div className="py-12 text-center text-[#999]">A carregar atividades...</div>
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-12 text-center">
+          <BellIcon className="mx-auto h-12 w-12 text-[#555]" />
+          <p className="mt-4 text-[#999]">Nenhuma atividade recente</p>
+          <p className="mt-2 text-xs text-[#666]">
+            As atividades da equipa aparecerão aqui
+          </p>
+        </div>
+      ) : (
         <div className="space-y-3">
           {items.map((item) => (
             <FeedRow key={item.id} item={item} />
           ))}
         </div>
       )}
-      <p className="mt-2 text-xs text-[#C5C5C5]">
-        TODO: integrar feed real (endpoint /feed) e avatares reais. Mock baseado no render 17/18.
-      </p>
     </BackofficeLayout>
   );
 }

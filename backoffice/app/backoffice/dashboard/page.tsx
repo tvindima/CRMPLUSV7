@@ -96,55 +96,16 @@ type Activity = {
   time: string;
 };
 
-// Mock data - substituir por chamadas API reais
-const mockAgents: Agent[] = [
-  { id: 1, name: "Tiago Vindima", avatar: "/avatars/1.png", role: "Coordenador", leads: 23, propostas: 12, visitas: 8, performance: 95, rank: 1 },
-  { id: 2, name: "Bruno Libânio", avatar: "/avatars/2.png", role: "Agente Sénior", leads: 19, propostas: 10, visitas: 7, performance: 88, rank: 2 },
-  { id: 3, name: "Sara Costa", avatar: "/avatars/3.png", role: "Agente", leads: 15, propostas: 7, visitas: 5, performance: 76, rank: 3 },
-  { id: 4, name: "João Silva", avatar: "/avatars/4.png", role: "Agente", leads: 12, propostas: 5, visitas: 4, performance: 68, rank: 4 },
-];
+// Dados vazios como fallback - sem mocks
+const emptyAgents: Agent[] = [];
+const emptyLeads: Lead[] = [];
+const emptyTasks: Task[] = [];
+const emptyActivities: Activity[] = [];
 
-const mockLeads: Lead[] = [
-  { id: 1, cliente: "João Silva", tipo: "T2 - Lisboa", status: "nova", responsavel: "Tiago V.", data: "Há 2h", tempo: "2h" },
-  { id: 2, cliente: "Maria Santos", tipo: "T3 - Porto", status: "qualificada", responsavel: "Bruno L.", data: "Há 5h", tempo: "5h" },
-  { id: 3, cliente: "Pedro Costa", tipo: "Moradia - Gaia", status: "pendente", data: "Ontem", tempo: "24h" },
-  { id: 4, cliente: "Ana Ferreira", tipo: "T2 - Sines", status: "contacto", responsavel: "Sara C.", data: "Há 3h", tempo: "3h" },
-];
-
-const mockTasks: Task[] = [
-  { id: 1, tipo: 'reuniao', titulo: "Reunião de equipa semanal", responsavel: "Todos", hora: "10:00", urgente: true },
-  { id: 2, tipo: 'chamada', titulo: "Follow-up cliente João Silva", responsavel: "Tiago V.", hora: "11:30", urgente: true },
-  { id: 3, tipo: 'visita', titulo: "Visita T3 Porto - Maria Santos", responsavel: "Bruno L.", hora: "14:00", urgente: false },
-  { id: 4, tipo: 'revisao', titulo: "Revisar proposta T2 Lisboa", responsavel: "Sara C.", hora: "16:00", urgente: false },
-];
-
-const mockActivities: Activity[] = [
-  { id: 1, user: "Tiago Vindima", avatar: "/avatars/1.png", acao: "criou nova propriedade T3 em Lisboa", tipo: "criou", time: "Há 15 min" },
-  { id: 2, user: "Bruno Libânio", avatar: "/avatars/2.png", acao: "completou visita com cliente Maria Santos", tipo: "completou", time: "Há 30 min" },
-  { id: 3, user: "Sara Costa", avatar: "/avatars/3.png", acao: "editou proposta para João Silva", tipo: "editou", time: "Há 1h" },
-  { id: 4, user: "Tiago Vindima", avatar: "/avatars/1.png", acao: "atribuiu lead a João Silva", tipo: "atribuiu", time: "Há 2h" },
-];
-
-const barData = [
-  { label: "Lisboa", value: 38 },
-  { label: "Porto", value: 34 },
-  { label: "Gaia", value: 28 },
-  { label: "Sines", value: 18 },
-  { label: "Outros", value: 12 },
-];
-
-const pieData = [
-  { label: "T1", value: 15, color: "#3b82f6" },
-  { label: "T2", value: 45, color: "#a855f7" },
-  { label: "T3", value: 30, color: "#E10600" },
-  { label: "Outros", value: 10, color: "#14b8a6" },
-];
-
-const statusData = [
-  { label: "Disponível", value: 58, color: "#10b981" },
-  { label: "Reservado", value: 25, color: "#f59e0b" },
-  { label: "Vendido", value: 17, color: "#ef4444" },
-];
+// Dados vazios para gráficos - serão preenchidos pela API
+const emptyBarData: { label: string; value: number }[] = [];
+const emptyPieData: { label: string; value: number; color: string }[] = [];
+const emptyStatusData: { label: string; value: number; color: string }[] = [];
 
 const GlowCard = ({ children, className = "", onClick, tooltip }: { children: React.ReactNode; className?: string; onClick?: () => void; tooltip?: string }) => (
   <div
@@ -177,14 +138,14 @@ export default function DashboardPage() {
     { title: "Agentes Ativos", value: "0", icon: UserGroupIcon, iconColor: "text-green-400", bgGradient: "from-green-500/20 to-emerald-500/20" },
   ]);
   
-  // Estados para dados da API
-  const [agents, setAgents] = useState<Agent[]>(mockAgents);
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
-  const [barChartData, setBarChartData] = useState(barData);
-  const [pieChartData, setPieChartData] = useState(pieData);
-  const [statusChartData, setStatusChartData] = useState(statusData);
+  // Estados para dados da API (inicializar vazios)
+  const [agents, setAgents] = useState<Agent[]>(emptyAgents);
+  const [leads, setLeads] = useState<Lead[]>(emptyLeads);
+  const [tasks, setTasks] = useState<Task[]>(emptyTasks);
+  const [activities, setActivities] = useState<Activity[]>(emptyActivities);
+  const [barChartData, setBarChartData] = useState(emptyBarData);
+  const [pieChartData, setPieChartData] = useState(emptyPieData);
+  const [statusChartData, setStatusChartData] = useState(emptyStatusData);
   const [completedTasks, setCompletedTasks] = useState<number[]>([]);
 
   // Calcular progresso das tarefas

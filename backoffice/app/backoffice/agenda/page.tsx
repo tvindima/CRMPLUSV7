@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
 import { ToastProvider } from "../../../backoffice/components/ToastProvider";
 import { DataTable } from "../../../backoffice/components/DataTable";
+import { CalendarIcon } from "@heroicons/react/24/outline";
 
 type VisitItem = {
   id: number;
@@ -14,11 +15,6 @@ type VisitItem = {
   referencia: string;
 };
 
-const mockVisits: VisitItem[] = [
-  { id: 1, data: "26/04/2024 10:00", lead: "JR1044", agente: "Pedro Olaio", estado: "Confirmada", referencia: "MB1026" },
-  { id: 2, data: "27/04/2024 15:00", lead: "MB1018", agente: "Nuno Faria", estado: "Pendente", referencia: "MB1018" },
-];
-
 export default function AgendaPage() {
   return (
     <ToastProvider>
@@ -28,15 +24,36 @@ export default function AgendaPage() {
 }
 
 function AgendaInner() {
+  const [visits, setVisits] = useState<VisitItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Todas");
 
+  useEffect(() => {
+    loadVisits();
+  }, []);
+
+  const loadVisits = async () => {
+    try {
+      // TODO: Implementar quando endpoint /api/visits estiver disponível
+      // const response = await fetch('/api/visits');
+      // const data = await response.json();
+      // setVisits(data);
+      setVisits([]);
+    } catch (error) {
+      console.error("Erro ao carregar visitas:", error);
+      setVisits([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = useMemo(() => {
-    if (filter === "Todas") return mockVisits;
-    return mockVisits.filter((v) => v.estado === filter);
-  }, [filter]);
+    if (filter === "Todas") return visits;
+    return visits.filter((v) => v.estado === filter);
+  }, [filter, visits]);
 
   return (
-    <BackofficeLayout title="Visitas">
+    <BackofficeLayout title="Agenda">
       <div className="mb-4 flex flex-wrap gap-3">
         <select
           value={filter}
@@ -46,21 +63,35 @@ function AgendaInner() {
           <option>Todas</option>
           <option>Confirmada</option>
           <option>Pendente</option>
+          <option>Realizada</option>
+          <option>Cancelada</option>
         </select>
       </div>
-      <DataTable
-        dense
-        columns={["Data", "Lead", "Agente", "Estado", "Referência", "Ações"]}
-        rows={filtered.map((v) => [
-          v.data,
-          v.lead,
-          v.agente,
-          v.estado,
-          v.referencia,
-          "Editar",
-        ])}
-      />
-      <p className="mt-2 text-xs text-[#C5C5C5]">TODO: substituir mocks por dados reais de visitas quando endpoints estiverem disponíveis.</p>
+
+      {loading ? (
+        <div className="py-12 text-center text-[#999]">A carregar agenda...</div>
+      ) : visits.length === 0 ? (
+        <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-12 text-center">
+          <CalendarIcon className="mx-auto h-12 w-12 text-[#555]" />
+          <p className="mt-4 text-[#999]">Nenhuma visita agendada</p>
+          <p className="mt-2 text-xs text-[#666]">
+            As visitas agendadas aparecerão aqui quando forem criadas
+          </p>
+        </div>
+      ) : (
+        <DataTable
+          dense
+          columns={["Data", "Lead", "Agente", "Estado", "Referência", "Ações"]}
+          rows={filtered.map((v) => [
+            v.data,
+            v.lead,
+            v.agente,
+            v.estado,
+            v.referencia,
+            "Editar",
+          ])}
+        />
+      )}
     </BackofficeLayout>
   );
 }
