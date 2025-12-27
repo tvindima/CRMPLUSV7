@@ -534,3 +534,81 @@ def migrate_website_clients(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/migrate-website-clients-v2")
+def migrate_website_clients_v2(db: Session = Depends(get_db)):
+    """
+    Adiciona novos campos à tabela website_clients para sistema de leads.
+    - client_type: investidor, pontual, arrendamento
+    - interest_type: compra, arrendamento
+    - assigned_agent_id: FK para users
+    - agent_selected_by_client: boolean
+    
+    E cria tabela lead_distribution_counters para round-robin.
+    """
+    results = []
+    
+    try:
+        # Adicionar novas colunas a website_clients
+        columns_to_add = [
+            ("client_type", "VARCHAR DEFAULT 'pontual'"),
+            ("interest_type", "VARCHAR DEFAULT 'compra'"),
+            ("assigned_agent_id", "INTEGER REFERENCES users(id)"),
+            ("agent_selected_by_client", "BOOLEAN DEFAULT FALSE"),
+        ]
+        
+        for col_name, col_def in columns_to_add:
+            try:
+                add_col = text(f"ALTER TABLE website_clients ADD COLUMN IF NOT EXISTS {col_name} {col_def}")
+                db.execute(add_col)
+                results.append(f"✅ Coluna '{col_name}' adicionada/verificada")
+            except Exception as e:
+                results.append(f"⚠️ Coluna '{col_name}': {str(e)}")
+        
+        db.commit()
+        
+        # Criar tabela lead_distribution_counters
+        check_counters = text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'lead_distribution_counters'
+            );
+        """)
+        counters_exists = db.execute(check_counters).scalar()
+        
+        if counters_exists:
+            results.append("⚠️ Tabela 'lead_distribution_counters' já existe")
+        else:
+            create_counters = text("""
+                CREATE TABLE lead_distribution_counters (
+                    id SERIAL PRIMARY KEY,
+                    counter_type VARCHAR UNIQUE NOT NULL,
+                    last_agent_index INTEGER DEFAULT 0,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+                CREATE INDEX ix_lead_distribution_counters_type ON lead_distribution_counters(counter_type);
+            """)
+            db.execute(create_counters)
+            db.commit()
+            results.append("✅ Tabela 'lead_distribution_counters' criada!")
+        
+        # Inicializar contadores se não existirem
+        for counter_type in ["investidor", "pontual"]:
+            check_counter = text(f"SELECT id FROM lead_distribution_counters WHERE counter_type = '{counter_type}'")
+            exists = db.execute(check_counter).first()
+            if not exists:
+                insert_counter = text(f"INSERT INTO lead_distribution_counters (counter_type, last_agent_index) VALUES ('{counter_type}', 0)")
+                db.execute(insert_counter)
+                results.append(f"✅ Contador '{counter_type}' inicializado")
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

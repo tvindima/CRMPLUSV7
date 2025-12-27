@@ -13,6 +13,14 @@ interface UserData {
   email: string;
   name: string;
   phone?: string;
+  assigned_agent_name?: string;
+}
+
+interface Agent {
+  id: number;
+  name: string;
+  avatar_url?: string;
+  specialty?: string;
 }
 
 export function UserMenuWrapper() {
@@ -20,12 +28,18 @@ export function UserMenuWrapper() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [registerStep, setRegisterStep] = useState(1); // 1: dados, 2: qualificação, 3: agente
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
+    interest_type: "compra" as "compra" | "arrendamento",
+    client_type: "pontual" as "investidor" | "pontual",
+    has_agent: false,
+    selected_agent_id: null as number | null,
   });
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showMortgageSimulator, setShowMortgageSimulator] = useState(false);
@@ -106,6 +120,9 @@ export function UserMenuWrapper() {
             email: formData.email,
             password: formData.password,
             phone: formData.phone || undefined,
+            interest_type: formData.interest_type,
+            client_type: formData.interest_type === "compra" ? formData.client_type : "arrendamento",
+            selected_agent_id: formData.selected_agent_id,
           }),
         });
 
@@ -145,12 +162,66 @@ export function UserMenuWrapper() {
       }
 
       setShowAuthModal(false);
-      setFormData({ name: "", email: "", password: "", phone: "" });
+      resetForm();
       window.dispatchEvent(new Event("authChange"));
     } catch (err: any) {
       setError(err.message || "Ocorreu um erro");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      interest_type: "compra",
+      client_type: "pontual",
+      has_agent: false,
+      selected_agent_id: null,
+    });
+    setRegisterStep(1);
+    setAgents([]);
+  };
+
+  const fetchAgents = async (interestType: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/website/auth/agents?interest_type=${interestType}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar agentes:", error);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (registerStep === 1) {
+      // Validar dados básicos
+      if (!formData.name || !formData.email || !formData.password) {
+        setError("Preencha todos os campos obrigatórios");
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError("A password deve ter pelo menos 6 caracteres");
+        return;
+      }
+      setError("");
+      setRegisterStep(2);
+    } else if (registerStep === 2) {
+      // Carregar agentes e passar para passo 3
+      fetchAgents(formData.interest_type);
+      setRegisterStep(3);
+    }
+  };
+
+  const handlePrevStep = () => {
+    setError("");
+    if (registerStep > 1) {
+      setRegisterStep(registerStep - 1);
     }
   };
 
@@ -280,38 +351,58 @@ export function UserMenuWrapper() {
           onClick={() => setShowAuthModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl my-auto"
+            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl my-auto max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-white">
-                {mode === "login" ? "Entrar na conta" : "Criar conta"}
+                {mode === "login" ? "Entrar na conta" : 
+                  registerStep === 1 ? "Criar conta" :
+                  registerStep === 2 ? "Sobre si" :
+                  "Escolha o seu agente"
+                }
               </h2>
-              <button onClick={() => setShowAuthModal(false)} className="text-[#C5C5C5] hover:text-white">
+              <button onClick={() => { setShowAuthModal(false); resetForm(); }} className="text-[#C5C5C5] hover:text-white">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="mb-6 flex rounded-lg bg-[#0B0B0D] p-1">
-              <button
-                onClick={() => setMode("login")}
-                className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
-                  mode === "login" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
-                }`}
-              >
-                Entrar
-              </button>
-              <button
-                onClick={() => setMode("register")}
-                className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
-                  mode === "register" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
-                }`}
-              >
-                Registar
-              </button>
-            </div>
+            {mode === "login" && (
+              <div className="mb-6 flex rounded-lg bg-[#0B0B0D] p-1">
+                <button
+                  onClick={() => { setMode("login"); resetForm(); }}
+                  className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
+                    mode === "login" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
+                  }`}
+                >
+                  Entrar
+                </button>
+                <button
+                  onClick={() => { setMode("register"); resetForm(); }}
+                  className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
+                    mode === "register" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
+                  }`}
+                >
+                  Registar
+                </button>
+              </div>
+            )}
+
+            {mode === "register" && (
+              <div className="mb-6 flex items-center justify-center gap-2">
+                {[1, 2, 3].map((step) => (
+                  <div
+                    key={step}
+                    className={`h-2 w-8 rounded-full transition ${
+                      step === registerStep ? "bg-[#E10600]" :
+                      step < registerStep ? "bg-[#E10600]/50" : "bg-[#2A2A2E]"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-500">
@@ -319,10 +410,50 @@ export function UserMenuWrapper() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "register" && (
+            {/* LOGIN FORM */}
+            {mode === "login" && (
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-sm text-[#C5C5C5]">Nome</label>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-lg bg-[#E10600] py-3 font-semibold text-white transition hover:bg-[#C10500] disabled:opacity-50"
+                >
+                  {loading ? "A processar..." : "Entrar"}
+                </button>
+                <p className="text-center text-sm text-[#7A7A7A]">
+                  Não tem conta?{" "}
+                  <button type="button" onClick={() => { setMode("register"); resetForm(); }} className="text-[#E10600] hover:underline">
+                    Registar
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {/* REGISTER STEP 1: Dados básicos */}
+            {mode === "register" && registerStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Nome completo *</label>
                   <input
                     type="text"
                     required
@@ -331,50 +462,244 @@ export function UserMenuWrapper() {
                     className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
                   />
                 </div>
-              )}
-
-              <div>
-                <label className="mb-1 block text-sm text-[#C5C5C5]">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-[#C5C5C5]">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
-                />
-              </div>
-
-              {mode === "register" && (
                 <div>
-                  <label className="mb-1 block text-sm text-[#C5C5C5]">Telefone (opcional)</label>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Password *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                  />
+                  <p className="mt-1 text-xs text-[#7A7A7A]">Mínimo 6 caracteres</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-[#C5C5C5]">Telefone</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                    placeholder="Opcional"
                   />
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="w-full rounded-lg bg-[#E10600] py-3 font-semibold text-white transition hover:bg-[#C10500]"
+                >
+                  Continuar
+                </button>
+                <p className="text-center text-sm text-[#7A7A7A]">
+                  Já tem conta?{" "}
+                  <button type="button" onClick={() => { setMode("login"); resetForm(); }} className="text-[#E10600] hover:underline">
+                    Entrar
+                  </button>
+                </p>
+              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-[#E10600] py-3 font-semibold text-white transition hover:bg-[#C10500] disabled:opacity-50"
-              >
-                {loading ? "A processar..." : mode === "login" ? "Entrar" : "Criar conta"}
-              </button>
-            </form>
+            {/* REGISTER STEP 2: Qualificação */}
+            {mode === "register" && registerStep === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <label className="mb-3 block text-sm font-medium text-white">O que procura?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, interest_type: "compra" })}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition ${
+                        formData.interest_type === "compra"
+                          ? "border-[#E10600] bg-[#E10600]/10"
+                          : "border-[#2A2A2E] bg-[#0B0B0D] hover:border-[#3A3A3E]"
+                      }`}
+                    >
+                      <span className="text-2xl">🏠</span>
+                      <span className={`text-sm font-medium ${formData.interest_type === "compra" ? "text-white" : "text-[#C5C5C5]"}`}>
+                        Comprar
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, interest_type: "arrendamento" })}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition ${
+                        formData.interest_type === "arrendamento"
+                          ? "border-[#E10600] bg-[#E10600]/10"
+                          : "border-[#2A2A2E] bg-[#0B0B0D] hover:border-[#3A3A3E]"
+                      }`}
+                    >
+                      <span className="text-2xl">🔑</span>
+                      <span className={`text-sm font-medium ${formData.interest_type === "arrendamento" ? "text-white" : "text-[#C5C5C5]"}`}>
+                        Arrendar
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {formData.interest_type === "compra" && (
+                  <div>
+                    <label className="mb-3 block text-sm font-medium text-white">Como se identifica?</label>
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, client_type: "investidor" })}
+                        className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
+                          formData.client_type === "investidor"
+                            ? "border-[#E10600] bg-[#E10600]/10"
+                            : "border-[#2A2A2E] bg-[#0B0B0D] hover:border-[#3A3A3E]"
+                        }`}
+                      >
+                        <span className="text-2xl">💼</span>
+                        <div>
+                          <p className={`font-medium ${formData.client_type === "investidor" ? "text-white" : "text-[#C5C5C5]"}`}>
+                            Investidor
+                          </p>
+                          <p className="text-xs text-[#7A7A7A]">
+                            Faço investimentos imobiliários com alguma regularidade
+                          </p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, client_type: "pontual" })}
+                        className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
+                          formData.client_type === "pontual"
+                            ? "border-[#E10600] bg-[#E10600]/10"
+                            : "border-[#2A2A2E] bg-[#0B0B0D] hover:border-[#3A3A3E]"
+                        }`}
+                      >
+                        <span className="text-2xl">🏡</span>
+                        <div>
+                          <p className={`font-medium ${formData.client_type === "pontual" ? "text-white" : "text-[#C5C5C5]"}`}>
+                            Compra pontual
+                          </p>
+                          <p className="text-xs text-[#7A7A7A]">
+                            Procuro casa para habitar ou investimento ocasional
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="flex-1 rounded-lg border border-[#2A2A2E] py-3 font-semibold text-[#C5C5C5] transition hover:bg-[#1A1A1E]"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="flex-1 rounded-lg bg-[#E10600] py-3 font-semibold text-white transition hover:bg-[#C10500]"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* REGISTER STEP 3: Escolha de agente */}
+            {mode === "register" && registerStep === 3 && (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="mb-3 block text-sm font-medium text-white">
+                    Já trabalha com algum dos nossos agentes?
+                  </label>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, has_agent: false, selected_agent_id: null })}
+                      className={`rounded-xl border p-3 text-sm font-medium transition ${
+                        !formData.has_agent
+                          ? "border-[#E10600] bg-[#E10600]/10 text-white"
+                          : "border-[#2A2A2E] bg-[#0B0B0D] text-[#C5C5C5] hover:border-[#3A3A3E]"
+                      }`}
+                    >
+                      Não, atribuam-me um
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, has_agent: true })}
+                      className={`rounded-xl border p-3 text-sm font-medium transition ${
+                        formData.has_agent
+                          ? "border-[#E10600] bg-[#E10600]/10 text-white"
+                          : "border-[#2A2A2E] bg-[#0B0B0D] text-[#C5C5C5] hover:border-[#3A3A3E]"
+                      }`}
+                    >
+                      Sim, escolher
+                    </button>
+                  </div>
+
+                  {formData.has_agent && agents.length > 0 && (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {agents.map((agent) => (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, selected_agent_id: agent.id })}
+                          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                            formData.selected_agent_id === agent.id
+                              ? "border-[#E10600] bg-[#E10600]/10"
+                              : "border-[#2A2A2E] bg-[#0B0B0D] hover:border-[#3A3A3E]"
+                          }`}
+                        >
+                          {agent.avatar_url ? (
+                            <img 
+                              src={agent.avatar_url} 
+                              alt={agent.name} 
+                              className="h-10 w-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E10600] text-white font-semibold">
+                              {agent.name.charAt(0)}
+                            </div>
+                          )}
+                          <span className={`font-medium ${formData.selected_agent_id === agent.id ? "text-white" : "text-[#C5C5C5]"}`}>
+                            {agent.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!formData.has_agent && (
+                    <p className="text-sm text-[#7A7A7A] text-center py-2">
+                      Será atribuído um agente especializado automaticamente
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="flex-1 rounded-lg border border-[#2A2A2E] py-3 font-semibold text-[#C5C5C5] transition hover:bg-[#1A1A1E]"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || (formData.has_agent && !formData.selected_agent_id)}
+                    className="flex-1 rounded-lg bg-[#E10600] py-3 font-semibold text-white transition hover:bg-[#C10500] disabled:opacity-50"
+                  >
+                    {loading ? "A criar conta..." : "Criar conta"}
+                  </button>
+                </div>
+              </form>
+            )}
 
             <p className="mt-4 text-center text-xs text-[#7A7A7A]">
               Ao continuar, aceita os nossos{" "}
