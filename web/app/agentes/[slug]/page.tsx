@@ -185,9 +185,9 @@ export default async function AgentPage({ params }: Props) {
     supportFor: s.role.startsWith("Assistente de ") ? s.role.replace("Assistente de ", "") : undefined,
   }));
 
-  // Telefone prioritário: assistente dedicado, senão do agente
-  const supportAssistant = allStaffMembers.find((staff) => staff.supportFor === agent.name && staff.phone);
-  const phoneToCall = supportAssistant?.phone || agent.phone;
+  // O telefone do agente é sempre o do agente (vem da app mobile dele)
+  // Cada pessoa (agente ou assistente) tem o seu próprio contacto configurado na sua app
+  const phoneToCall = agent.phone;
 
   // Build team members list: only staff directly supporting this agent (or generic staff if no specific support)
   const teamMembers = [
