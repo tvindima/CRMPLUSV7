@@ -113,9 +113,17 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[models
     """Autenticar utilizador por email e password"""
     user = get_user_by_email(db, email)
     if not user:
+        print(f"[AUTH] User não encontrado: {email}")
+        return None
+    print(f"[AUTH] User encontrado: {email}, is_active={user.is_active}, has_password={bool(user.hashed_password)}")
+    if not user.hashed_password:
+        print(f"[AUTH] User {email} não tem password definida!")
         return None
     if not verify_password(password, user.hashed_password):
+        print(f"[AUTH] Password inválida para: {email}")
         return None
     if not user.is_active:
+        print(f"[AUTH] User inativo: {email}")
         return None
+    print(f"[AUTH] Login bem sucedido: {email}")
     return user

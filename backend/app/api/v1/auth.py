@@ -19,6 +19,24 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
+@router.get("/debug-user/{email}")
+def debug_user(email: str, db: Session = Depends(get_db)):
+    """DEBUG: Verificar estado do user (REMOVER EM PRODUÇÃO)"""
+    from app.users.models import User
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return {"found": False, "email": email}
+    return {
+        "found": True,
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "has_password": bool(user.hashed_password),
+        "password_length": len(user.hashed_password) if user.hashed_password else 0
+    }
+
+
 def _create_token(user_id: int, email: str, role: str, agent_id: int = None) -> TokenResponse:
     expires = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
