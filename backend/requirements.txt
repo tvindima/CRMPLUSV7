@@ -20,3 +20,4 @@ python-json-logger>=2.0.7  # FASE 2: Structured JSON logging
 requests>=2.31.0  # HTTP requests para integrações externas
 google-cloud-vision>=3.7.0  # OCR com Google Vision
 reportlab>=4.1.0  # Geração de PDF
+# Trigger redeploy Sat Dec 27 02:40:37 WET 2025
