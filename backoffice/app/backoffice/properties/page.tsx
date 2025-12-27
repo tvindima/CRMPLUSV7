@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { DataTable } from "../../../backoffice/components/DataTable";
 import { Drawer } from "../../../backoffice/components/Drawer";
 import { PropertyForm, PropertyFormSubmit } from "@/backoffice/components/PropertyForm";

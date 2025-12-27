@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BackofficeLayout } from '@/backoffice/components/BackofficeLayout';
+import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
 
 interface LeadFormData {

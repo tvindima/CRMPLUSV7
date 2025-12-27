@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { BackofficeLayout } from '@/backoffice/components/BackofficeLayout';
+import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
 
 interface AgentData {

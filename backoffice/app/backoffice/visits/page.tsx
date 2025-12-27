@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { PlusIcon, CalendarIcon } from "@heroicons/react/24/outline";
 
 export default function VisitsPage() {

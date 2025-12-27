@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
 
 type Agent = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 
 export default function PropertiesMapPage() {
   return (

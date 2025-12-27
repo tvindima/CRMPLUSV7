@@ -16,7 +16,7 @@ import {
   EnvelopeIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";

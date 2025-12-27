@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ChartBarIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 
 type ReportStats = {

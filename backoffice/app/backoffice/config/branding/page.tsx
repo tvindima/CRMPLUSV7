@@ -1,7 +1,7 @@
 'use client';
 
 import { BrandImage } from "../../../../components/BrandImage";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../../backoffice/components/ToastProvider";
 
 export default function BrandingPage() {

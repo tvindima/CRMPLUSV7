@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 
 export default function ExpensesCalculatorPage() {

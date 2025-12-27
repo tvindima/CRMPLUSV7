@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
 import { BackofficeProperty, getBackofficeProperty } from "../../../../src/services/backofficeApi";
 

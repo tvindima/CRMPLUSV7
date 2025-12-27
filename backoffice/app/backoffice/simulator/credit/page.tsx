@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { BanknotesIcon } from "@heroicons/react/24/outline";
 
 export default function CreditSimulatorPage() {

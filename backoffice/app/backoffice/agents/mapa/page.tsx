@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../../backoffice/components/ToastProvider";
 
 export default function AgentesMapaPage() {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { 
   UserGroupIcon, 
   MagnifyingGlassIcon,

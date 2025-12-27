@@ -1,4 +1,4 @@
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 
 export default function AutomacaoPage() {
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { BackofficeLayout } from "@/backoffice/components/BackofficeLayout";
+import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../backoffice/components/ToastProvider";
 import Link from "next/link";
 import { 
