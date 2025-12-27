@@ -138,29 +138,35 @@ def get_available_agents(
     Listar agentes disponíveis para o cliente escolher.
     Filtrado por tipo de interesse (compra/arrendamento).
     """
-    if interest_type == "arrendamento":
-        # Para arrendamento, só mostrar Marisa Barosa
-        agent = db.query(User).filter(User.id == RENTAL_AGENT_ID, User.is_active == True).first()
-        if agent:
-            return [AgentForSelection(
-                id=agent.id,
-                name=agent.display_name or agent.full_name or agent.email,
-                avatar_url=agent.avatar_url,
-                specialty="arrendamento"
-            )]
-        return []
-    else:
-        # Para compra, mostrar agentes de venda
-        agents = get_sales_agents(db)
-        return [
-            AgentForSelection(
-                id=a.id,
-                name=a.display_name or a.full_name or a.email,
-                avatar_url=a.avatar_url,
-                specialty="venda"
-            )
-            for a in agents
-        ]
+    try:
+        if interest_type == "arrendamento":
+            # Para arrendamento, só mostrar Marisa Barosa
+            agent = db.query(User).filter(User.id == RENTAL_AGENT_ID, User.is_active == True).first()
+            if agent:
+                return [AgentForSelection(
+                    id=agent.id,
+                    name=agent.display_name or agent.full_name or agent.email,
+                    avatar_url=agent.avatar_url,
+                    specialty="arrendamento"
+                )]
+            return []
+        else:
+            # Para compra, mostrar agentes de venda
+            agents = get_sales_agents(db)
+            return [
+                AgentForSelection(
+                    id=a.id,
+                    name=a.display_name or a.full_name or a.email,
+                    avatar_url=a.avatar_url,
+                    specialty="venda"
+                )
+                for a in agents
+            ]
+    except Exception as e:
+        import traceback
+        print(f"Error in get_available_agents: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/register", response_model=WebsiteClientToken, status_code=201)
