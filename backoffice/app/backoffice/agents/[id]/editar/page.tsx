@@ -125,7 +125,7 @@ function EditAgentInner() {
 
   if (loading) {
     return (
-      <BackofficeLayout title="Editar Agente" showBackButton>
+      <BackofficeLayout title="Editar Agente">
         <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E10600] border-t-transparent"></div>
           <span className="ml-3 text-[#C5C5C5]">A carregar...</span>
@@ -136,7 +136,7 @@ function EditAgentInner() {
 
   if (!formData) {
     return (
-      <BackofficeLayout title="Editar Agente" showBackButton>
+      <BackofficeLayout title="Editar Agente">
         <div className="py-20 text-center text-[#C5C5C5]">
           Agente não encontrado
         </div>
@@ -145,7 +145,7 @@ function EditAgentInner() {
   }
 
   return (
-    <BackofficeLayout title={`Editar ${formData.name}`} showBackButton>
+    <BackofficeLayout title={`Editar ${formData.name}`}>
       <form onSubmit={handleSubmit} className="max-w-4xl space-y-4 md:space-y-6 pb-8">
         {/* Dados Básicos */}
         <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">

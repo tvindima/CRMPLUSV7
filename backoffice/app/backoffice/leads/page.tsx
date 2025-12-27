@@ -122,7 +122,7 @@ function LeadsInner() {
   };
 
   return (
-    <BackofficeLayout title="Leads" showBackButton={true}>
+    <BackofficeLayout title="Leads">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           value={search}

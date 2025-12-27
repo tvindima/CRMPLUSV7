@@ -137,7 +137,7 @@ function NewLeadInner() {
   };
 
   return (
-    <BackofficeLayout title="Nova Lead - Cliente Comprador" showBackButton={true}>
+    <BackofficeLayout title="Nova Lead - Cliente Comprador">
       <form onSubmit={handleSubmit} className="max-w-5xl space-y-4 md:space-y-6 pb-8">
         
         {/* Dados do Cliente */}

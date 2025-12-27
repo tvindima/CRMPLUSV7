@@ -129,7 +129,7 @@ function NewStaffForm() {
   };
 
   return (
-    <BackofficeLayout title="Novo Membro de Staff" showBackButton={true}>
+    <BackofficeLayout title="Novo Membro de Staff">
       <div className="max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Dados Pessoais */}
