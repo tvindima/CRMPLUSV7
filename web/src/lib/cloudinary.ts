@@ -79,3 +79,28 @@ export function optimizeAvatarUrl(url: string | null | undefined): string | null
   
   return url.replace('/upload/', `/upload/${transformations}/`);
 }
+
+/**
+ * Otimiza avatar de staff com remoção de fundo automática.
+ * Usa Cloudinary AI para remover fundos não transparentes.
+ * 
+ * @param url - URL do avatar
+ * @returns URL com remoção de fundo e otimizações
+ */
+export function optimizeStaffAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  
+  if (!url.includes('res.cloudinary.com')) {
+    return url;
+  }
+  
+  // Transformações: remover fundo + formato automático + qualidade
+  const transformations = 'e_background_removal,f_auto,q_auto:best';
+  
+  // Se já tem remoção de fundo, não duplicar
+  if (url.includes('e_background_removal') || url.includes('e_bgremoval')) {
+    return url.replace('/upload/', '/upload/f_auto,q_auto:best/');
+  }
+  
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}

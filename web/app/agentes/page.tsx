@@ -1,6 +1,6 @@
 import { getAgents, getStaff } from "../../src/services/publicApi";
 import TeamCarousel, { TeamMember } from "../../components/TeamCarousel";
-import { optimizeAvatarUrl } from "../../src/lib/cloudinary";
+import { optimizeAvatarUrl, optimizeStaffAvatarUrl } from "../../src/lib/cloudinary";
 
 // Revalidar esta página a cada 60 segundos
 export const revalidate = 60;
@@ -35,13 +35,13 @@ export default async function EquipaPage() {
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-PT')); // Ordenar por nome alfabeticamente
 
-  // Converter staff da API para o formato TeamMember
+  // Converter staff da API para o formato TeamMember (com remoção de fundo automática)
   const staffMembers: TeamMember[] = staffData.map((s) => ({
     id: s.id,
     name: s.name,
     role: s.role,
     phone: s.phone || undefined,
-    avatar: optimizeAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
+    avatar: optimizeStaffAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
     email: s.email || undefined,
     isAgent: false,
   }));

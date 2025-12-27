@@ -99,7 +99,7 @@ function TeamCard({ member }: { member: TeamMember }) {
           src={member.avatar || "/avatars/placeholder.png"}
           alt={member.name}
           fill
-          className="object-cover transition duration-500 group-hover:scale-105"
+          className="object-contain object-bottom transition duration-500 group-hover:scale-105"
           sizes="280px"
         />
         {/* Gradient overlay */}

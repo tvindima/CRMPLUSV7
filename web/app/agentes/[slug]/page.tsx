@@ -7,7 +7,7 @@ import { LeadForm } from "../../../components/LeadForm";
 import { SafeImage } from "../../../components/SafeImage";
 import { getPropertyCover } from "../../../src/utils/placeholders";
 import Image from "next/image";
-import { optimizeAvatarUrl } from "../../../src/lib/cloudinary";
+import { optimizeAvatarUrl, optimizeStaffAvatarUrl } from "../../../src/lib/cloudinary";
 
 type Props = { params: { slug: string } };
 
@@ -179,7 +179,7 @@ export default async function AgentPage({ params }: Props) {
     name: s.name,
     role: s.role,
     phone: s.phone || undefined,
-    avatar: optimizeAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
+    avatar: optimizeStaffAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
     isAgent: false,
     // Se o role contém "Assistente de X", extrair o nome do agente
     supportFor: s.role.startsWith("Assistente de ") ? s.role.replace("Assistente de ", "") : undefined,
