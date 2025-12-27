@@ -9,7 +9,7 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models.website_client import WebsiteClient, LeadDistributionCounter
-from app.users.models import User
+from app.agents.models import Agent
 from app.schemas.website_client import WebsiteClientListItem
 
 router = APIRouter(prefix="/website/clients", tags=["Website Clients Management"])
@@ -60,9 +60,9 @@ def list_website_clients(
     agent_ids = list(set([c.assigned_agent_id for c in clients if c.assigned_agent_id]))
     agents_map = {}
     if agent_ids:
-        agents = db.query(User).filter(User.id.in_(agent_ids)).all()
+        agents = db.query(Agent).filter(Agent.id.in_(agent_ids)).all()
         agents_map = {
-            a.id: a.display_name or f"{a.first_name} {a.last_name}".strip() or a.email
+            a.id: a.name or a.email
             for a in agents
         }
     
@@ -118,9 +118,9 @@ def get_clients_stats(db: Session = Depends(get_db)):
     agent_ids = [a[0] for a in by_agent if a[0]]
     agents_map = {}
     if agent_ids:
-        agents = db.query(User).filter(User.id.in_(agent_ids)).all()
+        agents = db.query(Agent).filter(Agent.id.in_(agent_ids)).all()
         agents_map = {
-            a.id: a.display_name or f"{a.first_name} {a.last_name}".strip()
+            a.id: a.name or a.email
             for a in agents
         }
     
