@@ -72,7 +72,7 @@ type Lead = {
   id: number;
   cliente: string;
   tipo: string;
-  status: 'nova' | 'qualificada' | 'contacto' | 'pendente';
+  status: string; // Aceita qualquer status (new, contacted, qualified, etc.)
   responsavel?: string;
   data: string;
   tempo: string;
@@ -259,7 +259,7 @@ export default function DashboardPage() {
           id: l.id,
           cliente: l.cliente,
           tipo: l.tipo,
-          status: l.status as 'nova' | 'qualificada' | 'contacto' | 'pendente',
+          status: l.status as Lead['status'],
           responsavel: l.responsavel || undefined,
           data: l.tempo,
           tempo: l.tempo
@@ -318,13 +318,23 @@ export default function DashboardPage() {
   };
 
   const getStatusBadge = (status: Lead['status']) => {
-    const badges = {
+    const badges: Record<string, { text: string; color: string }> = {
+      // Status em português
       nova: { text: "Nova", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
       qualificada: { text: "Qualificada", color: "bg-green-500/20 text-green-400 border-green-500/30" },
       contacto: { text: "Contacto", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
       pendente: { text: "Pendente", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+      // Status em inglês (vindo do backend)
+      new: { text: "Nova", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+      contacted: { text: "Contactada", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+      qualified: { text: "Qualificada", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+      proposal_sent: { text: "Proposta Enviada", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+      visit_scheduled: { text: "Visita Agendada", color: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
+      negotiation: { text: "Em Negociação", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+      converted: { text: "Convertida", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+      lost: { text: "Perdida", color: "bg-red-500/20 text-red-400 border-red-500/30" },
     };
-    return badges[status];
+    return badges[status] || { text: status, color: "bg-gray-500/20 text-gray-400 border-gray-500/30" };
   };
 
   const getTaskIcon = (tipo: Task['tipo']) => {
