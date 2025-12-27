@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from . import services, schemas
 from app.database import get_db
 from app.core.storage import storage
+from app.users.models import User, UserRole
 from PIL import Image
 from io import BytesIO
 import os
@@ -14,6 +15,48 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 @router.get("/", response_model=list[schemas.AgentOut])
 def list_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return services.get_agents(db, skip=skip, limit=limit)
+
+
+@router.get("/staff", response_model=list[dict])
+def list_public_staff(db: Session = Depends(get_db)):
+    """
+    Listar staff público (assistentes, coordenadores, etc.)
+    Endpoint PÚBLICO para o site web.
+    Exclui agentes e admins.
+    """
+    from app.agents.models import Agent
+    
+    staff = db.query(User).filter(
+        User.role.in_([UserRole.ASSISTANT.value, UserRole.COORDINATOR.value]),
+        User.is_active == True
+    ).all()
+    
+    result = []
+    for u in staff:
+        # Buscar nome do agente se for assistente
+        works_for_name = None
+        if u.works_for_agent_id:
+            agent = db.query(Agent).filter(Agent.id == u.works_for_agent_id).first()
+            if agent:
+                works_for_name = agent.name
+        
+        # Determinar role label
+        role_label = "Staff"
+        if u.role == UserRole.ASSISTANT.value:
+            role_label = f"Assistente de {works_for_name}" if works_for_name else "Assistente"
+        elif u.role == UserRole.COORDINATOR.value:
+            role_label = "Coordenador(a)"
+        
+        result.append({
+            "id": u.id,
+            "name": u.full_name,
+            "role": role_label,
+            "phone": u.phone,
+            "email": u.email,
+            "avatar_url": u.avatar_url,
+        })
+    
+    return result
 
 
 @router.get("/{agent_id}", response_model=schemas.AgentOut)

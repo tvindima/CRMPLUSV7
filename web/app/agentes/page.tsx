@@ -1,4 +1,4 @@
-import { getAgents } from "../../src/services/publicApi";
+import { getAgents, getStaff } from "../../src/services/publicApi";
 import TeamCarousel, { TeamMember } from "../../components/TeamCarousel";
 import { optimizeAvatarUrl } from "../../src/lib/cloudinary";
 
@@ -14,53 +14,11 @@ function normalizeForFilename(name: string): string {
     .replace(/\s+/g, "-"); // Espaços por hífens
 }
 
-// Staff members (não são agentes, não têm página individual)
-// Last updated: 2025-12-16 15:20 - Forcing rebuild for avatar deployment
-const staffMembers: TeamMember[] = [
-  {
-    id: 19,
-    name: "Ana Vindima",
-    role: "Assistente de Tiago Vindima",
-    phone: "918 503 014",
-    avatar: "/avatars/19.png",
-    isAgent: false,
-  },
-  {
-    id: 20,
-    name: "Maria Olaio",
-    role: "Diretora Financeira",
-    phone: "244 001 003",
-    avatar: "/avatars/20.png",
-    isAgent: false,
-  },
-  {
-    id: 21,
-    name: "Andreia Borges",
-    role: "Assistente Administrativa",
-    phone: "244 001 004",
-    avatar: "/avatars/21.png",
-    isAgent: false,
-  },
-  {
-    id: 22,
-    name: "Sara Ferreira",
-    role: "Assistente Administrativa",
-    phone: "244 001 002",
-    avatar: "/avatars/22.png",
-    isAgent: false,
-  },
-  {
-    id: 23,
-    name: "Cláudia Libânio",
-    role: "Assistente de Bruno Libânio",
-    phone: "912 118 911",
-    avatar: "/avatars/23.png",
-    isAgent: false,
-  },
-];
-
 export default async function EquipaPage() {
-  const agents = await getAgents(50);
+  const [agents, staffData] = await Promise.all([
+    getAgents(50),
+    getStaff()
+  ]);
 
   // Converter agentes da API para o formato TeamMember e ordenar alfabeticamente
   const agentMembers: TeamMember[] = agents
@@ -76,6 +34,17 @@ export default async function EquipaPage() {
       team: agent.team,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-PT')); // Ordenar por nome alfabeticamente
+
+  // Converter staff da API para o formato TeamMember
+  const staffMembers: TeamMember[] = staffData.map((s) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role,
+    phone: s.phone || undefined,
+    avatar: optimizeAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
+    email: s.email || undefined,
+    isAgent: false,
+  }));
 
   return (
     <div className="space-y-12">

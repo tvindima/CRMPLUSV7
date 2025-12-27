@@ -185,6 +185,25 @@ export async function getAgents(limit = 50): Promise<Agent[]> {
   }
 }
 
+export interface StaffMember {
+  id: number;
+  name: string;
+  role: string;
+  phone: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}
+
+export async function getStaff(): Promise<StaffMember[]> {
+  try {
+    const data = await fetchJson<StaffMember[]>(`/agents/staff`);
+    return data;
+  } catch (error) {
+    console.error("[API] Failed to fetch staff:", error);
+    return []; // ✅ Retornar array vazio em caso de erro
+  }
+}
+
 export async function getAgentById(id: number): Promise<Agent | null> {
   try {
     const data = await fetchJson<Agent>(`/agents/${id}`);
