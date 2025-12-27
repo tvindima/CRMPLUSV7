@@ -2,7 +2,7 @@
 Routes API para CMI - Contrato de Mediação Imobiliária
 CRUD + OCR + Assinaturas + PDF
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from typing import List, Optional
@@ -14,7 +14,7 @@ from io import BytesIO
 from fastapi.responses import StreamingResponse
 
 from app.database import get_db
-from app.security import get_current_user
+from app.security import get_current_user, get_effective_agent_id
 from app.users.models import User
 from app.models.contrato_mediacao import ContratoMediacaoImobiliaria, CMIStatus, TipoContrato
 from app.models.first_impression import FirstImpression
@@ -109,6 +109,7 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
 
 @router.get("/", response_model=List[schemas.CMIListItem])
 def listar_cmis(
+    request: Request,
     status: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=100),
@@ -116,11 +117,12 @@ def listar_cmis(
     db: Session = Depends(get_db)
 ):
     """Listar todos os CMIs do agente"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     query = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     )
     
     if status:
@@ -132,15 +134,17 @@ def listar_cmis(
 
 @router.get("/stats", response_model=schemas.CMIStats)
 def obter_estatisticas(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obter estatísticas dos CMIs"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     base = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     )
     
     return schemas.CMIStats(
@@ -154,17 +158,19 @@ def obter_estatisticas(
 
 @router.get("/{cmi_id}", response_model=schemas.CMIResponse)
 def obter_cmi(
+    request: Request,
     cmi_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obter detalhes de um CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -175,24 +181,26 @@ def obter_cmi(
 
 @router.post("/", response_model=schemas.CMIResponse, status_code=201)
 def criar_cmi(
+    request: Request,
     data: schemas.CMICreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Criar novo CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     # Gerar número do contrato
     ano = datetime.now().year
     count = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id,
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id,
         func.extract('year', ContratoMediacaoImobiliaria.created_at) == ano
     ).count()
     numero = f"CMI-{ano}-{count + 1:04d}"
     
     # Obter dados do mediador
-    dados_mediador = get_dados_mediador(current_user.agent_id, db)
+    dados_mediador = get_dados_mediador(effective_agent_id, db)
     
     # Calcular data fim se não fornecida
     data_inicio = data.data_inicio or date.today()
@@ -202,7 +210,7 @@ def criar_cmi(
     
     # Criar CMI
     cmi = ContratoMediacaoImobiliaria(
-        agent_id=current_user.agent_id,
+        agent_id=effective_agent_id,
         numero_contrato=numero,
         first_impression_id=data.first_impression_id,
         pre_angariacao_id=data.pre_angariacao_id,
@@ -217,22 +225,25 @@ def criar_cmi(
     db.commit()
     db.refresh(cmi)
     
-    logger.info(f"CMI criado: {numero} por agent_id={current_user.agent_id}")
+    logger.info(f"CMI criado: {numero} por agent_id={effective_agent_id}")
     return cmi
 
 
 @router.get("/{cmi_id}/pdf")
 def gerar_pdf(
+    request: Request,
     cmi_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Gerar PDF oficial do CMI seguindo o modelo legal português."""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.id == cmi_id
+        ContratoMediacaoImobiliaria.id == cmi_id,
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
@@ -634,18 +645,20 @@ def gerar_pdf(
 
 @router.post("/from-first-impression", response_model=schemas.CMIResponse, status_code=201)
 def criar_de_first_impression(
+    request: Request,
     data: schemas.CMICreateFromFirstImpression,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Criar CMI a partir de uma 1ª Impressão (pré-preenchido)"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     # Buscar 1ª Impressão
     fi = db.query(FirstImpression).filter(
         FirstImpression.id == data.first_impression_id,
-        FirstImpression.agent_id == current_user.agent_id
+        FirstImpression.agent_id == effective_agent_id
     ).first()
     
     if not fi:
@@ -665,13 +678,13 @@ def criar_de_first_impression(
     # Gerar número
     ano = datetime.now().year
     count = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id,
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id,
         func.extract('year', ContratoMediacaoImobiliaria.created_at) == ano
     ).count()
     numero = f"CMI-{ano}-{count + 1:04d}"
     
     # Obter dados do mediador
-    dados_mediador = get_dados_mediador(current_user.agent_id, db)
+    dados_mediador = get_dados_mediador(effective_agent_id, db)
     
     # Data início e fim
     data_inicio = date.today()
@@ -679,7 +692,7 @@ def criar_de_first_impression(
     
     # Criar CMI com dados da 1ª Impressão
     cmi = ContratoMediacaoImobiliaria(
-        agent_id=current_user.agent_id,
+        agent_id=effective_agent_id,
         first_impression_id=fi.id,
         numero_contrato=numero,
         
@@ -731,18 +744,20 @@ def criar_de_first_impression(
 
 @router.put("/{cmi_id}", response_model=schemas.CMIResponse)
 def atualizar_cmi(
+    request: Request,
     cmi_id: int,
     data: schemas.CMIUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Atualizar CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -762,17 +777,19 @@ def atualizar_cmi(
 
 @router.delete("/{cmi_id}")
 def cancelar_cmi(
+    request: Request,
     cmi_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Cancelar CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -786,17 +803,19 @@ def cancelar_cmi(
 
 @router.get("/by-first-impression/{first_impression_id}", response_model=schemas.CMIResponse)
 def obter_por_first_impression(
+    request: Request,
     first_impression_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obter CMI associado a uma 1ª Impressão (se existir)"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.first_impression_id == first_impression_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -811,18 +830,20 @@ def obter_por_first_impression(
 
 @router.post("/{cmi_id}/assinatura-cliente", response_model=schemas.CMIResponse)
 def adicionar_assinatura_cliente(
+    request: Request,
     cmi_id: int,
     data: schemas.AssinaturaClienteRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Adicionar assinatura do cliente ao CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -848,18 +869,20 @@ def adicionar_assinatura_cliente(
 
 @router.post("/{cmi_id}/assinatura-mediador", response_model=schemas.CMIResponse)
 def adicionar_assinatura_mediador(
+    request: Request,
     cmi_id: int,
     data: schemas.AssinaturaMediadorRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Adicionar assinatura do mediador ao CMI"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -1778,6 +1801,7 @@ def extrair_dados_ocr_standalone(
 
 @router.post("/{cmi_id}/ocr", response_model=schemas.DocumentoOCRResponse)
 def processar_documento_ocr(
+    request: Request,
     cmi_id: int,
     data: schemas.DocumentoOCRRequest,
     current_user: User = Depends(get_current_user),
@@ -1796,12 +1820,13 @@ def processar_documento_ocr(
     - Proprietários: Registo Predial > AT > CC
     - Imóvel: Registo Predial > AT > Certificado Energético
     """
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
@@ -2112,6 +2137,7 @@ def processar_documento_ocr(
 
 @router.put("/{cmi_id}/documentos/{doc_tipo}", response_model=schemas.CMIResponse)
 def marcar_documento(
+    request: Request,
     cmi_id: int,
     doc_tipo: str,
     entregue: bool = Query(True),
@@ -2119,12 +2145,13 @@ def marcar_documento(
     db: Session = Depends(get_db)
 ):
     """Marcar documento como entregue/não entregue"""
-    if not current_user.agent_id:
+    effective_agent_id = get_effective_agent_id(request, db)
+    if not effective_agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
     item = db.query(ContratoMediacaoImobiliaria).filter(
         ContratoMediacaoImobiliaria.id == cmi_id,
-        ContratoMediacaoImobiliaria.agent_id == current_user.agent_id
+        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
     ).first()
     
     if not item:
