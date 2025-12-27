@@ -37,6 +37,23 @@ def debug_user(email: str, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/reset-admin-password")
+def reset_admin_password(db: Session = Depends(get_db)):
+    """EMERGÊNCIA: Resetar password do admin (REMOVER APÓS USO)"""
+    from app.users.models import User
+    from app.users.services import hash_password
+    
+    user = db.query(User).filter(User.email == "tvindima@imoveismais.pt").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Admin não encontrado")
+    
+    new_password = "admin123"
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+    
+    return {"message": "Password resetada para 'admin123'", "user_id": user.id}
+
+
 def _create_token(user_id: int, email: str, role: str, agent_id: int = None) -> TokenResponse:
     expires = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
