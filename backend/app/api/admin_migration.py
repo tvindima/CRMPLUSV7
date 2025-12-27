@@ -2,7 +2,7 @@
 Admin endpoint para aplicar migração de tasks no Railway.
 TEMPORÁRIO - Remover após migração aplicada.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import get_db, SessionLocal, engine
@@ -431,3 +431,53 @@ def setup_staff_users(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/upload-staff-avatar/{user_id}")
+async def upload_staff_avatar(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload de avatar para um user de staff.
+    POST /admin/upload-staff-avatar/{user_id}
+    """
+    from app.users.models import User
+    from app.core.storage import storage
+    
+    # 1. Verificar se user existe
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {user_id} não encontrado")
+    
+    # 2. Upload para Cloudinary
+    try:
+        # Ler conteúdo do arquivo
+        content = await file.read()
+        
+        # Criar file-like object
+        from io import BytesIO
+        file_obj = BytesIO(content)
+        
+        # Upload para pasta de avatares de staff
+        url = await storage.upload_file(
+            file_obj,
+            folder=f"avatars/staff",
+            filename=f"{user_id}.png"
+        )
+        
+        # 3. Atualizar avatar_url no user
+        user.avatar_url = url
+        db.commit()
+        
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "name": user.full_name,
+            "avatar_url": url
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
