@@ -521,42 +521,40 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setPdfLoading(true);
     try {
       const blob = await cmiService.getPdf(cmi.id);
+      const filename = `cmi-${cmi.numero_contrato || cmi.id}.pdf`;
+      
       if (Platform.OS === 'web') {
-        const url = URL.createObjectURL(blob);
-        
-        // Detectar se é iOS (iPhone/iPad)
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        
-        if (isIOS) {
-          // No iOS Safari, criar um link <a> e clicar programaticamente
-          // Isso funciona melhor que window.open para blobs
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `cmi-${cmi.numero_contrato || cmi.id}.pdf`;
-          link.target = '_blank';
-          
-          // Adicionar ao DOM, clicar e remover
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          // Alternativa: abrir diretamente no mesmo tab se o download não funcionar
-          // Alguns browsers iOS abrem o PDF inline
-          setTimeout(() => {
-            if (document.hasFocus()) {
-              // Se ainda temos focus, o download pode não ter funcionado
-              // Tentar abrir numa nova janela como fallback
-              window.location.href = url;
+        // Tentar usar Web Share API (funciona bem no iOS Safari)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], filename, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: `CMI ${cmi.numero_contrato || ''}`,
+              });
+              return; // Sucesso - sair
             }
-          }, 1000);
-          
-          setTimeout(() => URL.revokeObjectURL(url), 30000);
-        } else {
-          // Desktop browsers - window.open funciona bem
-          window.open(url, '_blank');
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          } catch (shareError: any) {
+            // Se o user cancelou, não mostrar erro
+            if (shareError.name === 'AbortError') {
+              return;
+            }
+            console.log('[PDF] Share API falhou, tentando download:', shareError);
+          }
         }
+        
+        // Fallback: download direto
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
       } else {
+        // React Native nativo
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -566,7 +564,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           reader.onerror = reject;
           reader.readAsDataURL(blob as any);
         });
-        const fileUri = `${FileSystem.cacheDirectory}cmi-${cmi.numero_contrato || cmi.id}.pdf`;
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
         await FileSystem.writeAsStringAsync(fileUri, base64, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -1545,7 +1543,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           )}
         </TouchableOpacity>
 
-        {/* BOTÃO GERAR PDF */}
+        {/* BOTÃO PARTILHAR PDF */}
         <TouchableOpacity
           style={[styles.pdfButton, pdfLoading && styles.saveButtonDisabled]}
           onPress={handleGeneratePdf}
@@ -1555,8 +1553,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Ionicons name="document" size={20} color="#fff" />
-              <Text style={styles.pdfButtonText}>Gerar PDF</Text>
+              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Text style={styles.pdfButtonText}>Partilhar PDF</Text>
             </>
           )}
         </TouchableOpacity>
