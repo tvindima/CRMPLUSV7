@@ -14,6 +14,7 @@ import os
 from app.database import get_db
 from app.models.website_client import WebsiteClient, LeadDistributionCounter
 from app.users.models import User
+from app.agents.models import Agent  # Usar tabela Agent para listar agentes
 from app.schemas.website_client import (
     WebsiteClientRegister,
     WebsiteClientLogin,
@@ -64,13 +65,15 @@ def get_current_client(token: str, db: Session) -> WebsiteClient:
         raise HTTPException(status_code=401, detail="Token inválido")
 
 
-def get_sales_agents(db: Session) -> List[User]:
-    """Obter lista de agentes de venda (excluindo Marisa Barosa)"""
-    return db.query(User).filter(
-        User.role == "agent",
-        User.is_active == True,
-        User.id != RENTAL_AGENT_ID  # Excluir agente de arrendamento
-    ).order_by(User.id).all()
+def get_sales_agents(db: Session) -> List[Agent]:
+    """Obter lista de agentes de venda da tabela Agent (excluindo Marisa Barosa e agência)"""
+    # Buscar da tabela Agent, excluindo:
+    # - Marisa Barosa (arrendamento): email = arrendamentosleiria@imoveismais.pt
+    # - Agência Leiria: nome = "Imóveis Mais Leiria"
+    return db.query(Agent).filter(
+        Agent.name != "Imóveis Mais Leiria",  # Excluir agência
+        Agent.email != "arrendamentosleiria@imoveismais.pt"  # Excluir agente de arrendamento
+    ).order_by(Agent.name).all()
 
 
 def get_next_agent_round_robin(db: Session, client_type: str) -> int:
@@ -113,16 +116,18 @@ def assign_agent_to_client(db: Session, interest_type: str, client_type: str, se
     """
     Atribuir agente ao cliente baseado no tipo de interesse e cliente.
     Retorna (agent_id, selected_by_client)
+    Nota: selected_agent_id é da tabela Agent (não User)
     """
-    # Se cliente escolheu um agente específico, usar esse
+    # Se cliente escolheu um agente específico, usar esse (da tabela Agent)
     if selected_agent_id:
-        agent = db.query(User).filter(User.id == selected_agent_id, User.is_active == True).first()
+        agent = db.query(Agent).filter(Agent.id == selected_agent_id).first()
         if agent:
             return (agent.id, True)
     
-    # Arrendamento → Marisa Barosa
+    # Arrendamento → Marisa Barosa (buscar ID da tabela Agent)
     if interest_type == "arrendamento":
-        return (RENTAL_AGENT_ID, False)
+        marisa = db.query(Agent).filter(Agent.email == "arrendamentosleiria@imoveismais.pt").first()
+        return (marisa.id if marisa else None, False)
     
     # Compra → Round-robin por tipo de cliente
     agent_id = get_next_agent_round_robin(db, client_type)
@@ -137,27 +142,30 @@ def get_available_agents(
     """
     Listar agentes disponíveis para o cliente escolher.
     Filtrado por tipo de interesse (compra/arrendamento).
+    Usa tabela Agent (não Users).
     """
     try:
         if interest_type == "arrendamento":
-            # Para arrendamento, só mostrar Marisa Barosa
-            agent = db.query(User).filter(User.id == RENTAL_AGENT_ID, User.is_active == True).first()
+            # Para arrendamento, só mostrar Marisa Barosa (da tabela Agent)
+            agent = db.query(Agent).filter(
+                Agent.email == "arrendamentosleiria@imoveismais.pt"
+            ).first()
             if agent:
                 return [AgentForSelection(
                     id=agent.id,
-                    name=agent.display_name or agent.full_name or agent.email,
-                    avatar_url=agent.avatar_url,
+                    name=agent.name,
+                    avatar_url=agent.avatar_url or agent.photo,
                     specialty="arrendamento"
                 )]
             return []
         else:
-            # Para compra, mostrar agentes de venda
+            # Para compra, mostrar todos agentes de venda (tabela Agent)
             agents = get_sales_agents(db)
             return [
                 AgentForSelection(
                     id=a.id,
-                    name=a.display_name or a.full_name or a.email,
-                    avatar_url=a.avatar_url,
+                    name=a.name,
+                    avatar_url=a.avatar_url or a.photo,
                     specialty="venda"
                 )
                 for a in agents
