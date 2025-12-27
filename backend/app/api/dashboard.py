@@ -296,8 +296,8 @@ def get_recent_leads(
             result.append({
                 "id": lead.id,
                 "cliente": lead.name,
-                "tipo": property_info or f"{lead.source.value if lead.source else 'Lead'} - {lead.action_type or 'Contacto'}",
-                "status": lead.status.value if lead.status else "new",
+                "tipo": property_info or f"{lead.source or 'Lead'} - {lead.action_type or 'Contacto'}",
+                "status": lead.status.lower() if lead.status else "new",
                 "responsavel": agent.name.split()[0] if agent else None,
                 "responsavel_id": agent.id if agent else None,
                 "tempo": tempo,

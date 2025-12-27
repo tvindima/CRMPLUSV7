@@ -647,3 +647,44 @@ def fix_leads_message_column(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix-leads-status")
+def fix_leads_status_enum(db: Session = Depends(get_db)):
+    """
+    Normalizar valores de status na tabela leads para maiúsculas.
+    """
+    results = []
+    
+    try:
+        # Converter status minúsculos para maiúsculos
+        status_map = [
+            ("'new'", "'NEW'"),
+            ("'contacted'", "'CONTACTED'"),
+            ("'qualified'", "'QUALIFIED'"),
+            ("'proposal_sent'", "'PROPOSAL_SENT'"),
+            ("'visit_scheduled'", "'VISIT_SCHEDULED'"),
+            ("'negotiation'", "'NEGOTIATION'"),
+            ("'converted'", "'CONVERTED'"),
+            ("'lost'", "'LOST'"),
+        ]
+        
+        for old_val, new_val in status_map:
+            update_sql = text(f"UPDATE leads SET status = {new_val} WHERE status = {old_val}")
+            result = db.execute(update_sql)
+            if result.rowcount > 0:
+                results.append(f"✅ Convertidos {result.rowcount} registos de {old_val} para {new_val}")
+        
+        db.commit()
+        
+        if not results:
+            results.append("✅ Todos os status já estão normalizados")
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -36,11 +36,11 @@ class Lead(Base):
     message = Column(Text, nullable=True)  # Mensagem do cliente (site ou mobile)
     
     # Origem e contexto
-    source = Column(Enum(LeadSource), default=LeadSource.MANUAL)
+    source = Column(String, nullable=True)  # website, phone, email, referral, social, manual, other
     origin = Column(String, nullable=True)  # URL ou descrição adicional
     
     # Status e atribuição
-    status = Column(Enum(LeadStatus), default=LeadStatus.NEW)
+    status = Column(String, default="NEW")  # NEW, CONTACTED, QUALIFIED, etc.
     assigned_agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
     
     # Propriedade que gerou a lead (do site montra)
