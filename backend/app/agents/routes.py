@@ -40,12 +40,15 @@ def list_public_staff(db: Session = Depends(get_db)):
             if agent:
                 works_for_name = agent.name
         
-        # Determinar role label
-        role_label = "Staff"
-        if u.role == UserRole.ASSISTANT.value:
+        # Determinar role label (usar role_label customizado se existir)
+        if u.role_label:
+            role_label = u.role_label
+        elif u.role == UserRole.ASSISTANT.value:
             role_label = f"Assistente de {works_for_name}" if works_for_name else "Assistente"
         elif u.role == UserRole.COORDINATOR.value:
             role_label = "Coordenador(a)"
+        else:
+            role_label = "Staff"
         
         result.append({
             "id": u.id,
