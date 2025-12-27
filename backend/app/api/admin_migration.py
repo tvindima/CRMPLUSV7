@@ -295,3 +295,124 @@ def add_twitter_tiktok_columns(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/setup-staff-users")
+def setup_staff_users(db: Session = Depends(get_db)):
+    """
+    Cria ou atualiza os users de staff para o site público.
+    - Adiciona coluna role_label se não existir
+    - Cria Maria Olaio, Andreia Borges, Sara Ferreira, Cláudia Libânio
+    """
+    from app.users.models import User, UserRole
+    from app.agents.models import Agent
+    from app.security import hash_password
+    
+    results = []
+    
+    try:
+        # 1. Adicionar coluna role_label se não existir
+        check_col = text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'role_label'
+            );
+        """)
+        col_exists = db.execute(check_col).scalar()
+        
+        if not col_exists:
+            db.execute(text("ALTER TABLE users ADD COLUMN role_label VARCHAR"))
+            results.append("✅ Coluna 'role_label' adicionada à tabela users")
+        else:
+            results.append("⚠️ Coluna 'role_label' já existe")
+        
+        db.commit()
+        
+        # 2. Definir staff members
+        staff_to_create = [
+            {
+                "email": "m.olaio@imoveismais.pt",
+                "full_name": "Maria Olaio",
+                "role": UserRole.COORDINATOR.value,
+                "phone": "244001003",
+                "password": "staff2024",
+                "works_for_agent_name": None,
+                "role_label": "Diretora Financeira",
+            },
+            {
+                "email": "a.borges@imoveismais.pt",
+                "full_name": "Andreia Borges",
+                "role": UserRole.COORDINATOR.value,
+                "phone": "244001004",
+                "password": "staff2024",
+                "works_for_agent_name": None,
+                "role_label": "Assistente Administrativa",
+            },
+            {
+                "email": "s.ferreira@imoveismais.pt",
+                "full_name": "Sara Ferreira",
+                "role": UserRole.COORDINATOR.value,
+                "phone": "244001002",
+                "password": "staff2024",
+                "works_for_agent_name": None,
+                "role_label": "Assistente Administrativa",
+            },
+            {
+                "email": "c.libanio@imoveismais.pt",
+                "full_name": "Cláudia Libânio",
+                "role": UserRole.ASSISTANT.value,
+                "phone": "912118911",
+                "password": "staff2024",
+                "works_for_agent_name": "Bruno Libânio",
+                "role_label": None,
+            },
+        ]
+        
+        # 3. Criar/atualizar staff
+        for staff_data in staff_to_create:
+            existing = db.query(User).filter(User.email == staff_data["email"]).first()
+            
+            if existing:
+                updated = False
+                if existing.phone != staff_data["phone"]:
+                    existing.phone = staff_data["phone"]
+                    updated = True
+                if staff_data.get("role_label") and existing.role_label != staff_data.get("role_label"):
+                    existing.role_label = staff_data.get("role_label")
+                    updated = True
+                if updated:
+                    results.append(f"✅ Atualizado: {staff_data['full_name']}")
+                else:
+                    results.append(f"⚠️ Sem alterações: {staff_data['full_name']}")
+                continue
+            
+            # Buscar agent_id
+            works_for_agent_id = None
+            if staff_data.get("works_for_agent_name"):
+                agent = db.query(Agent).filter(Agent.name == staff_data["works_for_agent_name"]).first()
+                if agent:
+                    works_for_agent_id = agent.id
+            
+            new_user = User(
+                email=staff_data["email"],
+                hashed_password=hash_password(staff_data["password"]),
+                full_name=staff_data["full_name"],
+                role=staff_data["role"],
+                phone=staff_data["phone"],
+                is_active=True,
+                works_for_agent_id=works_for_agent_id,
+                role_label=staff_data.get("role_label"),
+            )
+            db.add(new_user)
+            results.append(f"✅ Criado: {staff_data['full_name']} (Role: {staff_data['role']})")
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
