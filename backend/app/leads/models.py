@@ -33,7 +33,7 @@ class Lead(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=True, index=True)  # ✅ NULLABLE para leads mobile sem email
     phone = Column(String, nullable=True)
-    # message = Column(Text, nullable=True)  # 🚨 COMENTADO: coluna não existe no Railway PostgreSQL
+    message = Column(Text, nullable=True)  # Mensagem do cliente (site ou mobile)
     
     # Origem e contexto
     source = Column(Enum(LeadSource), default=LeadSource.MANUAL)
