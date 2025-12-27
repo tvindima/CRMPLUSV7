@@ -239,9 +239,9 @@ def register_client(
     # Buscar nome do agente
     agent_name = None
     if agent_id:
-        agent = db.query(User).filter(User.id == agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     # Gerar token
     token = create_client_token(client.id, client.email)
@@ -311,9 +311,9 @@ def login_client(
     # Buscar nome do agente
     agent_name = None
     if client.assigned_agent_id:
-        agent = db.query(User).filter(User.id == client.assigned_agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == client.assigned_agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     # Gerar token
     token = create_client_token(client.id, client.email)
@@ -355,9 +355,9 @@ def get_current_client_info(
     # Buscar nome do agente
     agent_name = None
     if client.assigned_agent_id:
-        agent = db.query(User).filter(User.id == client.assigned_agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == client.assigned_agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     return WebsiteClientOut(
         id=client.id,
@@ -406,9 +406,9 @@ def update_client_info(
     # Buscar nome do agente
     agent_name = None
     if client.assigned_agent_id:
-        agent = db.query(User).filter(User.id == client.assigned_agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == client.assigned_agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     return WebsiteClientOut(
         id=client.id,
@@ -442,9 +442,9 @@ def validate_token(
     # Buscar nome do agente
     agent_name = None
     if client.assigned_agent_id:
-        agent = db.query(User).filter(User.id == client.assigned_agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == client.assigned_agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     return WebsiteClientOut(
         id=client.id,
