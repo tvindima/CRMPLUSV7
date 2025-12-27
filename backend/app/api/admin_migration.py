@@ -481,3 +481,56 @@ async def upload_staff_avatar(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
+
+
+@router.post("/migrate-website-clients")
+def migrate_website_clients(db: Session = Depends(get_db)):
+    """
+    Cria a tabela website_clients para autenticação de clientes do site.
+    """
+    results = []
+    
+    try:
+        # Verificar se tabela já existe
+        check_table = text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'website_clients'
+            );
+        """)
+        exists = db.execute(check_table).scalar()
+        
+        if exists:
+            results.append("⚠️ Tabela 'website_clients' já existe!")
+        else:
+            # Criar tabela
+            create_sql = text("""
+                CREATE TABLE website_clients (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR NOT NULL,
+                    email VARCHAR NOT NULL UNIQUE,
+                    phone VARCHAR,
+                    hashed_password VARCHAR NOT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    is_verified BOOLEAN DEFAULT FALSE,
+                    receive_alerts BOOLEAN DEFAULT TRUE,
+                    search_preferences TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    last_login TIMESTAMP
+                );
+                CREATE INDEX ix_website_clients_id ON website_clients(id);
+                CREATE UNIQUE INDEX ix_website_clients_email ON website_clients(email);
+            """)
+            db.execute(create_sql)
+            db.commit()
+            results.append("✅ Tabela 'website_clients' criada com sucesso!")
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
