@@ -144,8 +144,8 @@ def get_available_agents(
         if agent:
             return [AgentForSelection(
                 id=agent.id,
-                name=agent.display_name or f"{agent.first_name} {agent.last_name}".strip() or agent.email,
-                avatar_url=agent.avatar,
+                name=agent.display_name or agent.full_name or agent.email,
+                avatar_url=agent.avatar_url,
                 specialty="arrendamento"
             )]
         return []
@@ -155,8 +155,8 @@ def get_available_agents(
         return [
             AgentForSelection(
                 id=a.id,
-                name=a.display_name or f"{a.first_name} {a.last_name}".strip() or a.email,
-                avatar_url=a.avatar,
+                name=a.display_name or a.full_name or a.email,
+                avatar_url=a.avatar_url,
                 specialty="venda"
             )
             for a in agents
