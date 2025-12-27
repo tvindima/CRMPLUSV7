@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MortgageSimulator } from './MortgageSimulator';
+import { TaxCalculator } from './TaxCalculator';
 
 interface MobileMenuProps {
   links: Array<{ href: string; label: string }>;
@@ -10,7 +12,27 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ links }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showMortgageSimulator, setShowMortgageSimulator] = useState(false);
+  const [showTaxCalculator, setShowTaxCalculator] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    // Verificar se utilizador está logado
+    const checkAuth = () => {
+      const clientUser = localStorage.getItem('client_user');
+      setIsLoggedIn(!!clientUser);
+    };
+    
+    checkAuth();
+    window.addEventListener('authChange', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    
+    return () => {
+      window.removeEventListener('authChange', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   return (
     <>
@@ -79,29 +101,65 @@ export default function MobileMenu({ links }: MobileMenuProps) {
           </button>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex flex-col gap-0.5 p-3">
-          {links.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-[#E10600] text-white'
-                    : 'text-[#C5C5C5] hover:bg-[#2A2A2E] hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Scrollable content */}
+        <div className="flex h-[calc(100%-60px)] flex-col overflow-y-auto pb-20">
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-0.5 p-3">
+            {links.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-[#E10600] text-white'
+                      : 'text-[#C5C5C5] hover:bg-[#2A2A2E] hover:text-white'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Login Button */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-[#2A2A2E] p-3">
+          {/* Ferramentas Section - Visível para utilizadores logados */}
+          {isLoggedIn && (
+            <div className="border-t border-[#2A2A2E] p-3">
+              <span className="mb-2 block px-3 text-xs font-semibold uppercase tracking-wider text-[#7A7A7A]">
+                Ferramentas
+              </span>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowMortgageSimulator(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+              >
+                <svg className="h-5 w-5 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Simulador de Prestação
+              </button>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowTaxCalculator(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+              >
+                <svg className="h-5 w-5 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Calculadora de IMT
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Login Button - Fixed at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-[#2A2A2E] bg-[#0B0B0D] p-3">
           <button
             onClick={() => {
               setIsOpen(false);
@@ -118,10 +176,40 @@ export default function MobileMenu({ links }: MobileMenuProps) {
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
-            Entrar
+            {isLoggedIn ? 'Minha Conta' : 'Entrar'}
           </button>
         </div>
       </div>
+
+      {/* Modal Simulador de Prestação */}
+      {showMortgageSimulator && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setShowMortgageSimulator(false)}
+        >
+          <div 
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MortgageSimulator onClose={() => setShowMortgageSimulator(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Calculadora IMT */}
+      {showTaxCalculator && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setShowTaxCalculator(false)}
+        >
+          <div 
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TaxCalculator onClose={() => setShowTaxCalculator(false)} />
+          </div>
+        </div>
+      )}
     </>
   );
 }
