@@ -373,17 +373,13 @@ export function UserMenuWrapper() {
               <div className="mb-6 flex rounded-lg bg-[#0B0B0D] p-1">
                 <button
                   onClick={() => { setMode("login"); resetForm(); }}
-                  className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
-                    mode === "login" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
-                  }`}
+                  className="flex-1 rounded-md px-4 py-2 text-sm font-semibold transition bg-[#E10600] text-white"
                 >
                   Entrar
                 </button>
                 <button
                   onClick={() => { setMode("register"); resetForm(); }}
-                  className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
-                    mode === "register" ? "bg-[#E10600] text-white" : "text-[#C5C5C5]"
-                  }`}
+                  className="flex-1 rounded-md px-4 py-2 text-sm font-semibold transition text-[#C5C5C5]"
                 >
                   Registar
                 </button>
