@@ -612,3 +612,38 @@ def migrate_website_clients_v2(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix-leads-message")
+def fix_leads_message_column(db: Session = Depends(get_db)):
+    """
+    Adicionar coluna message à tabela leads se não existir.
+    """
+    results = []
+    
+    try:
+        # Verificar se coluna message existe
+        check_column = text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'leads' AND column_name = 'message'
+            );
+        """)
+        exists = db.execute(check_column).scalar()
+        
+        if exists:
+            results.append("✅ Coluna 'message' já existe na tabela leads")
+        else:
+            # Adicionar coluna
+            db.execute(text("ALTER TABLE leads ADD COLUMN message TEXT"))
+            db.commit()
+            results.append("✅ Coluna 'message' adicionada à tabela leads")
+        
+        return {
+            "status": "success",
+            "messages": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

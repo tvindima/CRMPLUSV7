@@ -7,6 +7,7 @@ Create Date: 2025-12-27
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,28 +18,41 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create website_clients table
-    op.create_table(
-        'website_clients',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=False),
-        sa.Column('email', sa.String(), nullable=False),
-        sa.Column('phone', sa.String(), nullable=True),
-        sa.Column('hashed_password', sa.String(), nullable=False),
-        sa.Column('is_active', sa.Boolean(), default=True),
-        sa.Column('is_verified', sa.Boolean(), default=False),
-        sa.Column('receive_alerts', sa.Boolean(), default=True),
-        sa.Column('search_preferences', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.Column('last_login', sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_website_clients_id'), 'website_clients', ['id'], unique=False)
-    op.create_index(op.f('ix_website_clients_email'), 'website_clients', ['email'], unique=True)
+    # Verificar se a tabela já existe
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    tables = inspector.get_table_names()
+    
+    if 'website_clients' not in tables:
+        op.create_table(
+            'website_clients',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(), nullable=False),
+            sa.Column('email', sa.String(), nullable=False),
+            sa.Column('phone', sa.String(), nullable=True),
+            sa.Column('hashed_password', sa.String(), nullable=False),
+            sa.Column('is_active', sa.Boolean(), default=True),
+            sa.Column('is_verified', sa.Boolean(), default=False),
+            sa.Column('receive_alerts', sa.Boolean(), default=True),
+            sa.Column('search_preferences', sa.Text(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=True),
+            sa.Column('updated_at', sa.DateTime(), nullable=True),
+            sa.Column('last_login', sa.DateTime(), nullable=True),
+            sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_website_clients_id'), 'website_clients', ['id'], unique=False)
+        op.create_index(op.f('ix_website_clients_email'), 'website_clients', ['email'], unique=True)
+        print("Tabela website_clients criada com sucesso")
+    else:
+        print("Tabela website_clients já existe, pulando...")
 
 
 def downgrade() -> None:
-    op.drop_index(op.f('ix_website_clients_email'), table_name='website_clients')
-    op.drop_index(op.f('ix_website_clients_id'), table_name='website_clients')
-    op.drop_table('website_clients')
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    tables = inspector.get_table_names()
+    
+    if 'website_clients' in tables:
+        op.drop_index(op.f('ix_website_clients_email'), table_name='website_clients')
+        op.drop_index(op.f('ix_website_clients_id'), table_name='website_clients')
+        op.drop_table('website_clients')
