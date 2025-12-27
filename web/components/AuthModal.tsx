@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AuthModal() {
+  const { login, register, isLoading: authLoading, error: authError } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [formData, setFormData] = useState({
@@ -21,28 +23,15 @@ export function AuthModal() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Save user to localStorage (demo purpose)
       if (mode === 'register') {
-        const user = {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          createdAt: new Date().toISOString(),
-        };
-        localStorage.setItem('user', JSON.stringify(user));
+        await register(formData.name, formData.email, formData.password, formData.phone || undefined);
       } else {
-        // For login, just check if user exists (demo)
-        const savedUser = localStorage.getItem('user');
-        if (!savedUser) {
-          throw new Error('Utilizador não encontrado');
-        }
+        await login(formData.email, formData.password);
       }
 
       setIsOpen(false);
-      window.location.reload(); // Refresh to update UI
+      // Limpar form
+      setFormData({ name: '', email: '', password: '', phone: '' });
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro');
     } finally {
@@ -184,25 +173,15 @@ export function AuthModal() {
 }
 
 export function UserMenu() {
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const { user, isAuthenticated, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      }
-    }
-  });
-
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    window.location.reload();
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
   };
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <AuthModal />;
   }
 
@@ -240,7 +219,7 @@ export function UserMenu() {
           </Link>
           <hr className="my-2 border-[#2A2A2E]" />
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="block w-full px-4 py-2 text-left text-sm text-[#C5C5C5] hover:bg-[#0B0B0D] hover:text-white"
           >
             Terminar sessão
