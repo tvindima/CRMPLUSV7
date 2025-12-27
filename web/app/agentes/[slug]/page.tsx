@@ -172,11 +172,11 @@ export default async function AgentPage({ params }: Props) {
 
   // Staff members (support team) - matching structure from /agentes page
   const allStaffMembers = [
-    { id: 19, name: "Ana Vindima", role: "Assistente de Tiago Vindima", phone: "918 503 014", avatar: "/avatars/19.png", isAgent: false, supportFor: "Tiago Vindima" },
-    { id: 20, name: "Maria Olaio", role: "Diretora Financeira", phone: "244 001 003", avatar: "/avatars/20.png", isAgent: false },
-    { id: 21, name: "Andreia Borges", role: "Assistente Administrativa", phone: "244 001 004", avatar: "/avatars/21.png", isAgent: false },
-    { id: 22, name: "Sara Ferreira", role: "Assistente Administrativa", phone: "244 001 002", avatar: "/avatars/22.png", isAgent: false },
-    { id: 23, name: "Cláudia Libânio", role: "Assistente de Bruno Libânio", phone: "912 118 911", avatar: "/avatars/23.png", isAgent: false, supportFor: "Bruno Libânio" },
+    { id: 19, name: "Ana Vindima", role: "Assistente de Tiago Vindima", phone: "918503015", avatar: "/avatars/19.png", isAgent: false, supportFor: "Tiago Vindima" },
+    { id: 20, name: "Maria Olaio", role: "Diretora Financeira", phone: "244001003", avatar: "/avatars/20.png", isAgent: false },
+    { id: 21, name: "Andreia Borges", role: "Assistente Administrativa", phone: "244001004", avatar: "/avatars/21.png", isAgent: false },
+    { id: 22, name: "Sara Ferreira", role: "Assistente Administrativa", phone: "244001002", avatar: "/avatars/22.png", isAgent: false },
+    { id: 23, name: "Cláudia Libânio", role: "Assistente de Bruno Libânio", phone: "912118911", avatar: "/avatars/23.png", isAgent: false, supportFor: "Bruno Libânio" },
   ];
 
   // Telefone prioritário: assistente dedicado, senão do agente
