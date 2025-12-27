@@ -24,6 +24,7 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     role_label = Column(String, nullable=True)  # Label customizado para exibição (ex: "Diretora Financeira")
+    display_name = Column(String, nullable=True)  # Nome público para o site (se não definido, usa primeiro+último)
     
     # Relacionamento com Agent (opcional - um User pode ser um Agent)
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)

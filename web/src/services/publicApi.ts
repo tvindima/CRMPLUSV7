@@ -192,6 +192,7 @@ export interface StaffMember {
   phone: string | null;
   email: string | null;
   avatar_url: string | null;
+  works_for_agent_id: number | null;
 }
 
 export async function getStaff(): Promise<StaffMember[]> {

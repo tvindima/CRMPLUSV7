@@ -326,6 +326,21 @@ def setup_staff_users(db: Session = Depends(get_db)):
         else:
             results.append("⚠️ Coluna 'role_label' já existe")
         
+        # 1b. Adicionar coluna display_name se não existir
+        check_display = text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'display_name'
+            );
+        """)
+        display_exists = db.execute(check_display).scalar()
+        
+        if not display_exists:
+            db.execute(text("ALTER TABLE users ADD COLUMN display_name VARCHAR"))
+            results.append("✅ Coluna 'display_name' adicionada à tabela users")
+        else:
+            results.append("⚠️ Coluna 'display_name' já existe")
+        
         db.commit()
         
         # 2. Definir staff members

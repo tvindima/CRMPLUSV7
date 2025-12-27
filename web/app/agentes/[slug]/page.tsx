@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getAgents, getProperties, Property } from "../../../src/services/publicApi";
+import { getAgents, getProperties, getStaff, Property } from "../../../src/services/publicApi";
 import { HeroCarousel } from "../../../components/HeroCarousel";
 import { CarouselHorizontal } from "../../../components/CarouselHorizontal";
 import { LeadForm } from "../../../components/LeadForm";
@@ -143,8 +143,11 @@ const TEAMS = {
 };
 
 export default async function AgentPage({ params }: Props) {
-  const agents = await getAgents(200);
-  const allProperties = await getProperties(1000);
+  const [agents, allProperties, staffData] = await Promise.all([
+    getAgents(200),
+    getProperties(1000),
+    getStaff()
+  ]);
 
   const normalizedSlug = normalizeSlug(decodeURIComponent(params.slug));
   const agent = agents.find((a) => normalizeSlug(a.name) === normalizedSlug);
@@ -170,14 +173,17 @@ export default async function AgentPage({ params }: Props) {
     ? heroPropertiesVideo
     : properties.slice(0, 4);
 
-  // Staff members (support team) - matching structure from /agentes page
-  const allStaffMembers = [
-    { id: 19, name: "Ana Vindima", role: "Assistente de Tiago Vindima", phone: "918503015", avatar: "/avatars/19.png", isAgent: false, supportFor: "Tiago Vindima" },
-    { id: 20, name: "Maria Olaio", role: "Diretora Financeira", phone: "244001003", avatar: "/avatars/20.png", isAgent: false },
-    { id: 21, name: "Andreia Borges", role: "Assistente Administrativa", phone: "244001004", avatar: "/avatars/21.png", isAgent: false },
-    { id: 22, name: "Sara Ferreira", role: "Assistente Administrativa", phone: "244001002", avatar: "/avatars/22.png", isAgent: false },
-    { id: 23, name: "Cláudia Libânio", role: "Assistente de Bruno Libânio", phone: "912118911", avatar: "/avatars/23.png", isAgent: false, supportFor: "Bruno Libânio" },
-  ];
+  // Converter staff da API para formato interno com supportFor
+  const allStaffMembers = staffData.map((s) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role,
+    phone: s.phone || undefined,
+    avatar: optimizeAvatarUrl(s.avatar_url) || `/avatars/${s.id}.png`,
+    isAgent: false,
+    // Se o role contém "Assistente de X", extrair o nome do agente
+    supportFor: s.role.startsWith("Assistente de ") ? s.role.replace("Assistente de ", "") : undefined,
+  }));
 
   // Telefone prioritário: assistente dedicado, senão do agente
   const supportAssistant = allStaffMembers.find((staff) => staff.supportFor === agent.name && staff.phone);

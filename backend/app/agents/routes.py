@@ -50,13 +50,25 @@ def list_public_staff(db: Session = Depends(get_db)):
         else:
             role_label = "Staff"
         
+        # Nome público: display_name > primeiro+último nome
+        if u.display_name:
+            public_name = u.display_name
+        else:
+            # Extrair primeiro e último nome do full_name
+            name_parts = u.full_name.strip().split()
+            if len(name_parts) >= 2:
+                public_name = f"{name_parts[0]} {name_parts[-1]}"
+            else:
+                public_name = u.full_name
+        
         result.append({
             "id": u.id,
-            "name": u.full_name,
+            "name": public_name,
             "role": role_label,
             "phone": u.phone,
             "email": u.email,
             "avatar_url": u.avatar_url,
+            "works_for_agent_id": u.works_for_agent_id,
         })
     
     return result
