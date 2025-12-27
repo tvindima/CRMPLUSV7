@@ -306,7 +306,7 @@ def setup_staff_users(db: Session = Depends(get_db)):
     """
     from app.users.models import User, UserRole
     from app.agents.models import Agent
-    from app.security import hash_password
+    from app.users.services import hash_password
     
     results = []
     
