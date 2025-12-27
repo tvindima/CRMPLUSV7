@@ -11,15 +11,17 @@ const links = [
   { href: "/backoffice/properties", label: "Propriedades", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/clients", label: "Clientes", roles: ["agent", "leader", "admin", "staff"] },
+  { href: "/backoffice/website-clients", label: "Clientes Website", roles: ["leader", "admin", "staff"] },
   { href: "/backoffice/opportunities", label: "Oportunidades", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/visits", label: "Visitas", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/proposals", label: "Propostas", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/documents", label: "Documentos", roles: ["agent", "leader", "admin", "staff"] },
+  { href: "/backoffice/pre-angariacoes", label: "Pré-Angariações", roles: ["agent", "leader", "admin", "staff"] },
   { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff"] },
   // Secção GESTÃO
   { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
   { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
+  { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
   { href: "/backoffice/config", label: "Configurações", roles: ["admin", "staff"], isManagement: true },
   { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true, isSubItem: true },
 ];

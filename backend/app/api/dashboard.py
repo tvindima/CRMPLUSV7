@@ -266,7 +266,7 @@ def get_recent_leads(
         result = []
         for lead in leads:
             # Buscar agente responsável
-            agent = db.query(Agent).filter(Agent.id == lead.agent_id).first() if lead.agent_id else None
+            agent = db.query(Agent).filter(Agent.id == lead.assigned_agent_id).first() if lead.assigned_agent_id else None
             
             # Calcular tempo desde criação
             time_diff = datetime.now() - lead.created_at
@@ -310,7 +310,7 @@ def assign_lead_to_agent(
         if not agent:
             raise HTTPException(status_code=404, detail="Agente não encontrado")
         
-        lead.agent_id = agent_id
+        lead.assigned_agent_id = agent_id
         lead.updated_at = datetime.now()
         db.commit()
         
@@ -348,7 +348,7 @@ def distribute_leads_automatically(
             raise HTTPException(status_code=400, detail="Nenhum agente ativo disponível")
         
         # Buscar leads pendentes (sem agente atribuído)
-        query = db.query(Lead).filter(Lead.agent_id == None)
+        query = db.query(Lead).filter(Lead.assigned_agent_id == None)
         if lead_ids:
             query = query.filter(Lead.id.in_(lead_ids))
         
@@ -361,7 +361,7 @@ def distribute_leads_automatically(
             # Distribuição circular simples
             for idx, lead in enumerate(pending_leads):
                 agent = agents[idx % len(agents)]
-                lead.agent_id = agent.id
+                lead.assigned_agent_id = agent.id
                 lead.updated_at = datetime.now()
         
         elif strategy == "performance-based":
@@ -374,20 +374,20 @@ def distribute_leads_automatically(
                     agent = agents_sorted[idx % (len(agents_sorted) // 2 or 1)]
                 else:
                     agent = agents_sorted[idx % len(agents_sorted)]
-                lead.agent_id = agent.id
+                lead.assigned_agent_id = agent.id
                 lead.updated_at = datetime.now()
         
         else:  # workload-balanced
             # Contar workload atual de cada agente
             workload = {}
             for agent in agents:
-                count = db.query(Lead).filter(Lead.agent_id == agent.id).count()
+                count = db.query(Lead).filter(Lead.assigned_agent_id == agent.id).count()
                 workload[agent.id] = count
             
             # Atribuir leads ao agente com menos workload
             for lead in pending_leads:
                 agent_id_min_workload = min(workload, key=workload.get)
-                lead.agent_id = agent_id_min_workload
+                lead.assigned_agent_id = agent_id_min_workload
                 lead.updated_at = datetime.now()
                 workload[agent_id_min_workload] += 1
         
@@ -514,7 +514,7 @@ def get_recent_activities(
             tipo = "criou" if (lead.updated_at - lead.created_at).seconds < 60 else "editou"
             
             # Buscar agente
-            agent = db.query(Agent).filter(Agent.id == lead.agent_id).first() if lead.agent_id else None
+            agent = db.query(Agent).filter(Agent.id == lead.assigned_agent_id).first() if lead.assigned_agent_id else None
             
             acao = f"{tipo} lead de {lead.name}"
             if agent and tipo == "editou":
