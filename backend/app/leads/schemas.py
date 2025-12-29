@@ -9,7 +9,7 @@ class LeadBase(BaseModel):
     email: Optional[EmailStr] = None  # Email opcional para suportar leads mobile
     phone: Optional[str] = None
     message: Optional[str] = None
-    source: Optional[LeadSource] = LeadSource.MANUAL
+    source: Optional[str] = "manual"  # String em vez de Enum para compatibilidade BD
     origin: Optional[str] = None
     property_id: Optional[int] = None
     action_type: Optional[str] = None
@@ -28,7 +28,7 @@ class LeadCreateMobile(BaseModel):
     origin: Optional[str] = None  # Ex: "Feira Imobiliária", "Indicação"
     budget: Optional[int] = None  # Orçamento do cliente
     notes: Optional[str] = None  # Interesse, preferências
-    source: Optional[LeadSource] = LeadSource.MANUAL
+    source: Optional[str] = "manual"  # String em vez de Enum
 
 
 class LeadCreateFromWebsite(BaseModel):
@@ -47,7 +47,7 @@ class LeadUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     message: Optional[str] = None
-    status: Optional[LeadStatus] = None
+    status: Optional[str] = None  # String em vez de Enum
     assigned_agent_id: Optional[int] = None
 
 
@@ -58,9 +58,9 @@ class LeadAssign(BaseModel):
 
 class LeadOut(LeadBase):
     id: int
-    status: LeadStatus
-    assigned_agent_id: Optional[int]
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    status: Optional[str] = None  # String - BD agora usa String em vez de Enum
+    assigned_agent_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

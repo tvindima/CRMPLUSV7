@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from . import services, schemas
-from .models import LeadStatus, LeadSource
 from app.database import get_db
 from app.security import require_staff
 
@@ -13,8 +12,8 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 def list_leads(
     skip: int = 0,
     limit: int = 100,
-    status: Optional[LeadStatus] = None,
-    source: Optional[LeadSource] = None,
+    status: Optional[str] = None,
+    source: Optional[str] = None,
     assigned_agent_id: Optional[int] = None,
     property_id: Optional[int] = None,
     db: Session = Depends(get_db)

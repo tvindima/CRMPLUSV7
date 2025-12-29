@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
-from .models import Lead, LeadStatus, LeadSource
+from .models import Lead
 from .schemas import LeadCreate, LeadUpdate, LeadCreateFromWebsite
 from app.properties.models import Property
 from app.agents.models import Agent
@@ -12,8 +12,8 @@ def get_leads(
     db: Session,
     skip: int = 0,
     limit: int = 100,
-    status: Optional[LeadStatus] = None,
-    source: Optional[LeadSource] = None,
+    status: Optional[str] = None,
+    source: Optional[str] = None,
     assigned_agent_id: Optional[int] = None,
     property_id: Optional[int] = None
 ):
