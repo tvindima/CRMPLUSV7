@@ -328,6 +328,40 @@ export function UserMenuWrapper() {
             </div>
           </>
         )}
+
+        {/* Modal Simulador de Prestação - Utilizador Logado */}
+        {showMortgageSimulator && typeof document !== 'undefined' && createPortal(
+          <div 
+            className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+            style={{ zIndex: 99999 }}
+            onClick={() => setShowMortgageSimulator(false)}
+          >
+            <div 
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MortgageSimulator onClose={() => setShowMortgageSimulator(false)} />
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Modal Calculadora IMT - Utilizador Logado */}
+        {showTaxCalculator && typeof document !== 'undefined' && createPortal(
+          <div 
+            className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+            style={{ zIndex: 99999 }}
+            onClick={() => setShowTaxCalculator(false)}
+          >
+            <div 
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <TaxCalculator onClose={() => setShowTaxCalculator(false)} />
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     );
   }
