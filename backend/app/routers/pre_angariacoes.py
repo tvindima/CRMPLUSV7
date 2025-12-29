@@ -412,7 +412,7 @@ def atualizar_pre_angariacao(
                     fi.client_phone = item.proprietario_telefone
                 fi.updated_at = func.now()
     except Exception as e:
-        logger.warning(f\"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}\")
+        logger.warning(f"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}")
 
     db.commit()
     db.refresh(item)
