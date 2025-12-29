@@ -173,14 +173,17 @@ async def generic_exception_handler(request: Request, exc: Exception):
     Evita expor stack traces ao cliente
     """
     import logging
+    import traceback
     logger = logging.getLogger(__name__)
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    error_detail = f"{type(exc).__name__}: {str(exc)}"
+    stack_trace = traceback.format_exc()
+    logger.error(f"Unhandled exception: {error_detail}\n{stack_trace}")
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Erro interno do servidor",
-            "detail": "Ocorreu um erro inesperado. Por favor, tente novamente.",
+            "detail": error_detail,  # Temporariamente mostrar erro real
             "support": "Se o problema persistir, contacte o suporte."
         }
     )
