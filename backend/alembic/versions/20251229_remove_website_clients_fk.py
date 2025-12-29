@@ -11,7 +11,7 @@ Create Date: 2025-12-29
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import inspect
+from sqlalchemy import text
 
 
 # revision identifiers, used by Alembic.
@@ -22,33 +22,28 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Remove FK constraint if it exists"""
+    """Remove FK constraint using raw SQL"""
     conn = op.get_bind()
-    inspector = inspect(conn)
     
-    # Check if table exists
-    tables = inspector.get_table_names()
-    if 'website_clients' not in tables:
-        print("Table website_clients doesn't exist, skipping...")
-        return
-    
-    # Get foreign keys
-    fks = inspector.get_foreign_keys('website_clients')
-    
-    for fk in fks:
-        if 'assigned_agent_id' in fk.get('constrained_columns', []):
-            fk_name = fk.get('name')
-            if fk_name:
-                print(f"Removing FK constraint: {fk_name}")
-                op.drop_constraint(fk_name, 'website_clients', type_='foreignkey')
-                print(f"FK constraint {fk_name} removed successfully")
-            else:
-                # Try with standard naming
-                try:
-                    op.drop_constraint('website_clients_assigned_agent_id_fkey', 'website_clients', type_='foreignkey')
-                    print("FK constraint removed with standard name")
-                except Exception as e:
-                    print(f"Could not remove FK: {e}")
+    # Try to drop the FK constraint directly with SQL
+    try:
+        conn.execute(text("""
+            ALTER TABLE website_clients 
+            DROP CONSTRAINT IF EXISTS website_clients_assigned_agent_id_fkey
+        """))
+        print("FK constraint dropped successfully via SQL")
+    except Exception as e:
+        print(f"Could not drop FK via SQL: {e}")
+        
+    # Also try with CASCADE
+    try:
+        conn.execute(text("""
+            ALTER TABLE website_clients 
+            DROP CONSTRAINT IF EXISTS website_clients_assigned_agent_id_fkey CASCADE
+        """))
+        print("FK constraint dropped with CASCADE")
+    except Exception as e2:
+        print(f"Could not drop FK with CASCADE: {e2}")
 
 
 def downgrade() -> None:
