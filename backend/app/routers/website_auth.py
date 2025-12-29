@@ -428,15 +428,32 @@ def update_client_info(
     )
 
 
+@router.get("/validate", response_model=WebsiteClientOut)
+def validate_token_get(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Validar token via GET e retornar dados do cliente.
+    Endpoint PÚBLICO - permite validação simples via query param.
+    """
+    return _validate_token(token, db)
+
+
 @router.post("/validate", response_model=WebsiteClientOut)
 def validate_token(
     token: str,
     db: Session = Depends(get_db)
 ):
     """
-    Validar token e retornar dados do cliente.
+    Validar token via POST e retornar dados do cliente.
     Endpoint PÚBLICO.
     """
+    return _validate_token(token, db)
+
+
+def _validate_token(token: str, db: Session) -> WebsiteClientOut:
+    """Lógica comum de validação de token"""
     client = get_current_client(token, db)
     
     # Buscar nome do agente
