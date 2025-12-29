@@ -183,7 +183,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Erro interno do servidor",
-            "detail": error_detail,  # Temporariamente mostrar erro real
+            # Não expor o detalhe em produção
+            "detail": "Ocorreu um erro inesperado. Tente novamente ou contacte o suporte.",
             "support": "Se o problema persistir, contacte o suporte."
         }
     )
