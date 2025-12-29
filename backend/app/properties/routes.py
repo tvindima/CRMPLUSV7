@@ -289,9 +289,17 @@ def list_properties(
     limit: int = 100,
     search: str | None = None,
     status: str | None = None,
+    is_published: int | None = None,
     db: Session = Depends(get_db),
 ):
-    return services.get_properties(db, skip=skip, limit=limit, search=search, status=status)
+    return services.get_properties(
+        db,
+        skip=skip,
+        limit=limit,
+        search=search,
+        status=status,
+        is_published=is_published,
+    )
 
 
 @router.get("/{property_id}", response_model=schemas.PropertyOut)
@@ -303,12 +311,21 @@ def get_property(property_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.PropertyOut, status_code=201)
-def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_db)):
+def create_property(
+    property: schemas.PropertyCreate,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     return services.create_property(db, property)
 
 
 @router.put("/{property_id}", response_model=schemas.PropertyOut)
-def update_property(property_id: int, property_update: schemas.PropertyUpdate, db: Session = Depends(get_db)):
+def update_property(
+    property_id: int,
+    property_update: schemas.PropertyUpdate,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     property = services.update_property(db, property_id, property_update)
     if not property:
         raise HTTPException(status_code=404, detail="Property not found")
@@ -316,7 +333,11 @@ def update_property(property_id: int, property_update: schemas.PropertyUpdate, d
 
 
 @router.delete("/{property_id}", response_model=schemas.PropertyOut)
-def delete_property(property_id: int, db: Session = Depends(get_db)):
+def delete_property(
+    property_id: int,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     property = services.delete_property(db, property_id)
     if not property:
         raise HTTPException(status_code=404, detail="Property not found")

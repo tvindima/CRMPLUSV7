@@ -5,6 +5,7 @@ from . import services, schemas
 from app.database import get_db
 from app.core.storage import storage
 from app.users.models import User, UserRole
+from app.security import require_staff
 from PIL import Image
 from io import BytesIO
 import os
@@ -83,12 +84,21 @@ def get_agent(agent_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.AgentOut, status_code=201)
-def create_agent(agent: schemas.AgentCreate, db: Session = Depends(get_db)):
+def create_agent(
+    agent: schemas.AgentCreate,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     return services.create_agent(db, agent)
 
 
 @router.put("/{agent_id}", response_model=schemas.AgentOut)
-def update_agent(agent_id: int, agent_update: schemas.AgentUpdate, db: Session = Depends(get_db)):
+def update_agent(
+    agent_id: int,
+    agent_update: schemas.AgentUpdate,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     agent = services.update_agent(db, agent_id, agent_update)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -96,7 +106,11 @@ def update_agent(agent_id: int, agent_update: schemas.AgentUpdate, db: Session =
 
 
 @router.delete("/{agent_id}", response_model=schemas.AgentOut)
-def delete_agent(agent_id: int, db: Session = Depends(get_db)):
+def delete_agent(
+    agent_id: int,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     agent = services.delete_agent(db, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -106,14 +120,14 @@ def delete_agent(agent_id: int, db: Session = Depends(get_db)):
 @router.post("/{agent_id}/upload-photo")
 async def upload_agent_photo(
     agent_id: int,
+    user=Depends(require_staff),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     """
     Upload de foto de perfil para agente.
     
-    ⚠️ TEMPORÁRIO: Sem autenticação para bulk upload inicial.
-    TODO: Adicionar Depends(require_staff) após population.
+    Requer autenticação (staff).
     
     Faz upload para Cloudinary e atualiza campo 'photo' na database.
     Otimiza automaticamente para tamanho ideal (500x500).

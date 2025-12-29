@@ -4,13 +4,22 @@ from .models import Property, PropertyStatus
 from .schemas import PropertyCreate, PropertyUpdate
 
 
-def get_properties(db: Session, skip: int = 0, limit: int = 100, search: str | None = None, status: str | None = None):
+def get_properties(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = None,
+    status: str | None = None,
+    is_published: int | None = None,
+):
     query = db.query(Property)
     if search:
         like = f"%{search}%"
         query = query.filter(Property.title.ilike(like) | Property.reference.ilike(like) | Property.location.ilike(like))
     if status and status in {s.value for s in PropertyStatus}:
         query = query.filter(Property.status == PropertyStatus(status))
+    if is_published is not None:
+        query = query.filter(Property.is_published == is_published)
     return query.offset(skip).limit(limit).all()
 
 

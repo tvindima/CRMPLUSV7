@@ -163,9 +163,9 @@ def get_website_client(client_id: int, db: Session = Depends(get_db)):
     # Buscar agente
     agent_name = None
     if client.assigned_agent_id:
-        agent = db.query(User).filter(User.id == client.assigned_agent_id).first()
+        agent = db.query(Agent).filter(Agent.id == client.assigned_agent_id).first()
         if agent:
-            agent_name = agent.display_name or f"{agent.first_name} {agent.last_name}".strip()
+            agent_name = agent.name or agent.email
     
     return {
         "id": client.id,
@@ -200,7 +200,7 @@ def reassign_client_agent(
     if not client:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     
-    agent = db.query(User).filter(User.id == agent_id, User.is_active == True).first()
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agente não encontrado")
     
@@ -210,10 +210,7 @@ def reassign_client_agent(
     
     db.commit()
     
-    return {
-        "success": True,
-        "message": f"Cliente reatribuído a {agent.display_name or agent.first_name}"
-    }
+    return {"success": True, "message": f"Cliente reatribuído a {agent.name}"}
 
 
 @router.put("/{client_id}/toggle-active")
