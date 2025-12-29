@@ -15,6 +15,7 @@ from app.security import get_current_user
 from app.users.models import User
 from app.models.pre_angariacao import PreAngariacao, PreAngariacaoStatus
 from app.models.first_impression import FirstImpression
+from app.models.first_impression import FirstImpression
 from app.properties.models import Property
 from app.schemas import pre_angariacao as schemas
 from app.users.models import UserRole
@@ -346,6 +347,21 @@ def criar_de_first_impression(
     db.add(pre_ang)
     db.commit()
     db.refresh(pre_ang)
+
+    # Sincronizar dados básicos na 1ª impressão para refletir no mobile
+    try:
+        if pre_ang.first_impression_id and pre_ang.proprietario_nome:
+            fi = db.query(FirstImpression).filter(FirstImpression.id == pre_ang.first_impression_id).first()
+            if fi:
+                fi.client_name = pre_ang.proprietario_nome
+                if pre_ang.proprietario_nif:
+                    fi.client_nif = pre_ang.proprietario_nif
+                if pre_ang.proprietario_telefone:
+                    fi.client_phone = pre_ang.proprietario_telefone
+                fi.updated_at = func.now()
+                db.commit()
+    except Exception as e:
+        logger.warning(f"Não foi possível sincronizar 1ª impressão {pre_ang.first_impression_id}: {e}")
     
     logger.info(f"Pré-angariação criada de 1ª Impressão: {referencia}")
     return pre_ang
@@ -383,7 +399,21 @@ def atualizar_pre_angariacao(
     if fotos_payload is not None:
         item.fotos = fotos_payload
         flag_modified(item, "fotos")
-    
+
+    # Sincronizar dados básicos na 1ª impressão se existir
+    try:
+        if item.first_impression_id and item.proprietario_nome:
+            fi = db.query(FirstImpression).filter(FirstImpression.id == item.first_impression_id).first()
+            if fi:
+                fi.client_name = item.proprietario_nome
+                if item.proprietario_nif:
+                    fi.client_nif = item.proprietario_nif
+                if item.proprietario_telefone:
+                    fi.client_phone = item.proprietario_telefone
+                fi.updated_at = func.now()
+    except Exception as e:
+        logger.warning(f\"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}\")
+
     db.commit()
     db.refresh(item)
     return item
