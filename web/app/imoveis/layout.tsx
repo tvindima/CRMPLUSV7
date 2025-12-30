@@ -1,4 +1,7 @@
 import { Metadata } from "next";
+import { getSiteUrl } from "../../src/lib/siteUrl";
+
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   title: "Todos os Imóveis",
@@ -8,10 +11,10 @@ export const metadata: Metadata = {
     title: "Todos os Imóveis | Imóveis Mais",
     description: "Explore o nosso portefólio completo de imóveis. Apartamentos, moradias, terrenos e imóveis comerciais para venda e arrendamento.",
     type: "website",
-    url: "https://imoveismais-site.vercel.app/imoveis",
+    url: `${siteUrl}/imoveis`,
   },
   alternates: {
-    canonical: "https://imoveismais-site.vercel.app/imoveis",
+    canonical: `${siteUrl}/imoveis`,
   },
 };
 

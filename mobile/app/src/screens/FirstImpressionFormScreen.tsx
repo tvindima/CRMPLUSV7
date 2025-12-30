@@ -74,8 +74,10 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
   const loadImpressionData = async (id: number) => {
     try {
+      console.log('[FirstImpressionForm] Loading data for id:', id);
       setLoadingData(true);
       const data = await firstImpressionService.getById(id);
+      console.log('[FirstImpressionForm] Data received:', data ? 'OK' : 'null');
       
       if (!data) {
         throw new Error('Dados não encontrados');
@@ -98,24 +100,40 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setLongitude(data.longitude);
       
       // Filtrar e extrair URLs válidas (pode vir como string ou objeto {url: ...})
+      console.log('[FirstImpressionForm] Processing photos:', data.photos?.length || 0);
       const validPhotos = (data.photos || [])
-        .map((item: any) => typeof item === 'string' ? item : item?.url)
-        .filter((url: string) => url && typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://')));
+        .map((item: any) => {
+          try {
+            return typeof item === 'string' ? item : item?.url;
+          } catch (e) {
+            console.warn('[FirstImpressionForm] Invalid photo item:', item);
+            return null;
+          }
+        })
+        .filter((url: any) => url && typeof url === 'string' && url.startsWith && (url.startsWith('http://') || url.startsWith('https://')));
+      console.log('[FirstImpressionForm] Valid photos:', validPhotos.length);
       setPhotos(validPhotos);
-      setAttachments(data.attachments || []);
+      
+      // Processar attachments com segurança
+      console.log('[FirstImpressionForm] Processing attachments:', data.attachments?.length || 0);
+      const safeAttachments = (data.attachments || []).filter((att: any) => att && typeof att === 'object');
+      setAttachments(safeAttachments);
 
       // Buscar pré-angariação ligada
+      console.log('[FirstImpressionForm] Loading pre-angariacao...');
       try {
         const pre = await preAngariacaoService.getByFirstImpression(id);
+        console.log('[FirstImpressionForm] Pre-angariacao:', pre?.id || 'null');
         if (pre?.id) setPreAngariacaoId(pre.id);
       } catch (e) {
-        // silencioso se não existir ainda
+        console.log('[FirstImpressionForm] No pre-angariacao found');
       }
       
       setObservations(data.observations || '');
       setStatus((data.status as any) || 'draft');
+      console.log('[FirstImpressionForm] ✅ All data loaded successfully');
     } catch (error) {
-      console.error('Erro ao carregar:', error);
+      console.error('[FirstImpressionForm] ❌ Erro ao carregar:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados');
       navigation.goBack();
     } finally {

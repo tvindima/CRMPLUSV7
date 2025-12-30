@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { getProperties } from '../src/services/publicApi';
+import { getSiteUrl } from '../src/lib/siteUrl';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://imoveismais-site.vercel.app';
+  const baseUrl = getSiteUrl();
   
   // Páginas estáticas
   const staticPages: MetadataRoute.Sitemap = [

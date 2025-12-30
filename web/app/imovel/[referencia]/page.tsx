@@ -10,6 +10,9 @@ import { FavoriteButton } from "../../../components/FavoriteButton";
 import { LeadContactForm } from "../../../components/LeadContactForm";
 import { PropertyTools } from "../../../components/PropertyTools";
 import { getPropertyGallery, getPropertyCover } from "../../../src/utils/placeholders";
+import { getSiteUrl } from "../../../src/lib/siteUrl";
+
+const siteUrl = getSiteUrl();
 
 type Props = { params: { referencia: string } };
 
@@ -56,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "website",
-      url: `https://imoveismais-site.vercel.app/imovel/${encodeURIComponent(ref)}`,
+      url: `${siteUrl}/imovel/${encodeURIComponent(ref)}`,
       images: [
         {
           url: coverImage,
@@ -75,7 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [coverImage],
     },
     alternates: {
-      canonical: `https://imoveismais-site.vercel.app/imovel/${encodeURIComponent(ref)}`,
+      canonical: `${siteUrl}/imovel/${encodeURIComponent(ref)}`,
     },
   };
 }
@@ -162,19 +165,19 @@ export default async function ImovelDetail({ params }: Props) {
         "@type": "ListItem",
         "position": 1,
         "name": "Início",
-        "item": "https://imoveismais-site.vercel.app"
+        "item": siteUrl
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Imóveis",
-        "item": "https://imoveismais-site.vercel.app/imoveis"
+        "item": `${siteUrl}/imoveis`
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": property.title || property.reference,
-        "item": `https://imoveismais-site.vercel.app/imovel/${property.reference}`
+        "item": `${siteUrl}/imovel/${property.reference}`
       }
     ]
   };

@@ -6,9 +6,12 @@ import { BrandImage } from "../components/BrandImage";
 import UserMenuWrapper from "../components/UserMenuWrapper";
 import MobileMenu from "../components/MobileMenu";
 import { Providers } from "../components/Providers";
+import { getSiteUrl } from "../src/lib/siteUrl";
+
+const siteUrl = getSiteUrl();
 
 export const metadata = {
-  metadataBase: new URL('https://imoveismais-site.vercel.app'),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Imóveis Mais - Casas e Investimentos à Medida",
     template: "%s | Imóveis Mais"
@@ -26,7 +29,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "pt_PT",
-    url: "https://imoveismais-site.vercel.app",
+    url: siteUrl,
     siteName: "Imóveis Mais",
     title: "Imóveis Mais - Casas e Investimentos à Medida",
     description: "Encontre a casa perfeita ou o investimento ideal em Portugal. Moradias, apartamentos, terrenos e imóveis comerciais.",
