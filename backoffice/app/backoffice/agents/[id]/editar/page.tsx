@@ -57,7 +57,8 @@ function EditAgentInner() {
       try {
         setLoading(true);
         const token = localStorage.getItem('accessToken');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         
         // Carregar dados do agente
         const agentResponse = await fetch(
@@ -105,14 +106,13 @@ function EditAgentInner() {
     try {
       setSaving(true);
       const token = localStorage.getItem('accessToken');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`,
         {
           method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
+          headers,
           body: JSON.stringify(formData),
         }
       );

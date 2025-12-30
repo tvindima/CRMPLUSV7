@@ -87,11 +87,11 @@ function NewAgentInner() {
     async function loadAgents() {
       try {
         const token = localStorage.getItem('accessToken');
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`,
-          {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-          }
+          { headers }
         );
         if (!response.ok) return;
         const data = await response.json();
