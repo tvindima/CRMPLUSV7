@@ -97,10 +97,10 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       setLatitude(data.latitude);
       setLongitude(data.longitude);
       
-      // Filtrar blob: URLs inválidas (só aceitar http/https)
-      const validPhotos = (data.photos || []).filter((url: string) => 
-        url && (url.startsWith('http://') || url.startsWith('https://'))
-      );
+      // Filtrar e extrair URLs válidas (pode vir como string ou objeto {url: ...})
+      const validPhotos = (data.photos || [])
+        .map((item: any) => typeof item === 'string' ? item : item?.url)
+        .filter((url: string) => url && typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://')));
       setPhotos(validPhotos);
       setAttachments(data.attachments || []);
 
