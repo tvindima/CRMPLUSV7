@@ -23,7 +23,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Token em falta" }, { status: 500 });
     }
 
-    const response = NextResponse.json({ ok: true, role: data?.role || "staff" });
+    // Devolver também o token para o cliente guardar no localStorage
+    const response = NextResponse.json({ 
+      ok: true, 
+      role: data?.role || "staff",
+      access_token: token 
+    });
     response.cookies.set({
       name: COOKIE_NAME,
       value: token,

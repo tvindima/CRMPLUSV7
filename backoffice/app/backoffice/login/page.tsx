@@ -29,6 +29,11 @@ export default function BackofficeLoginPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || "Falha na autenticação");
       }
+      const data = await res.json();
+      // Guardar token no localStorage para as chamadas API
+      if (data?.access_token) {
+        localStorage.setItem('accessToken', data.access_token);
+      }
       router.push("/backoffice/dashboard");
       router.refresh();
     } catch (err: any) {
