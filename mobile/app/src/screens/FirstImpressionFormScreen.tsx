@@ -61,10 +61,14 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
-    if (isEditMode && impressionId) {
-      loadImpressionData(impressionId);
-    } else {
-      getCurrentLocation();
+    try {
+      if (isEditMode && impressionId) {
+        loadImpressionData(impressionId);
+      } else {
+        getCurrentLocation();
+      }
+    } catch (e) {
+      console.error('[FirstImpressionForm] useEffect error:', e);
     }
   }, [impressionId]);
 
@@ -72,6 +76,10 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     try {
       setLoadingData(true);
       const data = await firstImpressionService.getById(id);
+      
+      if (!data) {
+        throw new Error('Dados não encontrados');
+      }
 
       setClientName(data.client_name || '');
       setClientPhone(data.client_phone || '');
@@ -116,6 +124,32 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   };
 
   const getCurrentLocation = async () => {
+    // Na web, usar geolocation nativo se disponível
+    if (Platform.OS === 'web') {
+      if (!navigator?.geolocation) {
+        setGpsError('GPS não suportado neste browser');
+        return;
+      }
+      setGpsLoading(true);
+      setGpsError('');
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+          console.log('[GPS Web] ✅ Localização obtida:', position.coords);
+          setGpsLoading(false);
+        },
+        (error) => {
+          console.error('[GPS Web] ❌ Erro:', error);
+          setGpsError('Erro ao obter GPS');
+          setGpsLoading(false);
+        },
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+      return;
+    }
+
+    // Native: usar expo-location
     setGpsLoading(true);
     setGpsError('');
 
