@@ -398,15 +398,22 @@ def atualizar_pre_angariacao(
 
         # Substituir fotos se enviadas
         if fotos_payload is not None:
-            # Converter para dicts se forem objetos Pydantic
+            # Converter para dicts JSON-serializáveis
             fotos_list = []
             for foto in fotos_payload:
                 if hasattr(foto, 'model_dump'):
-                    fotos_list.append(foto.model_dump())
+                    foto_dict = foto.model_dump(mode='json')  # mode='json' converte datetime para string
                 elif isinstance(foto, dict):
-                    fotos_list.append(foto)
+                    foto_dict = foto.copy()
                 else:
-                    fotos_list.append(dict(foto))
+                    foto_dict = dict(foto)
+                
+                # Garantir que uploaded_at é string ISO
+                if 'uploaded_at' in foto_dict and foto_dict['uploaded_at'] is not None:
+                    if hasattr(foto_dict['uploaded_at'], 'isoformat'):
+                        foto_dict['uploaded_at'] = foto_dict['uploaded_at'].isoformat()
+                
+                fotos_list.append(foto_dict)
             item.fotos = fotos_list
             flag_modified(item, "fotos")
             logger.info(f"Fotos atualizadas para PA {pre_angariacao_id}: {len(fotos_list)} fotos")
