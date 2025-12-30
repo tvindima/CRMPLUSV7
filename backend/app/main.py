@@ -74,14 +74,26 @@ app = FastAPI(
 # CORS CONFIGURATION
 # ========================================
 
-# Em produção, permitir todas as origens para evitar problemas com Vercel previews
-# A autenticação é feita via Bearer tokens, não cookies, por isso é seguro
+# Domínios permitidos em produção
+PRODUCTION_ORIGINS = [
+    "https://backoffice.imoveismais.com",
+    "https://www.imoveismais.com",
+    "https://imoveismais.com",
+    "https://montra.imoveismais.com",
+    "https://crmplusv7-production.up.railway.app",
+]
+
+# Em produção, usar domínios específicos + regex para Vercel previews
 CORS_ORIGINS_ENV = os.environ.get("CORS_ORIGINS", "")
 
-if CORS_ORIGINS_ENV == "*" or os.environ.get("RAILWAY_ENVIRONMENT"):
-    # Em Railway/produção: permitir todas origens (Bearer auth é seguro)
+if os.environ.get("RAILWAY_ENVIRONMENT"):
+    # Em Railway/produção: usar lista específica + regex para previews
+    ALLOWED_ORIGINS = PRODUCTION_ORIGINS
+    ALLOW_CREDENTIALS = True
+    ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+elif CORS_ORIGINS_ENV == "*":
     ALLOWED_ORIGINS = ["*"]
-    ALLOW_CREDENTIALS = False  # Obrigatório com "*"
+    ALLOW_CREDENTIALS = False
     ALLOW_ORIGIN_REGEX = None
 else:
     # Desenvolvimento local
