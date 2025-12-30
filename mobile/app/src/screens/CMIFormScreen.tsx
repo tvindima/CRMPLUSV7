@@ -715,54 +715,71 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         } else if (tipoDocumento === 'caderneta_predial') {
           if (dados.artigo_matricial) {
             // ACUMULAR artigos matriciais para múltiplos prédios vendidos em conjunto
-            setImovelArtigoMatricial((prev) => {
-              if (!prev || prev.trim() === '') return dados.artigo_matricial;
-              // Verificar se já existe este artigo
-              const artigos = prev.split(',').map((a: string) => a.trim());
-              if (artigos.includes(dados.artigo_matricial.trim())) return prev;
-              return `${prev}, ${dados.artigo_matricial}`;
-            });
-            camposPreenchidos++;
+            const novoArtigo = String(dados.artigo_matricial || '').trim();
+            if (novoArtigo) {
+              setImovelArtigoMatricial((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novoArtigo;
+                const artigos = prevStr.split(',').map((a) => a.trim());
+                if (artigos.includes(novoArtigo)) return prevStr;
+                return `${prevStr}, ${novoArtigo}`;
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.tipo_imovel) {
             // ACUMULAR tipos de imóvel (ex: "Habitação + Arrecadação")
-            setImovelTipo((prev) => {
-              if (!prev || prev.trim() === '') return dados.tipo_imovel;
-              // Verificar se já existe este tipo
-              if (prev.toLowerCase().includes(dados.tipo_imovel.toLowerCase())) return prev;
-              return `${prev} + ${dados.tipo_imovel}`;
-            });
-            camposPreenchidos++;
+            const novoTipo = String(dados.tipo_imovel || '').trim();
+            if (novoTipo) {
+              setImovelTipo((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novoTipo;
+                if (prevStr.toLowerCase().includes(novoTipo.toLowerCase())) return prevStr;
+                return `${prevStr} + ${novoTipo}`;
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.tipologia) {
             // ACUMULAR tipologias (ex: "T4 + Arrecadações")
-            setImovelTipologia((prev) => {
-              if (!prev || prev.trim() === '') return dados.tipologia;
-              // Verificar se já existe esta tipologia
-              if (prev.toLowerCase().includes(dados.tipologia.toLowerCase())) return prev;
-              return `${prev} + ${dados.tipologia}`;
-            });
-            camposPreenchidos++;
+            const novaTipologia = String(dados.tipologia || '').trim();
+            if (novaTipologia) {
+              setImovelTipologia((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novaTipologia;
+                if (prevStr.toLowerCase().includes(novaTipologia.toLowerCase())) return prevStr;
+                return `${prevStr} + ${novaTipologia}`;
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.area_bruta) {
             // ACUMULAR áreas para múltiplos prédios
-            setImovelAreaBruta((prev) => {
-              if (!prev || prev.trim() === '') return dados.area_bruta;
-              const areaAnterior = parseFloat(prev.replace(',', '.')) || 0;
-              const areaNova = parseFloat(dados.area_bruta.replace(',', '.')) || 0;
-              return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
-            });
-            camposPreenchidos++;
+            const novaArea = String(dados.area_bruta || '').trim();
+            if (novaArea) {
+              setImovelAreaBruta((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novaArea;
+                const areaAnterior = parseFloat(prevStr.replace(',', '.')) || 0;
+                const areaNova = parseFloat(novaArea.replace(',', '.')) || 0;
+                return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.area_util) {
             // ACUMULAR áreas para múltiplos prédios
-            setImovelAreaUtil((prev) => {
-              if (!prev || prev.trim() === '') return dados.area_util;
-              const areaAnterior = parseFloat(prev.replace(',', '.')) || 0;
-              const areaNova = parseFloat(dados.area_util.replace(',', '.')) || 0;
-              return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
-            });
-            camposPreenchidos++;
+            const novaAreaUtil = String(dados.area_util || '').trim();
+            if (novaAreaUtil) {
+              setImovelAreaUtil((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novaAreaUtil;
+                const areaAnterior = parseFloat(prevStr.replace(',', '.')) || 0;
+                const areaNova = parseFloat(novaAreaUtil.replace(',', '.')) || 0;
+                return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.morada) {
             setImovelMorada(dados.morada);
@@ -783,13 +800,17 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         } else if (tipoDocumento === 'certidao_permanente') {
           if (dados.artigo_matricial) {
             // ACUMULAR artigos matriciais para múltiplos prédios
-            setImovelArtigoMatricial((prev) => {
-              if (!prev || prev.trim() === '') return dados.artigo_matricial;
-              const artigos = prev.split(',').map((a: string) => a.trim());
-              if (artigos.includes(dados.artigo_matricial.trim())) return prev;
-              return `${prev}, ${dados.artigo_matricial}`;
-            });
-            camposPreenchidos++;
+            const novoArtigo = String(dados.artigo_matricial || '').trim();
+            if (novoArtigo) {
+              setImovelArtigoMatricial((prev) => {
+                const prevStr = String(prev || '').trim();
+                if (!prevStr) return novoArtigo;
+                const artigos = prevStr.split(',').map((a) => a.trim());
+                if (artigos.includes(novoArtigo)) return prevStr;
+                return `${prevStr}, ${novoArtigo}`;
+              });
+              camposPreenchidos++;
+            }
           }
           if (dados.conservatoria) {
             setImovelConservatoria(dados.conservatoria);
