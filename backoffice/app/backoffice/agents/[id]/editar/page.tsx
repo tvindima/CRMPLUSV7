@@ -56,10 +56,13 @@ function EditAgentInner() {
     async function loadData() {
       try {
         setLoading(true);
+        const token = localStorage.getItem('accessToken');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
         // Carregar dados do agente
         const agentResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`,
+          { headers }
         );
         
         if (!agentResponse.ok) {
@@ -71,7 +74,8 @@ function EditAgentInner() {
 
         // Carregar lista de agentes para dropdown
         const agentsResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`,
+          { headers }
         );
         if (agentsResponse.ok) {
           const data = await agentsResponse.json();
@@ -100,11 +104,15 @@ function EditAgentInner() {
 
     try {
       setSaving(true);
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`,
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(formData),
         }
       );

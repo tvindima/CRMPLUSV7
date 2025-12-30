@@ -86,8 +86,12 @@ function NewAgentInner() {
   useEffect(() => {
     async function loadAgents() {
       try {
+        const token = localStorage.getItem('accessToken');
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`,
+          {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          }
         );
         if (!response.ok) return;
         const data = await response.json();
@@ -116,6 +120,12 @@ function NewAgentInner() {
     try {
       setLoading(true);
       const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        toast?.push('Sessão expirada. Faça login novamente.', 'error');
+        return;
+      }
 
       let agentId: number | null = null;
 
@@ -137,7 +147,10 @@ function NewAgentInner() {
         
         const agentResponse = await fetch(`${API_BASE}/agents/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
           body: JSON.stringify(agentData),
         });
 
