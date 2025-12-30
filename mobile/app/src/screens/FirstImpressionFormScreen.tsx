@@ -61,15 +61,19 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
 
   // GPS AUTOMÁTICO ao montar componente
   useEffect(() => {
-    try {
-      if (isEditMode && impressionId) {
-        loadImpressionData(impressionId);
-      } else {
-        getCurrentLocation();
+    const init = async () => {
+      try {
+        console.log('[FirstImpressionForm] 🚀 Component mounted, isEditMode:', isEditMode, 'id:', impressionId);
+        if (isEditMode && impressionId) {
+          await loadImpressionData(impressionId);
+        } else {
+          getCurrentLocation();
+        }
+      } catch (e) {
+        console.error('[FirstImpressionForm] useEffect error:', e);
       }
-    } catch (e) {
-      console.error('[FirstImpressionForm] useEffect error:', e);
-    }
+    };
+    init();
   }, [impressionId]);
 
   const loadImpressionData = async (id: number) => {
@@ -119,21 +123,27 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       const safeAttachments = (data.attachments || []).filter((att: any) => att && typeof att === 'object');
       setAttachments(safeAttachments);
 
-      // Buscar pré-angariação ligada
+      // Buscar pré-angariação ligada (não bloquear se falhar)
       console.log('[FirstImpressionForm] Loading pre-angariacao...');
       try {
         const pre = await preAngariacaoService.getByFirstImpression(id);
-        console.log('[FirstImpressionForm] Pre-angariacao:', pre?.id || 'null');
-        if (pre?.id) setPreAngariacaoId(pre.id);
-      } catch (e) {
-        console.log('[FirstImpressionForm] No pre-angariacao found');
+        console.log('[FirstImpressionForm] Pre-angariacao response:', JSON.stringify(pre).substring(0, 200));
+        if (pre && typeof pre === 'object' && pre.id) {
+          const preId = Number(pre.id);
+          if (!isNaN(preId)) {
+            console.log('[FirstImpressionForm] Setting preAngariacaoId:', preId);
+            setPreAngariacaoId(preId);
+          }
+        }
+      } catch (e: any) {
+        console.log('[FirstImpressionForm] No pre-angariacao found or error:', e?.message || e);
       }
       
       setObservations(data.observations || '');
       setStatus((data.status as any) || 'draft');
       console.log('[FirstImpressionForm] ✅ All data loaded successfully');
-    } catch (error) {
-      console.error('[FirstImpressionForm] ❌ Erro ao carregar:', error);
+    } catch (error: any) {
+      console.error('[FirstImpressionForm] ❌ Erro ao carregar:', error?.message || error);
       Alert.alert('Erro', 'Não foi possível carregar os dados');
       navigation.goBack();
     } finally {
@@ -427,6 +437,9 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       </View>
     );
   }
+
+  // Log para debug
+  console.log('[FirstImpressionForm] 🎨 Rendering, photos:', photos?.length || 0, 'attachments:', attachments?.length || 0);
 
   return (
     <KeyboardAvoidingView
