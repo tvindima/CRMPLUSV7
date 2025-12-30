@@ -714,7 +714,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           }
         } else if (tipoDocumento === 'caderneta_predial') {
           if (dados.artigo_matricial) {
-            setImovelArtigoMatricial(dados.artigo_matricial);
+            // ACUMULAR artigos matriciais para múltiplos prédios vendidos em conjunto
+            setImovelArtigoMatricial((prev) => {
+              if (!prev || prev.trim() === '') return dados.artigo_matricial;
+              // Verificar se já existe este artigo
+              const artigos = prev.split(',').map((a: string) => a.trim());
+              if (artigos.includes(dados.artigo_matricial.trim())) return prev;
+              return `${prev}, ${dados.artigo_matricial}`;
+            });
             camposPreenchidos++;
           }
           if (dados.tipo_imovel) {
@@ -726,11 +733,23 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             camposPreenchidos++;
           }
           if (dados.area_bruta) {
-            setImovelAreaBruta(dados.area_bruta);
+            // ACUMULAR áreas para múltiplos prédios
+            setImovelAreaBruta((prev) => {
+              if (!prev || prev.trim() === '') return dados.area_bruta;
+              const areaAnterior = parseFloat(prev.replace(',', '.')) || 0;
+              const areaNova = parseFloat(dados.area_bruta.replace(',', '.')) || 0;
+              return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
+            });
             camposPreenchidos++;
           }
           if (dados.area_util) {
-            setImovelAreaUtil(dados.area_util);
+            // ACUMULAR áreas para múltiplos prédios
+            setImovelAreaUtil((prev) => {
+              if (!prev || prev.trim() === '') return dados.area_util;
+              const areaAnterior = parseFloat(prev.replace(',', '.')) || 0;
+              const areaNova = parseFloat(dados.area_util.replace(',', '.')) || 0;
+              return (areaAnterior + areaNova).toFixed(2).replace('.', ',');
+            });
             camposPreenchidos++;
           }
           if (dados.morada) {
@@ -751,7 +770,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           }
         } else if (tipoDocumento === 'certidao_permanente') {
           if (dados.artigo_matricial) {
-            setImovelArtigoMatricial(dados.artigo_matricial);
+            // ACUMULAR artigos matriciais para múltiplos prédios
+            setImovelArtigoMatricial((prev) => {
+              if (!prev || prev.trim() === '') return dados.artigo_matricial;
+              const artigos = prev.split(',').map((a: string) => a.trim());
+              if (artigos.includes(dados.artigo_matricial.trim())) return prev;
+              return `${prev}, ${dados.artigo_matricial}`;
+            });
             camposPreenchidos++;
           }
           if (dados.conservatoria) {
