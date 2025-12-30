@@ -186,6 +186,12 @@ class CloudinaryService {
   async uploadFile(fileUri: string, fileName: string, mimeType: string, base64Data?: string): Promise<string> {
     const config = await this.getConfig();
 
+    // Validação: garantir que fileUri é string
+    if (!fileUri || typeof fileUri !== 'string') {
+      console.error('[Cloudinary] ❌ fileUri inválido:', typeof fileUri, fileUri);
+      throw new Error('URI de ficheiro inválido');
+    }
+
     console.log('[Cloudinary] 📤 Uploading file:', fileName, mimeType);
 
     // Web: blob:/file: URLs precisam ser convertidos para base64

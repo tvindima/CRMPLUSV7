@@ -330,8 +330,27 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       return { base64, mime };
     };
 
-    for (const uri of photos) {
+    for (const photoItem of photos) {
       try {
+        // Garantir que temos uma string URI
+        const uri = typeof photoItem === 'string' ? photoItem : (photoItem as any)?.uri || (photoItem as any)?.url;
+        if (!uri || typeof uri !== 'string') {
+          console.warn('[syncPreAngFotos] Foto inválida ignorada:', typeof photoItem, photoItem);
+          continue;
+        }
+        
+        // Se já é URL do Cloudinary, não precisa upload
+        if (uri.startsWith('https://res.cloudinary.com')) {
+          uploaded.push({
+            url: uri,
+            caption: null,
+            room_type: null,
+            order: order++,
+            uploaded_at: new Date().toISOString(),
+          });
+          continue;
+        }
+        
         const name = `preang-foto-${Date.now()}-${order}.jpg`;
         const { base64, mime } = await toBase64IfNeeded(uri);
         const url = await cloudinaryService.uploadFile(uri, name, mime, base64 || undefined);
