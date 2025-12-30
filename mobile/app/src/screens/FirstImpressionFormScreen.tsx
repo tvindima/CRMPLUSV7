@@ -148,7 +148,15 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
       try {
         const pre = await preAngariacaoService.getByFirstImpression(id);
         if (!isMountedRef.current) return;
-        console.log('[FirstImpressionForm] Pre-angariacao response:', JSON.stringify(pre).substring(0, 200));
+        
+        // Log seguro sem circular references
+        try {
+          const safeLog = { id: pre?.id, status: pre?.status, proprietario: pre?.proprietario_nome };
+          console.log('[FirstImpressionForm] Pre-angariacao response:', safeLog);
+        } catch (logErr) {
+          console.log('[FirstImpressionForm] Pre-angariacao received (log failed)');
+        }
+        
         if (pre && typeof pre === 'object' && pre.id) {
           const preId = Number(pre.id);
           if (!isNaN(preId)) {
@@ -157,7 +165,7 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           }
         }
       } catch (e: any) {
-        console.log('[FirstImpressionForm] No pre-angariacao found or error:', e?.message || e);
+        console.log('[FirstImpressionForm] No pre-angariacao found or error:', e?.message || String(e));
       }
       
       safeSetState(setObservations, data.observations || '');
