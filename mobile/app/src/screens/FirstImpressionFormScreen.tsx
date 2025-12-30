@@ -60,6 +60,16 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
   const [status, setStatus] = useState<'draft' | 'signed' | 'completed' | 'cancelled'>('draft');
 
   // GPS AUTOMÁTICO ao montar componente
+  // Ref para prevenir state updates em componente desmontado
+  const isMountedRef = React.useRef(true);
+  
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -76,32 +86,41 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
     init();
   }, [impressionId]);
 
+  const safeSetState = (setter: Function, value: any) => {
+    if (isMountedRef.current) {
+      setter(value);
+    }
+  };
+
   const loadImpressionData = async (id: number) => {
     try {
       console.log('[FirstImpressionForm] Loading data for id:', id);
-      setLoadingData(true);
+      safeSetState(setLoadingData, true);
       const data = await firstImpressionService.getById(id);
+      
+      if (!isMountedRef.current) return; // Abort if unmounted
+      
       console.log('[FirstImpressionForm] Data received:', data ? 'OK' : 'null');
       
       if (!data) {
         throw new Error('Dados não encontrados');
       }
 
-      setClientName(data.client_name || '');
-      setClientPhone(data.client_phone || '');
-      setClientEmail(data.client_email || '');
-      setReferredBy(data.referred_by || '');
+      safeSetState(setClientName, data.client_name || '');
+      safeSetState(setClientPhone, data.client_phone || '');
+      safeSetState(setClientEmail, data.client_email || '');
+      safeSetState(setReferredBy, data.referred_by || '');
       
-      setArtigoMatricial(data.artigo_matricial || '');
-      setTipologia(data.tipologia || '');
-      setAreaBruta(data.area_bruta?.toString() || '');
-      setAreaUtil(data.area_util?.toString() || '');
-      setEstadoConservacao(data.estado_conservacao || '');
-      setValorEstimado(data.valor_estimado?.toString() || '');
+      safeSetState(setArtigoMatricial, data.artigo_matricial || '');
+      safeSetState(setTipologia, data.tipologia || '');
+      safeSetState(setAreaBruta, data.area_bruta?.toString() || '');
+      safeSetState(setAreaUtil, data.area_util?.toString() || '');
+      safeSetState(setEstadoConservacao, data.estado_conservacao || '');
+      safeSetState(setValorEstimado, data.valor_estimado?.toString() || '');
       
-      setLocation(data.location || '');
-      setLatitude(data.latitude);
-      setLongitude(data.longitude);
+      safeSetState(setLocation, data.location || '');
+      safeSetState(setLatitude, data.latitude);
+      safeSetState(setLongitude, data.longitude);
       
       // Filtrar e extrair URLs válidas (pode vir como string ou objeto {url: ...})
       console.log('[FirstImpressionForm] Processing photos:', data.photos?.length || 0);
@@ -116,38 +135,42 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
         })
         .filter((url: any) => url && typeof url === 'string' && url.startsWith && (url.startsWith('http://') || url.startsWith('https://')));
       console.log('[FirstImpressionForm] Valid photos:', validPhotos.length);
-      setPhotos(validPhotos);
+      safeSetState(setPhotos, validPhotos);
       
       // Processar attachments com segurança
       console.log('[FirstImpressionForm] Processing attachments:', data.attachments?.length || 0);
-      const safeAttachments = (data.attachments || []).filter((att: any) => att && typeof att === 'object');
-      setAttachments(safeAttachments);
+      const safeAttachmentsList = (data.attachments || []).filter((att: any) => att && typeof att === 'object');
+      safeSetState(setAttachments, safeAttachmentsList);
 
       // Buscar pré-angariação ligada (não bloquear se falhar)
+      if (!isMountedRef.current) return;
       console.log('[FirstImpressionForm] Loading pre-angariacao...');
       try {
         const pre = await preAngariacaoService.getByFirstImpression(id);
+        if (!isMountedRef.current) return;
         console.log('[FirstImpressionForm] Pre-angariacao response:', JSON.stringify(pre).substring(0, 200));
         if (pre && typeof pre === 'object' && pre.id) {
           const preId = Number(pre.id);
           if (!isNaN(preId)) {
             console.log('[FirstImpressionForm] Setting preAngariacaoId:', preId);
-            setPreAngariacaoId(preId);
+            safeSetState(setPreAngariacaoId, preId);
           }
         }
       } catch (e: any) {
         console.log('[FirstImpressionForm] No pre-angariacao found or error:', e?.message || e);
       }
       
-      setObservations(data.observations || '');
-      setStatus((data.status as any) || 'draft');
+      safeSetState(setObservations, data.observations || '');
+      safeSetState(setStatus, (data.status as any) || 'draft');
       console.log('[FirstImpressionForm] ✅ All data loaded successfully');
     } catch (error: any) {
       console.error('[FirstImpressionForm] ❌ Erro ao carregar:', error?.message || error);
-      Alert.alert('Erro', 'Não foi possível carregar os dados');
-      navigation.goBack();
+      if (isMountedRef.current) {
+        Alert.alert('Erro', 'Não foi possível carregar os dados');
+        navigation.goBack();
+      }
     } finally {
-      setLoadingData(false);
+      safeSetState(setLoadingData, false);
     }
   };
 
