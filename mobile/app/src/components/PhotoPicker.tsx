@@ -273,7 +273,10 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({ photos, onPhotosChange
           style={styles.photoScroll}
           contentContainerStyle={styles.photoScrollContent}
         >
-          {photos.filter(uri => uri && (uri.startsWith('http://') || uri.startsWith('https://'))).map((uri, index) => (
+          {photos
+            .map((item, index) => ({ uri: typeof item === 'string' ? item : (item as any)?.url || (item as any)?.uri, index }))
+            .filter(({ uri }) => uri && typeof uri === 'string' && (uri.startsWith('http://') || uri.startsWith('https://')))
+            .map(({ uri, index }) => (
             <View key={`${uri}-${index}`} style={styles.photoContainer}>
               <Image source={{ uri }} style={styles.photo} />
               <TouchableOpacity

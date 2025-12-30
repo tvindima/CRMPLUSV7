@@ -582,16 +582,16 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
           {attachments.length === 0 ? (
             <Text style={styles.emptyAttachments}>Sem documentos anexados.</Text>
           ) : (
-            attachments.map((att, idx) => (
+            attachments.filter(att => att && att.url).map((att, idx) => (
               <TouchableOpacity
                 key={`${att.url}-${idx}`}
                 style={styles.attachmentItem}
-                onPress={() => Linking.openURL(att.url)}
+                onPress={() => att.url && Linking.openURL(att.url)}
               >
                 <View style={styles.attachmentInfo}>
                   <Ionicons name="document-text-outline" size={18} color="#9ca3af" />
                   <View>
-                    <Text style={styles.attachmentName}>{att.name}</Text>
+                    <Text style={styles.attachmentName}>{att.name || 'Documento'}</Text>
                     {att.type && <Text style={styles.attachmentMeta}>{att.type}</Text>}
                   </View>
                 </View>
