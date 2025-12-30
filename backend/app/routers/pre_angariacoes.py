@@ -377,46 +377,63 @@ def atualizar_pre_angariacao(
     """
     Atualizar dados de uma pré-angariação
     """
-    if not current_user.agent_id:
-        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
-    
-    item = db.query(PreAngariacao).filter(
-        PreAngariacao.id == pre_angariacao_id,
-        PreAngariacao.agent_id == current_user.agent_id
-    ).first()
-    
-    if not item:
-        raise HTTPException(status_code=404, detail="Pré-angariação não encontrada")
-    
-    payload = data.model_dump(exclude_unset=True)
-    fotos_payload = payload.pop("fotos", None)
-
-    # Atualizar campos simples
-    for field, value in payload.items():
-        setattr(item, field, value)
-
-    # Substituir fotos se enviadas
-    if fotos_payload is not None:
-        item.fotos = fotos_payload
-        flag_modified(item, "fotos")
-
-    # Sincronizar dados básicos na 1ª impressão se existir
     try:
-        if item.first_impression_id and item.proprietario_nome:
-            fi = db.query(FirstImpression).filter(FirstImpression.id == item.first_impression_id).first()
-            if fi:
-                fi.client_name = item.proprietario_nome
-                if item.proprietario_nif:
-                    fi.client_nif = item.proprietario_nif
+        if not current_user.agent_id:
+            raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+        
+        item = db.query(PreAngariacao).filter(
+            PreAngariacao.id == pre_angariacao_id,
+            PreAngariacao.agent_id == current_user.agent_id
+        ).first()
+        
+        if not item:
+            raise HTTPException(status_code=404, detail="Pré-angariação não encontrada")
+        
+        payload = data.model_dump(exclude_unset=True)
+        fotos_payload = payload.pop("fotos", None)
+
+        # Atualizar campos simples
+        for field, value in payload.items():
+            setattr(item, field, value)
+
+        # Substituir fotos se enviadas
+        if fotos_payload is not None:
+            # Converter para dicts se forem objetos Pydantic
+            fotos_list = []
+            for foto in fotos_payload:
+                if hasattr(foto, 'model_dump'):
+                    fotos_list.append(foto.model_dump())
+                elif isinstance(foto, dict):
+                    fotos_list.append(foto)
+                else:
+                    fotos_list.append(dict(foto))
+            item.fotos = fotos_list
+            flag_modified(item, "fotos")
+            logger.info(f"Fotos atualizadas para PA {pre_angariacao_id}: {len(fotos_list)} fotos")
+
+        # Sincronizar dados básicos na 1ª impressão se existir
+        try:
+            if item.first_impression_id and item.proprietario_nome:
+                fi = db.query(FirstImpression).filter(FirstImpression.id == item.first_impression_id).first()
+                if fi:
+                    fi.client_name = item.proprietario_nome
+                    if item.proprietario_nif:
+                        fi.client_nif = item.proprietario_nif
                 if item.proprietario_telefone:
                     fi.client_phone = item.proprietario_telefone
                 fi.updated_at = func.now()
-    except Exception as e:
-        logger.warning(f"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}")
+        except Exception as e:
+            logger.warning(f"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}")
 
-    db.commit()
-    db.refresh(item)
-    return item
+        db.commit()
+        db.refresh(item)
+        return item
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar pré-angariação {pre_angariacao_id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
 @router.delete("/{pre_angariacao_id}")
