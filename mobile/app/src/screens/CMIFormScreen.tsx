@@ -725,11 +725,23 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             camposPreenchidos++;
           }
           if (dados.tipo_imovel) {
-            setImovelTipo(dados.tipo_imovel);
+            // ACUMULAR tipos de imóvel (ex: "Habitação + Arrecadação")
+            setImovelTipo((prev) => {
+              if (!prev || prev.trim() === '') return dados.tipo_imovel;
+              // Verificar se já existe este tipo
+              if (prev.toLowerCase().includes(dados.tipo_imovel.toLowerCase())) return prev;
+              return `${prev} + ${dados.tipo_imovel}`;
+            });
             camposPreenchidos++;
           }
           if (dados.tipologia) {
-            setImovelTipologia(dados.tipologia);
+            // ACUMULAR tipologias (ex: "T4 + Arrecadações")
+            setImovelTipologia((prev) => {
+              if (!prev || prev.trim() === '') return dados.tipologia;
+              // Verificar se já existe esta tipologia
+              if (prev.toLowerCase().includes(dados.tipologia.toLowerCase())) return prev;
+              return `${prev} + ${dados.tipologia}`;
+            });
             camposPreenchidos++;
           }
           if (dados.area_bruta) {
