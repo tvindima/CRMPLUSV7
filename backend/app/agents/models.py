@@ -25,6 +25,8 @@ class Agent(Base):
     instagram = Column(String(255), nullable=True)
     facebook = Column(String(255), nullable=True)
     linkedin = Column(String(255), nullable=True)
+    twitter = Column(String(255), nullable=True)  # X.com
+    tiktok = Column(String(255), nullable=True)
     whatsapp = Column(String(50), nullable=True)
     
     # Relationships

@@ -183,6 +183,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     """
     Handler genérico para erros não tratados (500)
     Evita expor stack traces ao cliente
+    Adiciona headers CORS para que o browser possa ler o erro
     """
     import logging
     import traceback
@@ -191,12 +192,29 @@ async def generic_exception_handler(request: Request, exc: Exception):
     stack_trace = traceback.format_exc()
     logger.error(f"Unhandled exception: {error_detail}\n{stack_trace}")
     
+    # Determinar origin para CORS
+    origin = request.headers.get("origin", "")
+    cors_headers = {}
+    
+    # Verificar se a origem é permitida
+    if origin in PRODUCTION_ORIGINS or origin.endswith(".vercel.app"):
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    elif origin.startswith("http://localhost:"):
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        headers=cors_headers,
         content={
             "error": "Erro interno do servidor",
-            # Não expor o detalhe em produção
-            "detail": "Ocorreu um erro inesperado. Tente novamente ou contacte o suporte.",
+            # Em dev, mostrar o erro real para debug
+            "detail": error_detail if os.environ.get("RAILWAY_ENVIRONMENT") else "Ocorreu um erro inesperado. Tente novamente ou contacte o suporte.",
             "support": "Se o problema persistir, contacte o suporte."
         }
     )
