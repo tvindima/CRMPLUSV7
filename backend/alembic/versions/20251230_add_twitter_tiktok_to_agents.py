@@ -1,7 +1,7 @@
 """add twitter and tiktok columns to agents table
 
 Revision ID: 20251230_agents_social
-Revises: 
+Revises: 20251229_remove_fk
 Create Date: 2025-12-30
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20251230_agents_social'
-down_revision = None
+down_revision = '20251229_remove_fk'
 branch_labels = None
 depends_on = None
 
