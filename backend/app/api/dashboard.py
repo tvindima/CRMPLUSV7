@@ -358,8 +358,8 @@ def distribute_leads_automatically(
     - workload-balanced: Equilibra workload entre agentes
     """
     try:
-        # Buscar agentes ativos
-        agents = db.query(Agent).filter(Agent.active == True).all()
+        # Buscar todos os agentes (exceto agência principal)
+        agents = db.query(Agent).filter(Agent.name != "Imóveis Mais Leiria").all()
         if not agents:
             raise HTTPException(status_code=400, detail="Nenhum agente ativo disponível")
         
