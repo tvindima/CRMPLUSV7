@@ -113,6 +113,41 @@ def require_staff(req: Request, db: Session = Depends(lambda: None)):
     return user
 
 
+def get_optional_user(req: Request, db: Session = Depends(lambda: None)) -> Optional["User"]:
+    """
+    Dependency para obter utilizador autenticado, se existir.
+    Retorna None se não houver autenticação (para endpoints públicos).
+    """
+    from app.database import get_db
+    from app.users.models import User
+    
+    if db is None:
+        db = next(get_db())
+    
+    token = extract_token(req)
+    if not token:
+        return None  # Sem autenticação - acesso público
+    
+    try:
+        payload = decode_token(token)
+    except Exception:
+        return None  # Token inválido - tratar como acesso público
+    
+    user_id = payload.get("user_id")
+    email = payload.get("email")
+    
+    if user_id:
+        user = db.query(User).filter(User.id == user_id).first()
+    elif email:
+        user = db.query(User).filter(User.email == email).first()
+    else:
+        return None
+    
+    if user and user.is_active:
+        return user
+    return None
+
+
 def require_admin(req: Request, db: Session = Depends(lambda: None)):
     """Requer utilizador com role admin"""
     user = get_current_user(req, db)

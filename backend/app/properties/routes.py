@@ -10,7 +10,7 @@ from . import services, schemas
 from app.database import get_db
 from app.properties.models import PropertyStatus, Property
 from app.core.storage import storage  # Storage abstraction layer
-from app.security import require_staff, get_current_user
+from app.security import require_staff, get_current_user, get_optional_user
 from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -292,18 +292,30 @@ def list_properties(
     status: str | None = None,
     is_published: int | None = None,
     agent_id: int | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
+    """
+    Listar propriedades.
+    
+    Comportamento por tipo de acesso:
+    - Sem autenticação (site público): apenas imóveis publicados (is_published=1)
+    - Agent autenticado: apenas os seus imóveis
+    - Admin/Staff/Leader: todos os imóveis
+    """
     # Perfis com permissão total
     privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
-    is_admin = current_user.role in privileged_roles
     
-    # Agentes só veem os seus imóveis
-    if not is_admin:
+    if current_user is None:
+        # Acesso público - apenas imóveis publicados
+        is_published = 1
+    elif current_user.role in privileged_roles:
+        # Admin/Staff - pode ver todos
+        pass
+    else:
+        # Agente - só vê os seus imóveis
         if not current_user.agent_id:
             raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
-        # Força filtro pelo agent_id do utilizador
         agent_id = current_user.agent_id
     
     return services.get_properties(
@@ -320,19 +332,34 @@ def list_properties(
 @router.get("/{property_id}", response_model=schemas.PropertyOut)
 def get_property(
     property_id: int, 
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Obter detalhes de uma propriedade.
+    
+    Comportamento por tipo de acesso:
+    - Sem autenticação: apenas se imóvel estiver publicado
+    - Agent autenticado: apenas se for o seu imóvel
+    - Admin/Staff/Leader: qualquer imóvel
+    """
     property = services.get_property(db, property_id)
     if not property:
         raise HTTPException(status_code=404, detail="Property not found")
     
-    # Verificar permissões - agentes só veem os seus imóveis
     privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
-    is_admin = current_user.role in privileged_roles
     
-    if not is_admin and property.agent_id != current_user.agent_id:
-        raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
+    if current_user is None:
+        # Acesso público - apenas se publicado
+        if property.is_published != 1:
+            raise HTTPException(status_code=404, detail="Property not found")
+    elif current_user.role in privileged_roles:
+        # Admin/Staff - pode ver qualquer imóvel
+        pass
+    else:
+        # Agente - só pode ver os seus
+        if property.agent_id != current_user.agent_id:
+            raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
     
     return property
 
