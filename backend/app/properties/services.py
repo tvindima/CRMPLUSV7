@@ -11,8 +11,11 @@ def get_properties(
     search: str | None = None,
     status: str | None = None,
     is_published: int | None = None,
+    agent_id: int | None = None,
 ):
     query = db.query(Property)
+    if agent_id:
+        query = query.filter(Property.agent_id == agent_id)
     if search:
         like = f"%{search}%"
         query = query.filter(Property.title.ilike(like) | Property.reference.ilike(like) | Property.location.ilike(like))

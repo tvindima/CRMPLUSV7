@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 
 const STAFF_COOKIE = "crmplus_staff_session";
 const LOGIN_PATH = "/backoffice/login";
-const ALLOWED_ROLES = new Set(["staff", "admin", "leader"]);
+const ALLOWED_ROLES = new Set(["staff", "admin", "leader", "agent"]);
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 async function verifyStaffToken(token: string) {

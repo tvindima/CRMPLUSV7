@@ -8,9 +8,10 @@ import io
 import requests
 from . import services, schemas
 from app.database import get_db
-from app.properties.models import PropertyStatus
+from app.properties.models import PropertyStatus, Property
 from app.core.storage import storage  # Storage abstraction layer
-from app.security import require_staff
+from app.security import require_staff, get_current_user
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
@@ -290,8 +291,21 @@ def list_properties(
     search: str | None = None,
     status: str | None = None,
     is_published: int | None = None,
+    agent_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Perfis com permissão total
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    
+    # Agentes só veem os seus imóveis
+    if not is_admin:
+        if not current_user.agent_id:
+            raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+        # Força filtro pelo agent_id do utilizador
+        agent_id = current_user.agent_id
+    
     return services.get_properties(
         db,
         skip=skip,
@@ -299,14 +313,27 @@ def list_properties(
         search=search,
         status=status,
         is_published=is_published,
+        agent_id=agent_id,
     )
 
 
 @router.get("/{property_id}", response_model=schemas.PropertyOut)
-def get_property(property_id: int, db: Session = Depends(get_db)):
+def get_property(
+    property_id: int, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     property = services.get_property(db, property_id)
     if not property:
         raise HTTPException(status_code=404, detail="Property not found")
+    
+    # Verificar permissões - agentes só veem os seus imóveis
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    
+    if not is_admin and property.agent_id != current_user.agent_id:
+        raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
+    
     return property
 
 
