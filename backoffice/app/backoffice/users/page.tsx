@@ -9,14 +9,23 @@ interface UserData {
   full_name: string
   phone?: string
   avatar_url?: string
-  role: 'admin' | 'coordinator' | 'agent'
+  role: 'admin' | 'coordinator' | 'agent' | 'assistant' | 'staff' | 'leader'
   is_active: boolean
   created_at: string
+  agent_id?: number | null
+  works_for_agent_id?: number | null
+}
+
+interface Agent {
+  id: number
+  name: string
+  email: string
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserData[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -30,12 +39,14 @@ export default function UsersPage() {
     full_name: '',
     password: '',
     phone: '',
-    role: 'agent' as 'admin' | 'coordinator' | 'agent',
+    role: 'agent' as 'admin' | 'coordinator' | 'agent' | 'assistant' | 'staff' | 'leader',
     is_active: true,
+    works_for_agent_id: null as number | null,
   })
 
   useEffect(() => {
     fetchUsers()
+    fetchAgents()
   }, [])
 
   useEffect(() => {
@@ -53,6 +64,18 @@ export default function UsersPage() {
       console.error('Failed to fetch users:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch('/api/agents')
+      if (res.ok) {
+        const data = await res.json()
+        setAgents(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch agents:', error)
     }
   }
 
@@ -88,6 +111,7 @@ export default function UsersPage() {
       phone: '',
       role: 'agent',
       is_active: true,
+      works_for_agent_id: null,
     })
     setShowModal(true)
   }
@@ -101,6 +125,7 @@ export default function UsersPage() {
       phone: user.phone || '',
       role: user.role,
       is_active: user.is_active,
+      works_for_agent_id: user.works_for_agent_id || null,
     })
     setShowModal(true)
   }
@@ -177,19 +202,25 @@ export default function UsersPage() {
   }
 
   const getRoleBadge = (role: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       admin: 'bg-red-100 text-red-800',
       coordinator: 'bg-blue-100 text-blue-800',
       agent: 'bg-green-100 text-green-800',
+      assistant: 'bg-purple-100 text-purple-800',
+      staff: 'bg-orange-100 text-orange-800',
+      leader: 'bg-yellow-100 text-yellow-800',
     }
-    const labels = {
+    const labels: Record<string, string> = {
       admin: 'Admin',
       coordinator: 'Coordenador',
       agent: 'Agente',
+      assistant: 'Assistente',
+      staff: 'Staff',
+      leader: 'Líder',
     }
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[role as keyof typeof colors]}`}>
-        {labels[role as keyof typeof labels]}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[role] || 'bg-gray-100 text-gray-800'}`}>
+        {labels[role] || role}
       </span>
     )
   }
@@ -246,6 +277,9 @@ export default function UsersPage() {
             <option value="admin">Admin</option>
             <option value="coordinator">Coordenador</option>
             <option value="agent">Agente</option>
+            <option value="assistant">Assistente</option>
+            <option value="staff">Staff</option>
+            <option value="leader">Líder</option>
           </select>
 
           <select
@@ -269,12 +303,15 @@ export default function UsersPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trabalha para</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
+            {filteredUsers.map((user) => {
+              const worksForAgent = user.works_for_agent_id ? agents.find(a => a.id === user.works_for_agent_id) : null
+              return (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -300,6 +337,9 @@ export default function UsersPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {getRoleBadge(user.role)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {worksForAgent ? worksForAgent.name : '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -336,7 +376,8 @@ export default function UsersPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
 
@@ -416,15 +457,38 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any, works_for_agent_id: null })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="agent">Agente</option>
+                  <option value="assistant">Assistente</option>
                   <option value="coordinator">Coordenador</option>
+                  <option value="staff">Staff</option>
+                  <option value="leader">Líder</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
+
+              {formData.role === 'assistant' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Trabalha para (Agente)
+                  </label>
+                  <select
+                    value={formData.works_for_agent_id || ''}
+                    onChange={(e) => setFormData({ ...formData, works_for_agent_id: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Selecione um agente...</option>
+                    {agents.map((agent) => (
+                      <option key={agent.id} value={agent.id}>
+                        {agent.name} ({agent.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex items-center">
                 <input
