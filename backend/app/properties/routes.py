@@ -11,7 +11,7 @@ from app.database import get_db
 from app.properties.models import PropertyStatus, Property
 from app.core.storage import storage  # Storage abstraction layer
 from app.security import require_staff, get_current_user, get_optional_user
-from app.models.user import User, UserRole
+from app.users.models import User, UserRole
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
