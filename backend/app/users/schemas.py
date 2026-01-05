@@ -27,6 +27,8 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     agent_id: Optional[int] = None
     works_for_agent_id: Optional[int] = None
+    role_label: Optional[str] = None  # Label público (ex: "Direção FRH")
+    display_name: Optional[str] = None  # Nome público para o site
 
 
 class UserUpdatePassword(BaseModel):
@@ -40,6 +42,8 @@ class UserOut(UserBase):
     is_active: bool
     agent_id: Optional[int]
     works_for_agent_id: Optional[int] = None
+    role_label: Optional[str] = None
+    display_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
