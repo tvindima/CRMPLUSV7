@@ -94,12 +94,13 @@ export function optimizeStaffAvatarUrl(url: string | null | undefined): string |
     return url;
   }
   
-  // Transformações: remover fundo + formato automático + qualidade
-  const transformations = 'e_background_removal,f_auto,q_auto:best';
+  // Transformações: remover fundo + redimensionar para altura uniforme (90%) + formato automático + qualidade
+  // w_0.9 = 90% da largura original para uniformizar tamanhos
+  const transformations = 'e_background_removal,c_scale,h_600,f_auto,q_auto:best';
   
-  // Se já tem remoção de fundo, não duplicar
+  // Se já tem remoção de fundo, apenas adicionar redimensionamento
   if (url.includes('e_background_removal') || url.includes('e_bgremoval')) {
-    return url.replace('/upload/', '/upload/f_auto,q_auto:best/');
+    return url.replace('/upload/', '/upload/c_scale,h_600,f_auto,q_auto:best/');
   }
   
   return url.replace('/upload/', `/upload/${transformations}/`);
