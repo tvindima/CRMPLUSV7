@@ -21,15 +21,20 @@ def list_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 @router.get("/staff", response_model=list[dict])
 def list_public_staff(db: Session = Depends(get_db)):
     """
-    Listar staff público (assistentes, coordenadores, etc.)
+    Listar staff público (assistentes, coordenadores, direção, etc.)
     Endpoint PÚBLICO para o site web.
-    Exclui agentes e admins.
+    Inclui: assistentes, coordenadores, e qualquer user com role_label definido.
     """
     from app.agents.models import Agent
+    from sqlalchemy import or_
     
+    # Incluir assistentes, coordenadores, ou qualquer user com role_label (ex: Direção FRH)
     staff = db.query(User).filter(
-        User.role.in_([UserRole.ASSISTANT.value, UserRole.COORDINATOR.value]),
-        User.is_active == True
+        User.is_active == True,
+        or_(
+            User.role.in_([UserRole.ASSISTANT.value, UserRole.COORDINATOR.value]),
+            User.role_label.isnot(None)  # Qualquer user com cargo público definido
+        )
     ).all()
     
     result = []
