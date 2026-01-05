@@ -300,11 +300,15 @@ def list_properties(
     
     Comportamento por tipo de acesso:
     - Sem autenticação (site público): apenas imóveis publicados (is_published=1)
-    - Agent autenticado: apenas os seus imóveis
+    - Agent autenticado: imóveis da sua equipa (ou só os seus se não tiver equipa)
     - Admin/Staff/Leader: todos os imóveis
     """
+    from app.agents.models import Agent
+    
     # Perfis com permissão total
     privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    
+    team_agent_ids = None  # Lista de agent_ids da equipa
     
     if current_user is None:
         # Acesso público - apenas imóveis publicados
@@ -313,10 +317,20 @@ def list_properties(
         # Admin/Staff - pode ver todos
         pass
     else:
-        # Agente - só vê os seus imóveis
+        # Agente - vê os imóveis da sua equipa
         if not current_user.agent_id:
             raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
-        agent_id = current_user.agent_id
+        
+        # Buscar o agente para saber a equipa
+        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+        
+        if agent and agent.team_id:
+            # Buscar todos os agentes da mesma equipa
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+        else:
+            # Sem equipa - só vê os seus imóveis
+            agent_id = current_user.agent_id
     
     return services.get_properties(
         db,
@@ -326,6 +340,7 @@ def list_properties(
         status=status,
         is_published=is_published,
         agent_id=agent_id,
+        agent_ids=team_agent_ids,
     )
 
 
@@ -340,9 +355,11 @@ def get_property(
     
     Comportamento por tipo de acesso:
     - Sem autenticação: apenas se imóvel estiver publicado
-    - Agent autenticado: apenas se for o seu imóvel
+    - Agent autenticado: apenas se for da sua equipa
     - Admin/Staff/Leader: qualquer imóvel
     """
+    from app.agents.models import Agent
+    
     property = services.get_property(db, property_id)
     if not property:
         raise HTTPException(status_code=404, detail="Property not found")
@@ -357,9 +374,19 @@ def get_property(
         # Admin/Staff - pode ver qualquer imóvel
         pass
     else:
-        # Agente - só pode ver os seus
-        if property.agent_id != current_user.agent_id:
-            raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
+        # Agente - só pode ver imóveis da sua equipa
+        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+        
+        if agent and agent.team_id:
+            # Verificar se o imóvel pertence a alguém da equipa
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+            if property.agent_id not in team_agent_ids:
+                raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
+        else:
+            # Sem equipa - só pode ver os seus
+            if property.agent_id != current_user.agent_id:
+                raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
     
     return property
 

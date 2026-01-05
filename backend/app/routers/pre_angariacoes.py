@@ -39,8 +39,10 @@ def listar_pre_angariacoes(
     db: Session = Depends(get_db)
 ):
     """
-    Listar todas as pré-angariações do agente
+    Listar todas as pré-angariações da equipa do agente
     """
+    from app.agents.models import Agent
+    
     # Perfis com permissão total
     privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
     is_admin = current_user.role in privileged_roles
@@ -51,7 +53,17 @@ def listar_pre_angariacoes(
     query = db.query(PreAngariacao).options(joinedload(PreAngariacao.agent))
 
     if not is_admin:
-        query = query.filter(PreAngariacao.agent_id == current_user.agent_id, PreAngariacao.status != PreAngariacaoStatus.CANCELADO)
+        # Buscar o agente para saber a equipa
+        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+        
+        if agent and agent.team_id:
+            # Buscar todos os agentes da mesma equipa
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+            query = query.filter(PreAngariacao.agent_id.in_(team_agent_ids), PreAngariacao.status != PreAngariacaoStatus.CANCELADO)
+        else:
+            # Sem equipa - só vê as suas
+            query = query.filter(PreAngariacao.agent_id == current_user.agent_id, PreAngariacao.status != PreAngariacaoStatus.CANCELADO)
     elif agent_id:
         query = query.filter(PreAngariacao.agent_id == agent_id)
     

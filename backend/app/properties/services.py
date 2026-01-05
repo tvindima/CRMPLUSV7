@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from .models import Property, PropertyStatus
 from .schemas import PropertyCreate, PropertyUpdate
@@ -12,10 +13,16 @@ def get_properties(
     status: str | None = None,
     is_published: int | None = None,
     agent_id: int | None = None,
+    agent_ids: List[int] | None = None,
 ):
     query = db.query(Property)
-    if agent_id:
+    
+    # Filtro por lista de agentes (equipa) tem prioridade sobre agent_id único
+    if agent_ids:
+        query = query.filter(Property.agent_id.in_(agent_ids))
+    elif agent_id:
         query = query.filter(Property.agent_id == agent_id)
+    
     if search:
         like = f"%{search}%"
         query = query.filter(Property.title.ilike(like) | Property.reference.ilike(like) | Property.location.ilike(like))
