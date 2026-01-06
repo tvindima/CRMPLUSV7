@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "../context/roleContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Menu ÁREA DE CLIENTE no site web
 const links = [
@@ -19,10 +19,20 @@ const ferramentas = [
 ];
 
 export function Sidebar() {
-  const { role, isAuthenticated, user } = useRole();
+  const { role, isAuthenticated } = useRole();
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    // Tentar obter dados do utilizador do localStorage ou session
+    const storedName = localStorage.getItem('userName') || 'Cliente';
+    const storedEmail = localStorage.getItem('userEmail') || '';
+    setUserName(storedName);
+    setUserEmail(storedEmail);
+  }, []);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -51,8 +61,8 @@ export function Sidebar() {
     <aside className="hidden w-64 flex-shrink-0 border-r border-[#1F1F22] bg-[#0F0F10] p-5 md:block">
       {/* User Info */}
       <div className="pb-6 border-b border-[#1F1F22]">
-        <p className="text-white font-semibold">{user?.name || 'Cliente'}</p>
-        <p className="text-xs text-[#888]">{user?.email || ''}</p>
+        <p className="text-white font-semibold">{userName}</p>
+        <p className="text-xs text-[#888]">{userEmail}</p>
       </div>
 
       {/* Menu principal */}
