@@ -43,7 +43,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        const response = await fetch(`${apiUrl}/admin/settings/branding`);
+        // Usar endpoint público (sem autenticação)
+        const response = await fetch(`${apiUrl}/public/branding`);
         
         if (response.ok) {
           const data = await response.json();

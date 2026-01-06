@@ -115,6 +115,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =====================================================
+# ENDPOINT PÚBLICO DE BRANDING (SEM AUTENTICAÇÃO)
+# =====================================================
+# Este endpoint é público para que os frontends possam 
+# obter o branding da agência sem necessidade de login
+
+@app.get("/public/branding")
+def get_public_branding(db: Session = Depends(get_db)):
+    """
+    Obter configurações de branding da agência.
+    
+    PÚBLICO - Não requer autenticação.
+    Usado pelos frontends (web, backoffice) para exibir logo e nome corretos.
+    """
+    from app.models.crm_settings import CRMSettings
+    
+    settings = db.query(CRMSettings).first()
+    
+    if not settings:
+        return {
+            "agency_name": "CRM Plus",
+            "agency_slogan": "Sistema Imobiliário",
+            "agency_logo_url": None,
+            "primary_color": "#E10600"
+        }
+    
+    return {
+        "agency_name": settings.agency_name or "CRM Plus",
+        "agency_slogan": settings.agency_slogan or "Sistema Imobiliário",
+        "agency_logo_url": settings.agency_logo_url,
+        "primary_color": settings.primary_color or "#E10600"
+    }
+
+
 app.include_router(leads_router)
 
 
