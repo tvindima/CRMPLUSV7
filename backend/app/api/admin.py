@@ -602,6 +602,112 @@ def delete_watermark_image(
     return {"success": True, "message": "Marca de água removida"}
 
 
+# =====================================================
+# BRANDING - CONFIGURAÇÕES DE MARCA DO SITE
+# =====================================================
+
+class BrandingSettingsUpdate(BaseModel):
+    """Schema para atualizar configurações de branding"""
+    agency_name: Optional[str] = None
+    agency_slogan: Optional[str] = None
+    agency_logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
+
+
+class BrandingSettingsOut(BaseModel):
+    """Schema de resposta das configurações de branding"""
+    agency_name: str
+    agency_slogan: str
+    agency_logo_url: Optional[str]
+    primary_color: str
+    
+    class Config:
+        from_attributes = True
+
+
+@router.get("/settings/branding", response_model=BrandingSettingsOut)
+def get_branding_settings(
+    db: Session = Depends(get_db)
+):
+    """
+    Obter configurações de branding do site.
+    
+    PÚBLICO - Não requer autenticação para que o frontend possa consultar.
+    
+    Retorna:
+    - agency_name: Nome da agência
+    - agency_slogan: Slogan da agência
+    - agency_logo_url: URL do logo
+    - primary_color: Cor principal
+    """
+    settings = db.query(CRMSettings).first()
+    
+    if not settings:
+        # Criar settings padrão se não existir
+        settings = CRMSettings(
+            agency_name="Luis Carlos Gaspar",
+            agency_slogan="By: ZOME",
+            primary_color="#E10600"
+        )
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    
+    return BrandingSettingsOut(
+        agency_name=settings.agency_name or "Luis Carlos Gaspar",
+        agency_slogan=settings.agency_slogan or "By: ZOME",
+        agency_logo_url=settings.agency_logo_url,
+        primary_color=settings.primary_color or "#E10600"
+    )
+
+
+@router.put("/settings/branding", response_model=BrandingSettingsOut)
+def update_branding_settings(
+    update: BrandingSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Atualizar configurações de branding do site.
+    
+    Requer autenticação de staff.
+    
+    Parâmetros:
+    - agency_name: Nome da agência
+    - agency_slogan: Slogan da agência  
+    - agency_logo_url: URL do logo
+    - primary_color: Cor principal (hex)
+    """
+    settings = db.query(CRMSettings).first()
+    
+    if not settings:
+        settings = CRMSettings()
+        db.add(settings)
+    
+    # Atualizar campos fornecidos
+    if update.agency_name is not None:
+        settings.agency_name = update.agency_name
+    
+    if update.agency_slogan is not None:
+        settings.agency_slogan = update.agency_slogan
+    
+    if update.agency_logo_url is not None:
+        settings.agency_logo_url = update.agency_logo_url
+    
+    if update.primary_color is not None:
+        settings.primary_color = update.primary_color
+    
+    db.commit()
+    db.refresh(settings)
+    
+    return BrandingSettingsOut(
+        agency_name=settings.agency_name or "Luis Carlos Gaspar",
+        agency_slogan=settings.agency_slogan or "By: ZOME",
+        agency_logo_url=settings.agency_logo_url,
+        primary_color=settings.primary_color or "#E10600"
+    )
+
+
 # ============ GESTÃO DE UTILIZADORES ============
 
 @router.get("/users/list")

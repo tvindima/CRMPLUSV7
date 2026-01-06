@@ -30,6 +30,7 @@ class CRMSettings(Base):
     # ==========================================
     agency_name = Column(String, default="CRM Plus")
     agency_logo_url = Column(String, nullable=True)
+    agency_slogan = Column(String, default="Powered by CRM Plus")
     primary_color = Column(String, default="#E10600")  # Vermelho CRM Plus
     
     # ==========================================
