@@ -723,6 +723,9 @@ export default function Page() {
           </div>
           <div className="mt-12 border-t border-pink-500/10 pt-8 text-center text-sm text-gray-500">
             <p>© {new Date().getFullYear()} {t.footer.copyright}</p>
+            <a href="/support-access" className="mt-2 inline-block text-gray-600 hover:text-gray-500 transition text-xs">
+              Platform Support
+            </a>
           </div>
         </div>
       </footer>
