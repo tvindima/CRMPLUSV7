@@ -74,8 +74,8 @@ app = FastAPI(
 # CORS CONFIGURATION
 # ========================================
 
-# Domínios permitidos em produção
-PRODUCTION_ORIGINS = [
+# Domínios base permitidos em produção (Imóveis Mais)
+BASE_PRODUCTION_ORIGINS = [
     "https://backoffice.imoveismais.com",
     "https://www.imoveismais.com",
     "https://imoveismais.com",
@@ -87,10 +87,18 @@ PRODUCTION_ORIGINS = [
 CORS_ORIGINS_ENV = os.environ.get("CORS_ORIGINS", "")
 
 if os.environ.get("RAILWAY_ENVIRONMENT"):
-    # Em Railway/produção: usar lista específica + regex para previews
-    ALLOWED_ORIGINS = PRODUCTION_ORIGINS
+    # Em Railway/produção: usar lista base + domínios da variável de ambiente
+    ALLOWED_ORIGINS = BASE_PRODUCTION_ORIGINS.copy()
+    
+    # Adicionar domínios da variável CORS_ORIGINS (se definida)
+    if CORS_ORIGINS_ENV:
+        extra_origins = [origin.strip() for origin in CORS_ORIGINS_ENV.split(",") if origin.strip()]
+        ALLOWED_ORIGINS.extend(extra_origins)
+    
     ALLOW_CREDENTIALS = True
     ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+    
+    print(f"[CORS] Allowed origins: {ALLOWED_ORIGINS}")
 elif CORS_ORIGINS_ENV == "*":
     ALLOWED_ORIGINS = ["*"]
     ALLOW_CREDENTIALS = False

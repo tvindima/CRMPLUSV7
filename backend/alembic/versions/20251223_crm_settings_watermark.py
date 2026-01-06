@@ -6,6 +6,7 @@ Create Date: 2024-12-23
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20251223_crm_settings_watermark'
@@ -14,11 +15,23 @@ branch_labels = None
 depends_on = None
 
 
+def table_exists(table_name):
+    """Verifica se uma tabela já existe"""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
 def upgrade() -> None:
     """
     Criar tabela crm_settings para configurações globais da agência.
     Inclui watermark, branding e limites de upload.
     """
+    # Verificar se tabela já existe (idempotente)
+    if table_exists('crm_settings'):
+        print("[MIGRATION] Skipping - crm_settings already exists")
+        return
+    
     op.create_table(
         'crm_settings',
         sa.Column('id', sa.Integer(), primary_key=True, index=True),
