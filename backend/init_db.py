@@ -26,10 +26,10 @@ def init_db():
     from app.models.agent_site_preferences import AgentSitePreferences
     
     # Business/Legal models
-    from app.models.contrato_mediacao import ContratoMediacaoImovel
+    from app.models.contrato_mediacao import ContratoMediacaoImobiliaria
     from app.models.pre_angariacao import PreAngariacao
     from app.models.crm_settings import CRMSettings
-    from app.models.website_client import WebsiteClient
+    from app.models.website_client import WebsiteClient, LeadDistributionCounter
     
     # Organization models
     from app.teams.models import Team
