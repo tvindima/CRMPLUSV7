@@ -22,8 +22,9 @@ const links = [
   { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
   { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
   { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
-  { href: "/backoffice/config", label: "Configurações", roles: ["admin", "staff"], isManagement: true },
-  { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true, isSubItem: true },
+  { href: "/backoffice/config/branding", label: "🎨 Branding Site", roles: ["admin", "staff"], isManagement: true },
+  { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true },
+  { href: "/backoffice/config", label: "⚙️ Configurações", roles: ["admin", "staff"], isManagement: true },
 ];
 
 const iconCircle = (

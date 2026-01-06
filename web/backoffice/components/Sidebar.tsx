@@ -6,20 +6,14 @@ import { useRole } from "../context/roleContext";
 import { BrandImage } from "../../components/BrandImage";
 import { useState } from "react";
 
+// Menu simplificado para ÁREA DE CLIENTE (não é backoffice de gestão)
 const links = [
-  { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/imoveis", label: "Propriedades", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/agenda", label: "Visitas", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/agentes", label: "Angariações", roles: ["leader", "admin", "staff"] },
-  { href: "/backoffice/feeds", label: "Feeds", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/config", label: "Configurações", roles: ["admin", "leader", "agent", "staff"] },
-];
-
-// Atalhos rápidos (quick actions) - só para admin/staff
-const quickActions = [
-  { href: "/backoffice/agentes/novo", label: "RH+", title: "Novo Membro Staff", icon: "👤", roles: ["admin", "staff"] },
-  { href: "/backoffice/imoveis/novo", label: "Imóvel+", title: "Novo Imóvel", icon: "🏠", roles: ["admin", "staff", "agent"] },
+  { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["client", "agent", "leader", "admin", "staff"] },
+  { href: "/backoffice/favoritos", label: "Favoritos", roles: ["client"] },
+  { href: "/backoffice/pesquisas", label: "Pesquisas Guardadas", roles: ["client"] },
+  { href: "/backoffice/visitas", label: "Minhas Visitas", roles: ["client"] },
+  { href: "/backoffice/propostas", label: "Minhas Propostas", roles: ["client"] },
+  { href: "/backoffice/perfil", label: "Meu Perfil", roles: ["client", "agent", "leader", "admin", "staff"] },
 ];
 
 const iconCircle = (
@@ -30,6 +24,22 @@ export function Sidebar() {
   const { role, isAuthenticated } = useRole();
   const pathname = usePathname();
   const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      router.push('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -39,34 +49,12 @@ export function Sidebar() {
     );
   }
 
-  const availableQuickActions = quickActions.filter((a) => a.roles.includes(role));
-
   return (
     <aside className="hidden w-64 flex-shrink-0 border-r border-[#1F1F22] bg-[#0F0F10] p-5 md:block">
       <div className="flex items-center gap-2 pb-8">
-        <BrandImage src="/brand/logoCRMPLUSS.png" alt="CRM PLUS" width={36} height={36} />
-        <span className="text-xl font-semibold text-white">CRM</span>
+        <BrandImage src="/brand/logoCRMPLUSS.png" alt="Logo" width={36} height={36} />
+        <span className="text-xl font-semibold text-white">Área Cliente</span>
       </div>
-
-      {/* Quick Actions / Atalhos */}
-      {availableQuickActions.length > 0 && (
-        <div className="mb-6 pb-4 border-b border-[#1F1F22]">
-          <p className="text-xs text-[#888] uppercase tracking-wider mb-3">Atalhos</p>
-          <div className="flex flex-wrap gap-2">
-            {availableQuickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                title={action.title}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gradient-to-r from-[#E10600]/20 to-[#E10600]/10 border border-[#E10600]/30 text-white text-xs font-medium hover:from-[#E10600]/30 hover:to-[#E10600]/20 transition-all"
-              >
-                <span>{action.icon}</span>
-                <span>{action.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="space-y-1">
         {links
@@ -86,6 +74,18 @@ export function Sidebar() {
               </Link>
             );
           })}
+      </div>
+
+      {/* Logout button */}
+      <div className="mt-8 pt-8 border-t border-[#1F1F22]">
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#C5C5C5] hover:bg-[#0B0B0D] disabled:opacity-50"
+        >
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0F0F10] text-xs text-[#E10600]">↪</span>
+          <span>{loggingOut ? 'A sair...' : 'Terminar sessão'}</span>
+        </button>
       </div>
     </aside>
   );
