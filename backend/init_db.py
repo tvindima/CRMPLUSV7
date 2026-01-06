@@ -25,6 +25,12 @@ def init_db():
     from app.models.draft_ingestion import DraftProperty, IngestionFile
     from app.models.agent_site_preferences import AgentSitePreferences
     
+    # Business/Legal models
+    from app.models.contrato_mediacao import ContratoMediacaoImovel
+    from app.models.pre_angariacao import PreAngariacao
+    from app.models.crm_settings import CRMSettings
+    from app.models.website_client import WebsiteClient
+    
     # Organization models
     from app.teams.models import Team
     from app.agencies.models import Agency
@@ -40,7 +46,7 @@ def init_db():
     # Create all tables
     Base.metadata.create_all(bind=engine)
     print("✅ All tables created successfully!")
-    print("📊 Total models registered: 21")
+    print("📊 Total models registered: 25")
     
     return 0
 
