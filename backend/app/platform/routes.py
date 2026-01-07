@@ -259,6 +259,75 @@ def require_super_admin(db: Session = Depends(get_db)):
 # AUTH ENDPOINTS
 # ===========================================
 
+# Chave para bootstrap inicial (criar primeiro super admin)
+BOOTSTRAP_KEY = os.environ.get("PLATFORM_BOOTSTRAP_KEY", "bootstrap_key_change_in_production")
+
+
+@router.post("/auth/bootstrap", response_model=schemas.SuperAdminToken)
+def bootstrap_super_admin(
+    bootstrap_data: schemas.SuperAdminCreate,
+    x_bootstrap_key: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Criar o primeiro super admin (bootstrap).
+    
+    IMPORTANTE: Este endpoint só funciona se:
+    1. Não existir nenhum super admin na BD
+    2. A chave X-Bootstrap-Key estiver correcta
+    
+    Após criar o primeiro admin, use o login normal e o endpoint 
+    protegido /super-admins para criar mais admins.
+    """
+    # Verificar chave de bootstrap
+    if x_bootstrap_key != BOOTSTRAP_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chave de bootstrap inválida"
+        )
+    
+    ensure_platform_tables(db)
+    
+    # Verificar se já existe algum super admin
+    existing_count = db.query(SuperAdmin).count()
+    if existing_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Bootstrap não permitido: já existem {existing_count} super admin(s). Use o endpoint /super-admins com autenticação."
+        )
+    
+    # Verificar se email já existe (redundante mas seguro)
+    existing_email = db.query(SuperAdmin).filter(SuperAdmin.email == bootstrap_data.email).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já registado"
+        )
+    
+    # Criar o super admin
+    super_admin = SuperAdmin(
+        email=bootstrap_data.email,
+        name=bootstrap_data.name,
+        password_hash=hash_password(bootstrap_data.password),
+        is_active=True,
+        permissions={"all": True}  # Primeiro admin tem todas as permissões
+    )
+    
+    db.add(super_admin)
+    db.commit()
+    db.refresh(super_admin)
+    
+    # Criar token e retornar
+    token = create_platform_token(super_admin)
+    
+    print(f"[PLATFORM] ✅ Bootstrap: Super admin '{bootstrap_data.email}' criado com sucesso!")
+    
+    return schemas.SuperAdminToken(
+        access_token=token,
+        super_admin=schemas.SuperAdminOut.model_validate(super_admin)
+    )
+
+
 @router.post("/auth/login", response_model=schemas.SuperAdminToken)
 def super_admin_login(
     credentials: schemas.SuperAdminLogin,
