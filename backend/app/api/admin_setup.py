@@ -1,9 +1,12 @@
 """
 Endpoint temporário para setup de agentes e users
+PROTEGIDO - Requer header X-Admin-Key
+
 Adicionar ao main.py e chamar via curl POST
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+import os
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import bcrypt
@@ -13,6 +16,24 @@ from app.agents.models import Agent
 from app.users.models import User
 
 setup_router = APIRouter(prefix="/admin/setup", tags=["admin-setup"])
+
+# Chave de admin para proteger endpoints sensíveis
+# Em produção, definir via variável de ambiente ADMIN_SETUP_KEY
+ADMIN_SETUP_KEY = os.environ.get("ADMIN_SETUP_KEY", "dev_admin_key_change_in_production")
+
+
+def verify_admin_key(x_admin_key: str = Header(..., description="Chave de administração")):
+    """
+    Verificar chave de admin para acesso a endpoints protegidos.
+    Requer header: X-Admin-Key
+    """
+    if x_admin_key != ADMIN_SETUP_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Chave de administração inválida"
+        )
+    return True
+
 
 # Dados dos 19 agentes reais
 AGENTES = [
@@ -46,13 +67,16 @@ def hash_password(password: str) -> str:
 
 
 @setup_router.post("/agents-users")
-def setup_agents_and_users(db: Session = Depends(get_db)):
+def setup_agents_and_users(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
     """
     Setup completo de agentes e users:
     1. Atualiza dados dos agentes (nome, email)
     2. Cria users para cada agente com password: {iniciais}crmtest
     
-    Chamar: curl -X POST https://crmplusv7-production.up.railway.app/admin/setup/agents-users
+    PROTEGIDO - Requer header: X-Admin-Key
     """
     results = {
         "agents_updated": [],
@@ -161,8 +185,8 @@ def setup_agents_and_users(db: Session = Depends(get_db)):
 
 
 @setup_router.get("/test-logins")
-def test_agent_logins():
-    """Lista todos os logins de teste configurados"""
+def test_agent_logins(_: bool = Depends(verify_admin_key)):
+    """Lista todos os logins de teste configurados - PROTEGIDO"""
     logins = []
     for agent in AGENTES:
         password_plain = f"{agent['initials'].lower()}crmtest"
@@ -176,8 +200,11 @@ def test_agent_logins():
 
 
 @setup_router.post("/add-works-for-column")
-def add_works_for_agent_column(db: Session = Depends(get_db)):
-    """Adicionar coluna works_for_agent_id à tabela users"""
+def add_works_for_agent_column(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Adicionar coluna works_for_agent_id à tabela users - PROTEGIDO"""
     try:
         # Verificar se coluna já existe
         result = db.execute(text("""
@@ -218,10 +245,13 @@ class CreateUserRequest(BaseModel):
 
 
 @setup_router.post("/create-user")
-def create_user_no_auth(data: CreateUserRequest, db: Session = Depends(get_db)):
+def create_user_no_auth(
+    data: CreateUserRequest, 
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
     """
-    Criar user sem autenticação - TEMPORÁRIO para setup backoffice
-    ⚠️ REMOVER quando implementar auth no backoffice
+    Criar user - PROTEGIDO com X-Admin-Key
     """
     # Verificar se email já existe
     existing = db.query(User).filter(User.email == data.email.lower()).first()
@@ -268,8 +298,11 @@ def create_user_no_auth(data: CreateUserRequest, db: Session = Depends(get_db)):
 
 
 @setup_router.get("/list-users")
-def list_all_users(db: Session = Depends(get_db)):
-    """Listar todos os users - TEMPORÁRIO para debug"""
+def list_all_users(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Listar todos os users - PROTEGIDO"""
     users = db.query(User).all()
     return {
         "total": len(users),
@@ -289,8 +322,11 @@ def list_all_users(db: Session = Depends(get_db)):
 
 
 @setup_router.get("/list-staff")
-def list_staff_users(db: Session = Depends(get_db)):
-    """Listar staff (não-agentes) - assistants, coordinators, etc"""
+def list_staff_users(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Listar staff (não-agentes) - PROTEGIDO"""
     staff = db.query(User).filter(User.role != "agent", User.role != "admin").all()
     result = []
     for u in staff:
@@ -323,8 +359,13 @@ class UpdateUserRequest(BaseModel):
 
 
 @setup_router.put("/update-user/{user_id}")
-def update_user_no_auth(user_id: int, data: UpdateUserRequest, db: Session = Depends(get_db)):
-    """Atualizar user - TEMPORÁRIO"""
+def update_user_no_auth(
+    user_id: int, 
+    data: UpdateUserRequest, 
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Atualizar user - PROTEGIDO"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User não encontrado")
@@ -349,8 +390,12 @@ def update_user_no_auth(user_id: int, data: UpdateUserRequest, db: Session = Dep
 
 
 @setup_router.delete("/delete-user/{user_id}")
-def delete_user_no_auth(user_id: int, db: Session = Depends(get_db)):
-    """Eliminar user - TEMPORÁRIO"""
+def delete_user_no_auth(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Eliminar user - PROTEGIDO"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User não encontrado")

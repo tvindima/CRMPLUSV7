@@ -1,17 +1,34 @@
 """
 Endpoint temporário para executar a migração SQL diretamente
+PROTEGIDO - Requer header X-Admin-Key
 """
-from fastapi import APIRouter, Depends
+import os
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.database import get_db
 
 router = APIRouter(prefix="/emergency", tags=["Emergency Fix"])
 
+# Chave de admin para proteger endpoints sensíveis
+ADMIN_SETUP_KEY = os.environ.get("ADMIN_SETUP_KEY", "dev_admin_key_change_in_production")
+
+
+def verify_admin_key(x_admin_key: str = Header(..., description="Chave de administração")):
+    """Verificar chave de admin para acesso a endpoints protegidos."""
+    if x_admin_key != ADMIN_SETUP_KEY:
+        raise HTTPException(status_code=403, detail="Chave de administração inválida")
+    return True
+
+
 @router.post("/fix-clients-table")
-def fix_clients_table(db: Session = Depends(get_db)):
+def fix_clients_table(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
     """
     Endpoint de emergência para adicionar colunas faltantes na tabela clients
+    PROTEGIDO - Requer header: X-Admin-Key
     """
     sql_statements = [
         "ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_empresa BOOLEAN DEFAULT FALSE;",
@@ -82,9 +99,13 @@ def fix_clients_table(db: Session = Depends(get_db)):
 
 
 @router.post("/add-missing-columns")
-def add_missing_columns(db: Session = Depends(get_db)):
+def add_missing_columns(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
     """
     Adicionar colunas que faltaram: preferencias e is_verified
+    PROTEGIDO - Requer header: X-Admin-Key
     """
     sql_statements = [
         "ALTER TABLE clients ADD COLUMN IF NOT EXISTS preferencias JSONB DEFAULT '{}'::jsonb;",

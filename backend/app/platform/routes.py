@@ -151,23 +151,58 @@ def create_platform_token(super_admin: SuperAdmin) -> str:
     return jwt.encode(payload, PLATFORM_SECRET, algorithm="HS256")
 
 
-def get_current_super_admin(
-    token: str = Depends(lambda: None),
+from fastapi import Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer(auto_error=False)
+
+
+async def get_current_super_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> SuperAdmin:
     """
     Dependency para obter super admin autenticado.
     Requer header: Authorization: Bearer <token>
     """
-    from fastapi import Request
-    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de super admin necessário"
+        )
     
-    # Esta função será chamada com o request
-    # Por simplicidade, vamos verificar o token manualmente
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Use /platform/auth/login para obter token"
-    )
+    token = credentials.credentials
+    
+    try:
+        payload = jwt.decode(token, PLATFORM_SECRET, algorithms=["HS256"])
+        
+        if payload.get("type") != "platform":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido - não é token de plataforma"
+            )
+        
+        super_admin_id = payload.get("super_admin_id")
+        super_admin = db.query(SuperAdmin).filter(SuperAdmin.id == super_admin_id).first()
+        
+        if not super_admin or not super_admin.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Super admin não encontrado ou inactivo"
+            )
+        
+        return super_admin
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado"
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido"
+        )
 
 
 def require_super_admin(db: Session = Depends(get_db)):
@@ -356,14 +391,15 @@ def get_tenant_by_domain(domain: str, db: Session = Depends(get_db)):
 
 
 @router.post("/tenants", response_model=schemas.TenantOut, status_code=201)
-def create_tenant(
+async def create_tenant(
     tenant_data: schemas.TenantCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """
     Criar novo tenant.
     
-    Requer autenticação de super admin (a implementar).
+    PROTEGIDO - Requer autenticação de super admin.
     """
     # Verificar se slug já existe
     existing = db.query(Tenant).filter(Tenant.slug == tenant_data.slug).first()
@@ -393,12 +429,13 @@ def create_tenant(
 
 
 @router.put("/tenants/{tenant_id}", response_model=schemas.TenantOut)
-def update_tenant(
+async def update_tenant(
     tenant_id: int,
     tenant_data: schemas.TenantUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
-    """Actualizar tenant"""
+    """Actualizar tenant - PROTEGIDO"""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
@@ -415,9 +452,13 @@ def update_tenant(
 
 
 @router.delete("/tenants/{tenant_id}")
-def delete_tenant(tenant_id: int, db: Session = Depends(get_db)):
+async def delete_tenant(
+    tenant_id: int, 
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
     """
-    Desactivar tenant (soft delete).
+    Desactivar tenant (soft delete) - PROTEGIDO.
     
     Não remove da BD, apenas marca como inactivo.
     """
@@ -432,8 +473,12 @@ def delete_tenant(tenant_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/tenants/{tenant_id}/activate")
-def activate_tenant(tenant_id: int, db: Session = Depends(get_db)):
-    """Reactivar tenant"""
+async def activate_tenant(
+    tenant_id: int, 
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Reactivar tenant - PROTEGIDO"""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
@@ -530,21 +575,24 @@ def get_tenant_stats(tenant_id: int, db: Session = Depends(get_db)):
 # ===========================================
 
 @router.get("/super-admins", response_model=List[schemas.SuperAdminOut])
-def list_super_admins(db: Session = Depends(get_db)):
-    """Listar super admins"""
+async def list_super_admins(
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Listar super admins - PROTEGIDO"""
     return db.query(SuperAdmin).all()
 
 
 @router.post("/super-admins", response_model=schemas.SuperAdminOut, status_code=201)
-def create_super_admin(
+async def create_super_admin(
     admin_data: schemas.SuperAdminCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """
     Criar novo super admin.
     
-    ATENÇÃO: Este endpoint deveria ser protegido!
-    Em produção, requer autenticação de outro super admin.
+    PROTEGIDO - Requer autenticação de outro super admin.
     """
     # Verificar se email já existe
     existing = db.query(SuperAdmin).filter(SuperAdmin.email == admin_data.email).first()
@@ -584,11 +632,12 @@ def get_platform_settings(db: Session = Depends(get_db)):
 
 
 @router.put("/settings", response_model=schemas.PlatformSettingsOut)
-def update_platform_settings(
+async def update_platform_settings(
     settings_data: schemas.PlatformSettingsUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
-    """Actualizar configurações da plataforma"""
+    """Actualizar configurações da plataforma - PROTEGIDO"""
     settings = db.query(PlatformSettings).first()
     
     if not settings:

@@ -358,7 +358,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     cors_headers = {}
     
     # Verificar se a origem é permitida
-    if origin in PRODUCTION_ORIGINS or origin.endswith(".vercel.app"):
+    if origin in ALLOWED_ORIGINS or origin.endswith(".vercel.app"):
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
