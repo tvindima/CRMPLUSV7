@@ -796,7 +796,8 @@ async def create_super_admin(
     super_admin = SuperAdmin(
         email=admin_data.email,
         name=admin_data.name,
-        password_hash=hash_password(admin_data.password)
+        password_hash=hash_password(admin_data.password),
+        permissions=admin_data.permissions or {}
     )
     
     db.add(super_admin)

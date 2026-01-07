@@ -88,6 +88,7 @@ class SuperAdminBase(BaseModel):
 class SuperAdminCreate(SuperAdminBase):
     """Schema para criar super admin"""
     password: str
+    permissions: Optional[Dict[str, Any]] = None
 
 
 class SuperAdminUpdate(BaseModel):
@@ -101,6 +102,7 @@ class SuperAdminOut(SuperAdminBase):
     """Schema de resposta para SuperAdmin"""
     id: int
     is_active: bool
+    permissions: Optional[Dict[str, Any]] = None
     last_login_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     
