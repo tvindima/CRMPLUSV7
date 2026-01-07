@@ -158,14 +158,20 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
       {/* Main Content */}
       <div className="absolute bottom-4 left-4 right-4 space-y-2 md:bottom-10 md:left-16 md:right-auto md:max-w-xl md:space-y-4">
         {currentProperty?.reference && (
-          <span className="inline-block rounded bg-black/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#E10600] md:px-3 md:py-1 md:text-xs">
+          <span 
+            className="inline-block rounded bg-black/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider md:px-3 md:py-1 md:text-xs"
+            style={{ color: 'var(--color-primary)' }}
+          >
             {currentProperty.reference}
           </span>
         )}
         <h1 className="text-xl font-semibold leading-tight md:text-5xl">
           {currentProperty?.title || "Descobre imóveis que valem o prime time"}
         </h1>
-        <p className="text-xs text-[#C5C5C5] md:text-sm">
+        <p 
+          className="text-xs md:text-sm"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
           {currentProperty
             ? `${currentProperty.typology || currentProperty.property_type || "Propriedade"} • ${price} • ${
                 currentProperty.location || currentProperty.municipality || "Localização reservada"
@@ -176,14 +182,16 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
           {currentProperty ? (
             <Link
               href={`/imovel/${encodeURIComponent(currentProperty.reference || currentProperty.title || `imovel-${currentProperty.id}`)}`}
-              className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black shadow-lg shadow-[#E10600]/40 transition hover:scale-105 md:px-6 md:py-3 md:text-sm"
+              className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition hover:scale-105 md:px-6 md:py-3 md:text-sm"
+              style={{ boxShadow: '0 10px 15px -3px var(--color-primary)' }}
             >
               Ver detalhes
             </Link>
           ) : (
             <Link
               href="/imoveis"
-              className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black shadow-lg shadow-[#E10600]/40 md:px-6 md:py-3 md:text-sm"
+              className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black md:px-6 md:py-3 md:text-sm"
+              style={{ boxShadow: '0 10px 15px -3px var(--color-primary)' }}
             >
               Ver catálogo completo
             </Link>
@@ -206,8 +214,9 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
               setCurrentIndex(idx);
             }}
             className={`group relative h-16 w-24 overflow-hidden rounded-lg border-2 transition ${
-              idx === currentIndex ? "border-[#E10600] scale-110" : "border-white/20 hover:border-white/50"
+              idx === currentIndex ? "scale-110" : "border-white/20 hover:border-white/50"
             }`}
+            style={idx === currentIndex ? { borderColor: 'var(--color-primary)' } : undefined}
           >
             <SafeImage
               src={getPropertyCover(property)}
@@ -217,7 +226,13 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
               sizes="100px"
             />
             {idx === currentIndex && (
-              <div className="absolute inset-0 bg-[#E10600]/20 ring-2 ring-[#E10600]" />
+              <div 
+                className="absolute inset-0 ring-2"
+                style={{ 
+                  backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                  '--tw-ring-color': 'var(--color-primary)' 
+                } as React.CSSProperties}
+              />
             )}
           </button>
         ))}
@@ -254,9 +269,10 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
             <button
               key={idx}
               onClick={() => goToSlide(idx)}
-              className={`h-2 w-2 rounded-full transition ${
-                idx === currentIndex ? "bg-[#E10600] w-6" : "bg-white/50"
+              className={`h-2 rounded-full transition ${
+                idx === currentIndex ? "w-6" : "w-2 bg-white/50"
               }`}
+              style={idx === currentIndex ? { backgroundColor: 'var(--color-primary)' } : undefined}
               aria-label={`Ir para imóvel ${idx + 1}`}
             />
           ))}

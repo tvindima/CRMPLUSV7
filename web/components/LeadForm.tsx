@@ -37,9 +37,16 @@ export function LeadForm({ source, title = "Fala connosco", cta = "Enviar" }: Pr
   };
 
   return (
-    <div className="rounded-2xl border border-[#2A2A2E] bg-[#151518] p-6 shadow-lg shadow-[#E10600]/10">
-      <h3 className="text-base font-semibold text-white md:text-xl">{title}</h3>
-      <p className="mb-4 text-sm text-[#C5C5C5]">Responderemos rapidamente.</p>
+    <div 
+      className="rounded-2xl border p-6 shadow-lg"
+      style={{
+        borderColor: 'var(--color-border)',
+        backgroundColor: 'var(--color-background-secondary)',
+        boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--color-primary) 10%, transparent)'
+      }}
+    >
+      <h3 className="text-base font-semibold md:text-xl" style={{ color: 'var(--color-text)' }}>{title}</h3>
+      <p className="mb-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>Responderemos rapidamente.</p>
       <form className="space-y-3" onSubmit={handleSubmit}>
         <input
           id="lead-name"
@@ -49,7 +56,14 @@ export function LeadForm({ source, title = "Fala connosco", cta = "Enviar" }: Pr
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="Nome"
-          className="w-full rounded border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-full rounded px-3 py-2 text-sm outline-none"
+          style={{
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-background)',
+            color: 'var(--color-text)'
+          }}
         />
         <input
           id="lead-email"
@@ -60,7 +74,14 @@ export function LeadForm({ source, title = "Fala connosco", cta = "Enviar" }: Pr
           type="email"
           required
           placeholder="Email"
-          className="w-full rounded border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-full rounded px-3 py-2 text-sm outline-none"
+          style={{
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-background)',
+            color: 'var(--color-text)'
+          }}
         />
         <textarea
           id="lead-message"
@@ -68,13 +89,24 @@ export function LeadForm({ source, title = "Fala connosco", cta = "Enviar" }: Pr
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Mensagem"
-          className="w-full rounded border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-full rounded px-3 py-2 text-sm outline-none"
+          style={{
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-background)',
+            color: 'var(--color-text)'
+          }}
           rows={3}
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="w-full rounded-full bg-gradient-to-r from-[#E10600] to-[#a10600] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_12px_rgba(225,6,0,0.6)] transition hover:shadow-[0_0_18px_rgba(225,6,0,0.8)] disabled:opacity-60"
+          className="w-full rounded-full px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60"
+          style={{
+            background: `linear-gradient(to right, var(--color-primary), color-mix(in srgb, var(--color-primary) 80%, black))`,
+            boxShadow: '0 0 12px color-mix(in srgb, var(--color-primary) 60%, transparent)'
+          }}
         >
           {status === "loading" ? "A enviar..." : cta}
         </button>
