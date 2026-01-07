@@ -21,7 +21,14 @@ export function CompareFloatingBar() {
 
   return (
     <>
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl rounded-2xl border border-[#2A2A2E] bg-[#151518]/95 p-4 shadow-2xl backdrop-blur">
+      <div 
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl rounded-2xl p-4 shadow-2xl backdrop-blur"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--color-background-secondary) 95%, transparent)',
+          borderColor: 'var(--color-border)',
+          borderWidth: '1px',
+        }}
+      >
         <div className="flex items-center gap-4">
           {/* Imóveis selecionados */}
           <div className="flex flex-1 items-center gap-2 overflow-x-auto">
@@ -30,7 +37,10 @@ export function CompareFloatingBar() {
                 key={property.id}
                 className="group relative flex-shrink-0"
               >
-                <div className={`relative h-12 w-12 overflow-hidden rounded-lg bg-[#2A2A2E] ${isExternal(property.imagem) ? "ring-2 ring-blue-500" : ""}`}>
+                <div 
+                  className={`relative h-12 w-12 overflow-hidden rounded-lg ${isExternal(property.imagem) ? "ring-2 ring-blue-500" : ""}`}
+                  style={{ backgroundColor: 'var(--color-border)' }}
+                >
                   {property.imagem && !isExternal(property.imagem) ? (
                     <Image
                       src={property.imagem}
@@ -45,7 +55,10 @@ export function CompareFloatingBar() {
                       </svg>
                     </div>
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-[#7A7A7A]">
+                    <div 
+                      className="flex h-full w-full items-center justify-center text-xs"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
                       {property.referencia.slice(0, 3)}
                     </div>
                   )}
@@ -75,8 +88,9 @@ export function CompareFloatingBar() {
                 className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition ${
                   i === 0 && canAddMore
                     ? "border-blue-500/50 hover:border-blue-500 hover:bg-blue-500/10 cursor-pointer"
-                    : "border-[#2A2A2E] cursor-default"
+                    : "cursor-default"
                 }`}
+                style={i === 0 && canAddMore ? undefined : { borderColor: 'var(--color-border)' }}
                 title={i === 0 ? "Adicionar imóvel externo" : undefined}
               >
                 {i === 0 ? (
@@ -84,7 +98,7 @@ export function CompareFloatingBar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 ) : (
-                  <span className="text-xs text-[#7A7A7A]">+</span>
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>+</span>
                 )}
               </button>
             ))}
@@ -92,15 +106,24 @@ export function CompareFloatingBar() {
 
         {/* Contador */}
         <div className="hidden sm:block text-center">
-          <p className="text-2xl font-bold text-white">{compareList.length}</p>
-          <p className="text-xs text-[#7A7A7A]">de 5</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{compareList.length}</p>
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>de 5</p>
         </div>
 
         {/* Ações */}
         <div className="flex items-center gap-2">
           <button
             onClick={clearCompare}
-            className="rounded-lg p-2 text-[#7A7A7A] transition hover:bg-[#2A2A2E] hover:text-white"
+            className="rounded-lg p-2 transition"
+            style={{ color: 'var(--color-text-muted)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-border)';
+              e.currentTarget.style.color = 'var(--color-text)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--color-text-muted)';
+            }}
             title="Limpar"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +132,8 @@ export function CompareFloatingBar() {
           </button>
           <Link
             href="/comparar"
-            className="flex items-center gap-2 rounded-full bg-[#E10600] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+            className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />

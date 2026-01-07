@@ -44,8 +44,9 @@ export function PropertyGallery({ images, title }: Props) {
               key={idx}
               onClick={() => setSelectedIndex(idx)}
               className={`relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg transition ${
-                idx === selectedIndex ? 'ring-2 ring-[#E10600]' : 'opacity-60 hover:opacity-100'
+                idx === selectedIndex ? 'ring-2' : 'opacity-60 hover:opacity-100'
               }`}
+              style={idx === selectedIndex ? { '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties : undefined}
             >
               <SafeImage src={img} alt={`Miniatura ${idx + 1}`} fill className="object-cover" />
             </button>
