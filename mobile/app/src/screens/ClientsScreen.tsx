@@ -28,7 +28,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
@@ -71,7 +70,7 @@ interface ClientFormData {
   client_type: string;
   nif: string;
   cc: string;
-  data_nascimento: Date | null;
+  data_nascimento: string;
   email: string;
   telefone: string;
   telefone_alt: string;
@@ -96,7 +95,6 @@ const ClientsScreen: React.FC = () => {
   const [showClientDetailModal, setShowClientDetailModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [editingNotes, setEditingNotes] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState<ClientFormData>({
@@ -104,7 +102,7 @@ const ClientsScreen: React.FC = () => {
     client_type: 'lead',
     nif: '',
     cc: '',
-    data_nascimento: null,
+    data_nascimento: '',
     email: '',
     telefone: '',
     telefone_alt: '',
@@ -223,7 +221,7 @@ const ClientsScreen: React.FC = () => {
         origin: 'manual',
         nif: formData.nif || null,
         cc: formData.cc || null,
-        data_nascimento: formData.data_nascimento?.toISOString().split('T')[0] || null,
+        data_nascimento: formData.data_nascimento || null,
         email: formData.email || null,
         telefone: formData.telefone,
         telefone_alt: formData.telefone_alt || null,
@@ -273,7 +271,7 @@ const ClientsScreen: React.FC = () => {
         client_type: formData.client_type,
         nif: formData.nif || null,
         cc: formData.cc || null,
-        data_nascimento: formData.data_nascimento?.toISOString().split('T')[0] || null,
+        data_nascimento: formData.data_nascimento || null,
         email: formData.email || null,
         telefone: formData.telefone,
         telefone_alt: formData.telefone_alt || null,
@@ -353,7 +351,7 @@ const ClientsScreen: React.FC = () => {
       client_type: 'lead',
       nif: '',
       cc: '',
-      data_nascimento: null,
+      data_nascimento: '',
       email: '',
       telefone: '',
       telefone_alt: '',
@@ -372,7 +370,7 @@ const ClientsScreen: React.FC = () => {
       client_type: client.client_type,
       nif: client.nif || '',
       cc: client.cc || '',
-      data_nascimento: client.data_nascimento ? new Date(client.data_nascimento) : null,
+      data_nascimento: client.data_nascimento || '',
       email: client.email || '',
       telefone: client.telefone || '',
       telefone_alt: client.telefone_alt || '',
@@ -598,20 +596,9 @@ const ClientsScreen: React.FC = () => {
                   (text) => setFormData({ ...formData, cc: text }))}
               </View>
               
-              <TouchableOpacity 
-                style={styles.formField}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={styles.formLabel}>Data de Nascimento</Text>
-                <View style={styles.datePickerBtn}>
-                  <Ionicons name="calendar" size={20} color="#00d9ff" />
-                  <Text style={styles.datePickerText}>
-                    {formData.data_nascimento 
-                      ? formData.data_nascimento.toLocaleDateString('pt-PT')
-                      : 'Selecionar data'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              {renderFormField('Data de Nascimento', formData.data_nascimento, 
+                (text) => setFormData({ ...formData, data_nascimento: text }),
+                { placeholder: 'DD/MM/AAAA' })}
             </View>
             
             <View style={styles.formSection}>
@@ -649,21 +636,6 @@ const ClientsScreen: React.FC = () => {
             <View style={{ height: 50 }} />
           </ScrollView>
         </KeyboardAvoidingView>
-        
-        {showDatePicker && (
-          <DateTimePicker
-            value={formData.data_nascimento || new Date(1980, 0, 1)}
-            mode="date"
-            display="spinner"
-            onChange={(_event: any, date?: Date) => {
-              setShowDatePicker(false);
-              if (date) {
-                setFormData({ ...formData, data_nascimento: date });
-              }
-            }}
-            maximumDate={new Date()}
-          />
-        )}
       </SafeAreaView>
     </Modal>
   );
@@ -748,20 +720,9 @@ const ClientsScreen: React.FC = () => {
                     (text) => setFormData({ ...formData, cc: text }))}
                 </View>
                 
-                <TouchableOpacity 
-                  style={styles.formField}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Text style={styles.formLabel}>Data de Nascimento</Text>
-                  <View style={styles.datePickerBtn}>
-                    <Ionicons name="calendar" size={20} color="#00d9ff" />
-                    <Text style={styles.datePickerText}>
-                      {formData.data_nascimento 
-                        ? formData.data_nascimento.toLocaleDateString('pt-PT')
-                        : 'Selecionar data'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                {renderFormField('Data de Nascimento', formData.data_nascimento, 
+                  (text) => setFormData({ ...formData, data_nascimento: text }),
+                  { placeholder: 'DD/MM/AAAA' })}
               </View>
               
               <View style={styles.formSection}>
@@ -825,21 +786,6 @@ const ClientsScreen: React.FC = () => {
               <View style={{ height: 50 }} />
             </ScrollView>
           </KeyboardAvoidingView>
-          
-          {showDatePicker && (
-            <DateTimePicker
-              value={formData.data_nascimento || new Date(1980, 0, 1)}
-              mode="date"
-              display="spinner"
-              onChange={(_event: any, date?: Date) => {
-                setShowDatePicker(false);
-                if (date) {
-                  setFormData({ ...formData, data_nascimento: date });
-                }
-              }}
-              maximumDate={new Date()}
-            />
-          )}
         </SafeAreaView>
       </Modal>
     );
