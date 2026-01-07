@@ -708,6 +708,70 @@ def update_branding_settings(
     )
 
 
+@router.post("/settings/branding/upload-logo")
+async def upload_branding_logo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Upload de logo da agência para branding.
+    
+    Requisitos:
+    - Formato: PNG, JPG, SVG
+    - Tamanho máximo: 2MB
+    - Recomendado: PNG com fundo transparente
+    
+    A imagem é carregada para Cloudinary e a URL guardada nas configurações.
+    """
+    # Validar tipo de arquivo
+    allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image/webp"]
+    if not file.content_type or file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=415,
+            detail="Formato não suportado. Aceites: PNG, JPG, SVG, WebP"
+        )
+    
+    # Validar tamanho (2MB max)
+    content = await file.read()
+    MAX_SIZE = 2 * 1024 * 1024  # 2MB
+    if len(content) > MAX_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Ficheiro muito grande. Máximo: 2MB. Tamanho recebido: {len(content) / (1024*1024):.1f}MB"
+        )
+    
+    try:
+        from io import BytesIO
+        
+        # Upload para Cloudinary na pasta de branding
+        url = await storage.upload_file(
+            file=BytesIO(content),
+            folder="crm-branding",
+            filename=f"agency-logo.{file.filename.split('.')[-1] if file.filename else 'png'}",
+            public=True
+        )
+        
+        # Guardar URL nas configurações
+        settings = db.query(CRMSettings).first()
+        if not settings:
+            settings = CRMSettings()
+            db.add(settings)
+        
+        settings.agency_logo_url = url
+        db.commit()
+        db.refresh(settings)
+        
+        return {"success": True, "url": url, "message": "Logo carregado com sucesso"}
+        
+    except Exception as e:
+        print(f"[Branding] Erro no upload: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao carregar logo: {str(e)}"
+        )
+
+
 # ============ GESTÃO DE UTILIZADORES ============
 
 @router.get("/users/list")
