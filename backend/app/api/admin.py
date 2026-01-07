@@ -680,6 +680,9 @@ class BrandingSettingsUpdate(BaseModel):
     text_muted: Optional[str] = None
     border_color: Optional[str] = None
     accent_color: Optional[str] = None
+    
+    class Config:
+        extra = "ignore"  # Ignorar campos extras enviados pelo frontend
 
 
 class BrandingSettingsOut(BaseModel):
@@ -794,6 +797,8 @@ def update_branding_settings(
     
     Requer autenticação de staff.
     """
+    print(f"[BRANDING PUT] User: {current_user.get('email', 'unknown')}, Update: {update.model_dump()}")
+    
     # Defaults para resposta
     defaults = {
         "agency_name": "CRM Plus",
@@ -809,9 +814,11 @@ def update_branding_settings(
     }
     
     try:
+        print("[BRANDING PUT] Querying CRMSettings...")
         settings = db.query(CRMSettings).first()
         
         if not settings:
+            print("[BRANDING PUT] No settings found, creating new...")
             settings = CRMSettings()
             db.add(settings)
     
