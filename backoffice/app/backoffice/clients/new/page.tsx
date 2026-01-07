@@ -177,7 +177,7 @@ export default function NewClientPage() {
         payload.empresa_poderes = formData.empresa_poderes || null;
       }
 
-      const response = await fetch(`${API_URL}/clients/?agent_id=${user?.agent_id || 1}`, {
+      const response = await fetch(`${API_URL}/clients/?agent_id=1`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

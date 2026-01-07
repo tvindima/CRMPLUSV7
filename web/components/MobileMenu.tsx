@@ -127,29 +127,29 @@ export default function MobileMenu({ links }: MobileMenuProps) {
             {links.map((link) => {
               const isActive = pathname === link.href;
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium transition"
-                  style={{
-                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
-                    color: isActive ? 'white' : 'var(--color-text-muted)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)';
-                      e.currentTarget.style.color = 'var(--color-text)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--color-text-muted)';
-                    }
-                  }}
-                >
-                  {link.label}
+                <Link key={link.href} href={link.href} legacyBehavior>
+                  <a
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                    style={{
+                      backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                      color: isActive ? 'white' : 'var(--color-text-muted)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)';
+                        e.currentTarget.style.color = 'var(--color-text)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--color-text-muted)';
+                      }
+                    }}
+                  >
+                    {link.label}
+                  </a>
                 </Link>
               );
             })}
