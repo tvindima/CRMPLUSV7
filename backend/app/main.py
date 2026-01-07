@@ -89,6 +89,11 @@ BASE_PRODUCTION_ORIGINS = [
     "https://luiscarlosgaspar.com",
     "https://app.luiscarlosgaspar.com",
     "https://luisgasparteam-backend-production.up.railway.app",
+    # Vercel preview/production URLs (fallback)
+    "https://backoffice-three-opal.vercel.app",
+    "https://imoveismais-web.vercel.app",
+    "https://luisgaspar-web.vercel.app",
+    "https://luisgaspar-backoffice.vercel.app",
 ]
 
 # Em produção, usar domínios específicos + regex para Vercel previews
