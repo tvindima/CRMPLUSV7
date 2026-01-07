@@ -797,7 +797,7 @@ def update_branding_settings(
     
     Requer autenticação de staff.
     """
-    print(f"[BRANDING PUT] User: {current_user.get('email', 'unknown')}, Update: {update.model_dump()}")
+    print(f"[BRANDING PUT] User: {current_user.get('email', 'unknown')}")
     
     # Defaults para resposta
     defaults = {
@@ -814,74 +814,141 @@ def update_branding_settings(
     }
     
     try:
-        print("[BRANDING PUT] Querying CRMSettings...")
-        settings = db.query(CRMSettings).first()
+        # Primeiro, garantir que as colunas de tema existem
+        theme_columns = [
+            ("secondary_color", "#C5C5C5"),
+            ("background_color", "#0B0B0D"),
+            ("background_secondary", "#1A1A1F"),
+            ("text_color", "#FFFFFF"),
+            ("text_muted", "#9CA3AF"),
+            ("border_color", "#2A2A2E"),
+            ("accent_color", "#E10600")
+        ]
         
-        if not settings:
+        for col_name, default_val in theme_columns:
+            try:
+                check_col = db.execute(text(f"""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'crm_settings' AND column_name = '{col_name}'
+                """)).fetchone()
+                
+                if not check_col:
+                    print(f"[BRANDING PUT] Adding missing column: {col_name}")
+                    db.execute(text(f"""
+                        ALTER TABLE crm_settings 
+                        ADD COLUMN IF NOT EXISTS {col_name} VARCHAR DEFAULT '{default_val}'
+                    """))
+                    db.commit()
+            except Exception as col_err:
+                print(f"[BRANDING PUT] Column check error for {col_name}: {col_err}")
+        
+        # Verificar se existe registo
+        result = db.execute(text("SELECT id FROM crm_settings LIMIT 1")).fetchone()
+        
+        if not result:
             print("[BRANDING PUT] No settings found, creating new...")
-            settings = CRMSettings()
-            db.add(settings)
-    
-        # Atualizar campos fornecidos
+            db.execute(text("""
+                INSERT INTO crm_settings (agency_name, agency_slogan, primary_color)
+                VALUES (:name, :slogan, :primary)
+            """), {
+                "name": update.agency_name or defaults["agency_name"],
+                "slogan": update.agency_slogan or defaults["agency_slogan"],
+                "primary": update.primary_color or defaults["primary_color"]
+            })
+            db.commit()
+        
+        # Construir UPDATE dinâmico apenas com campos fornecidos
+        updates = []
+        params = {}
+        
         if update.agency_name is not None:
-            settings.agency_name = update.agency_name
+            updates.append("agency_name = :agency_name")
+            params["agency_name"] = update.agency_name
         
         if update.agency_slogan is not None:
-            settings.agency_slogan = update.agency_slogan
+            updates.append("agency_slogan = :agency_slogan")
+            params["agency_slogan"] = update.agency_slogan
         
         if update.agency_logo_url is not None:
-            settings.agency_logo_url = update.agency_logo_url
+            updates.append("agency_logo_url = :agency_logo_url")
+            params["agency_logo_url"] = update.agency_logo_url
         
         if update.primary_color is not None:
-            settings.primary_color = update.primary_color
-            
+            updates.append("primary_color = :primary_color")
+            params["primary_color"] = update.primary_color
+        
         if update.secondary_color is not None:
-            settings.secondary_color = update.secondary_color
-            
+            updates.append("secondary_color = :secondary_color")
+            params["secondary_color"] = update.secondary_color
+        
         if update.background_color is not None:
-            settings.background_color = update.background_color
-            
+            updates.append("background_color = :background_color")
+            params["background_color"] = update.background_color
+        
         if update.background_secondary is not None:
-            settings.background_secondary = update.background_secondary
-            
+            updates.append("background_secondary = :background_secondary")
+            params["background_secondary"] = update.background_secondary
+        
         if update.text_color is not None:
-            settings.text_color = update.text_color
-            
+            updates.append("text_color = :text_color")
+            params["text_color"] = update.text_color
+        
         if update.text_muted is not None:
-            settings.text_muted = update.text_muted
-            
+            updates.append("text_muted = :text_muted")
+            params["text_muted"] = update.text_muted
+        
         if update.border_color is not None:
-            settings.border_color = update.border_color
-            
+            updates.append("border_color = :border_color")
+            params["border_color"] = update.border_color
+        
         if update.accent_color is not None:
-            settings.accent_color = update.accent_color
+            updates.append("accent_color = :accent_color")
+            params["accent_color"] = update.accent_color
         
-        db.commit()
-        db.refresh(settings)
+        if updates:
+            update_sql = f"UPDATE crm_settings SET {', '.join(updates)}"
+            print(f"[BRANDING PUT] Executing: {update_sql}")
+            db.execute(text(update_sql), params)
+            db.commit()
         
-        # Helper para obter valor com fallback
-        def safe_get(attr, default):
-            try:
-                val = getattr(settings, attr, None)
-                return val if val is not None else default
-            except:
-                return default
+        # Obter valores atualizados via SQL direto
+        row = db.execute(text("""
+            SELECT 
+                COALESCE(agency_name, 'CRM Plus') as agency_name,
+                COALESCE(agency_slogan, 'Sistema Imobiliário') as agency_slogan,
+                agency_logo_url,
+                COALESCE(primary_color, '#E10600') as primary_color,
+                COALESCE(secondary_color, '#C5C5C5') as secondary_color,
+                COALESCE(background_color, '#0B0B0D') as background_color,
+                COALESCE(background_secondary, '#1A1A1F') as background_secondary,
+                COALESCE(text_color, '#FFFFFF') as text_color,
+                COALESCE(text_muted, '#9CA3AF') as text_muted,
+                COALESCE(border_color, '#2A2A2E') as border_color,
+                COALESCE(accent_color, '#E10600') as accent_color
+            FROM crm_settings LIMIT 1
+        """)).fetchone()
         
-        return BrandingSettingsOut(
-            agency_name=safe_get('agency_name', defaults["agency_name"]),
-            agency_slogan=safe_get('agency_slogan', defaults["agency_slogan"]),
-            agency_logo_url=safe_get('agency_logo_url', None),
-            primary_color=safe_get('primary_color', defaults["primary_color"]),
-            secondary_color=safe_get('secondary_color', defaults["secondary_color"]),
-            background_color=safe_get('background_color', defaults["background_color"]),
-            background_secondary=safe_get('background_secondary', defaults["background_secondary"]),
-            text_color=safe_get('text_color', defaults["text_color"]),
-            text_muted=safe_get('text_muted', defaults["text_muted"]),
-            border_color=safe_get('border_color', defaults["border_color"]),
-            accent_color=safe_get('accent_color', defaults["accent_color"])
-        )
+        if row:
+            return BrandingSettingsOut(
+                agency_name=row.agency_name,
+                agency_slogan=row.agency_slogan,
+                agency_logo_url=row.agency_logo_url,
+                primary_color=row.primary_color,
+                secondary_color=row.secondary_color,
+                background_color=row.background_color,
+                background_secondary=row.background_secondary,
+                text_color=row.text_color,
+                text_muted=row.text_muted,
+                border_color=row.border_color,
+                accent_color=row.accent_color
+            )
+        else:
+            return BrandingSettingsOut(**defaults, agency_logo_url=None)
+            
     except Exception as e:
         print(f"[ADMIN BRANDING PUT] Error: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar branding: {str(e)}")
 
