@@ -64,11 +64,12 @@ export function FavoriteButton({ propertyId, propertyTitle }: Props) {
       <div className="flex gap-2">
         <button
           onClick={toggleFavorite}
-          className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-            isFavorite
-              ? 'bg-[#E10600] text-white'
-              : 'bg-[#0B0B0D]/70 text-white ring-1 ring-[#1F1F22] hover:ring-[#E10600]'
-          }`}
+          className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition"
+          style={{
+            backgroundColor: isFavorite ? 'var(--color-primary)' : 'rgba(11, 11, 13, 0.7)',
+            color: 'var(--color-text)',
+            boxShadow: isFavorite ? 'none' : 'inset 0 0 0 1px var(--color-border)',
+          }}
         >
           <svg
             className="h-5 w-5"
@@ -88,7 +89,12 @@ export function FavoriteButton({ propertyId, propertyTitle }: Props) {
 
         <button
           onClick={() => setShowListModal(true)}
-          className="flex items-center gap-2 rounded-xl bg-[#0B0B0D]/70 px-4 py-3 text-sm font-semibold text-white ring-1 ring-[#1F1F22] hover:ring-[#E10600]"
+          className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition"
+          style={{
+            backgroundColor: 'rgba(11, 11, 13, 0.7)',
+            color: 'var(--color-text)',
+            boxShadow: 'inset 0 0 0 1px var(--color-border)',
+          }}
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -101,12 +107,13 @@ export function FavoriteButton({ propertyId, propertyTitle }: Props) {
       {showListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setShowListModal(false)}>
           <div
-            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl"
+            className="w-full max-w-md rounded-2xl p-6 shadow-xl"
+            style={{ backgroundColor: 'var(--color-background-secondary)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Adicionar a uma lista</h3>
-              <button onClick={() => setShowListModal(false)} className="text-[#C5C5C5] hover:text-white">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Adicionar a uma lista</h3>
+              <button onClick={() => setShowListModal(false)} style={{ color: 'var(--color-text-muted)' }}>
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -118,26 +125,37 @@ export function FavoriteButton({ propertyId, propertyTitle }: Props) {
                 <button
                   key={list}
                   onClick={() => addToList(list)}
-                  className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] p-3 text-left text-sm text-white transition hover:border-[#E10600]"
+                  className="w-full rounded-lg p-3 text-left text-sm transition"
+                  style={{
+                    backgroundColor: 'var(--color-background)',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 >
                   {list}
                 </button>
               ))}
             </div>
 
-            <div className="mt-4 border-t border-[#2A2A2E] pt-4">
-              <p className="mb-2 text-sm text-[#C5C5C5]">Criar nova lista</p>
+            <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+              <p className="mb-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>Criar nova lista</p>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   placeholder="Nome da lista"
-                  className="flex-1 rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                  className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{
+                    backgroundColor: 'var(--color-background)',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 />
                 <button
                   onClick={createNewList}
-                  className="rounded-lg bg-[#E10600] px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
                   Criar
                 </button>

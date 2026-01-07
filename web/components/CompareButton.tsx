@@ -49,11 +49,11 @@ export function CompareButton({ property, size = "sm", className = "" }: Compare
     <div className="relative">
       <button
         onClick={handleClick}
-        className={`flex items-center justify-center rounded-full transition ${sizeClasses} ${
-          inCompare
-            ? "bg-[#E10600] text-white"
-            : "bg-black/50 text-white hover:bg-[#E10600] backdrop-blur"
-        } ${className}`}
+        className={`flex items-center justify-center rounded-full transition ${sizeClasses} ${className}`}
+        style={{
+          backgroundColor: inCompare ? 'var(--color-primary)' : 'rgba(0, 0, 0, 0.5)',
+          color: 'var(--color-text)',
+        }}
         title={inCompare ? "Remover da comparação" : "Adicionar à comparação"}
       >
         <svg 
@@ -73,7 +73,10 @@ export function CompareButton({ property, size = "sm", className = "" }: Compare
 
       {/* Ícone de cadeado para não autenticados */}
       {!isAuthenticated && (
-        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E10600]">
+        <div 
+          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
           <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
           </svg>

@@ -89,11 +89,11 @@ export function TaxCalculator({ valorImovel, onClose }: TaxCalculatorProps) {
   const escalaoInfo = getEscalaoInfo();
 
   return (
-    <div className="rounded-2xl bg-[#151518] p-6">
+    <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--color-background-secondary)' }}>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Calculadora de IMT</h2>
+        <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>Calculadora de IMT</h2>
         {onClose && (
-          <button onClick={onClose} className="text-[#7A7A7A] hover:text-white">
+          <button onClick={onClose} style={{ color: 'var(--color-text-muted)' }}>
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -104,35 +104,35 @@ export function TaxCalculator({ valorImovel, onClose }: TaxCalculatorProps) {
       <div className="space-y-6">
         {/* Tipo de Imóvel */}
         <div>
-          <label className="mb-2 block text-sm text-[#C5C5C5]">Tipo de Imóvel</label>
+          <label className="mb-2 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Tipo de Imóvel</label>
           <div className="flex gap-2">
             <button
               onClick={() => setTipoImovel("habitacao")}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tipoImovel === "habitacao"
-                  ? "bg-[#E10600] text-white"
-                  : "bg-[#2A2A2E] text-[#C5C5C5] hover:bg-[#3A3A3E]"
-              }`}
+              className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition"
+              style={{
+                backgroundColor: tipoImovel === "habitacao" ? 'var(--color-primary)' : 'var(--color-border)',
+                color: tipoImovel === "habitacao" ? 'white' : 'var(--color-text-muted)',
+              }}
             >
               Habitação
             </button>
             <button
               onClick={() => setTipoImovel("comercial")}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tipoImovel === "comercial"
-                  ? "bg-[#E10600] text-white"
-                  : "bg-[#2A2A2E] text-[#C5C5C5] hover:bg-[#3A3A3E]"
-              }`}
+              className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition"
+              style={{
+                backgroundColor: tipoImovel === "comercial" ? 'var(--color-primary)' : 'var(--color-border)',
+                color: tipoImovel === "comercial" ? 'white' : 'var(--color-text-muted)',
+              }}
             >
               Comercial
             </button>
             <button
               onClick={() => setTipoImovel("terreno")}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tipoImovel === "terreno"
-                  ? "bg-[#E10600] text-white"
-                  : "bg-[#2A2A2E] text-[#C5C5C5] hover:bg-[#3A3A3E]"
-              }`}
+              className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition"
+              style={{
+                backgroundColor: tipoImovel === "terreno" ? 'var(--color-primary)' : 'var(--color-border)',
+                color: tipoImovel === "terreno" ? 'white' : 'var(--color-text-muted)',
+              }}
             >
               Terreno
             </button>
@@ -142,25 +142,25 @@ export function TaxCalculator({ valorImovel, onClose }: TaxCalculatorProps) {
         {/* Finalidade (só para habitação) */}
         {tipoImovel === "habitacao" && (
           <div>
-            <label className="mb-2 block text-sm text-[#C5C5C5]">Finalidade</label>
+            <label className="mb-2 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Finalidade</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setFinalidade("propria_permanente")}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  finalidade === "propria_permanente"
-                    ? "bg-[#E10600] text-white"
-                    : "bg-[#2A2A2E] text-[#C5C5C5] hover:bg-[#3A3A3E]"
-                }`}
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition"
+                style={{
+                  backgroundColor: finalidade === "propria_permanente" ? 'var(--color-primary)' : 'var(--color-border)',
+                  color: finalidade === "propria_permanente" ? 'white' : 'var(--color-text-muted)',
+                }}
               >
                 Própria Permanente
               </button>
               <button
                 onClick={() => setFinalidade("secundaria")}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  finalidade === "secundaria"
-                    ? "bg-[#E10600] text-white"
-                    : "bg-[#2A2A2E] text-[#C5C5C5] hover:bg-[#3A3A3E]"
-                }`}
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition"
+                style={{
+                  backgroundColor: finalidade === "secundaria" ? 'var(--color-primary)' : 'var(--color-border)',
+                  color: finalidade === "secundaria" ? 'white' : 'var(--color-text-muted)',
+                }}
               >
                 Secundária/Investimento
               </button>
@@ -170,59 +170,82 @@ export function TaxCalculator({ valorImovel, onClose }: TaxCalculatorProps) {
 
         {/* Valor do Imóvel */}
         <div>
-          <label className="mb-2 block text-sm text-[#C5C5C5]">Valor do Imóvel</label>
+          <label className="mb-2 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Valor do Imóvel</label>
           <div className="relative">
             <input
               type="number"
               value={valor}
               onChange={(e) => setValor(Number(e.target.value))}
-              className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-4 py-3 pr-12 text-white outline-none focus:border-[#E10600]"
+              className="w-full rounded-lg px-4 py-3 pr-12 outline-none"
+              style={{
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+              }}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7A7A7A]">€</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }}>€</span>
           </div>
         </div>
 
         {/* Resultado */}
-        <div className="mt-6 rounded-xl bg-gradient-to-r from-[#E10600]/20 to-[#E10600]/5 p-5 border border-[#E10600]/30">
+        <div 
+          className="mt-6 rounded-xl p-5"
+          style={{
+            background: 'linear-gradient(to right, color-mix(in srgb, var(--color-primary) 20%, transparent), color-mix(in srgb, var(--color-primary) 5%, transparent))',
+            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
+          }}
+        >
           <div className="mb-4 text-center">
-            <p className="text-sm text-[#C5C5C5]">Total de Impostos</p>
-            <p className="text-4xl font-bold text-white mt-1">
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Total de Impostos</p>
+            <p className="text-4xl font-bold mt-1" style={{ color: 'var(--color-text)' }}>
               {totalImpostos.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
             </p>
           </div>
 
           <div className="space-y-3">
             {/* IMT */}
-            <div className="flex items-center justify-between rounded-lg bg-[#0B0B0D] p-4">
+            <div 
+              className="flex items-center justify-between rounded-lg p-4"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
               <div>
-                <p className="text-white font-medium">IMT</p>
-                <p className="text-xs text-[#7A7A7A]">
+                <p className="font-medium" style={{ color: 'var(--color-text)' }}>IMT</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                   {escalaoInfo.isento ? "Isento" : `Taxa: ${escalaoInfo.taxa}%`}
                 </p>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
                 {imt.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </p>
             </div>
 
             {/* Imposto de Selo */}
-            <div className="flex items-center justify-between rounded-lg bg-[#0B0B0D] p-4">
+            <div 
+              className="flex items-center justify-between rounded-lg p-4"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
               <div>
-                <p className="text-white font-medium">Imposto de Selo</p>
-                <p className="text-xs text-[#7A7A7A]">Taxa: 0,8%</p>
+                <p className="font-medium" style={{ color: 'var(--color-text)' }}>Imposto de Selo</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Taxa: 0,8%</p>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
                 {impostoSelo.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </p>
             </div>
 
             {/* Custo Total */}
-            <div className="flex items-center justify-between rounded-lg bg-[#E10600]/10 p-4 border border-[#E10600]/30">
+            <div 
+              className="flex items-center justify-between rounded-lg p-4"
+              style={{ 
+                backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
+              }}
+            >
               <div>
-                <p className="text-white font-medium">Custo Total de Aquisição</p>
-                <p className="text-xs text-[#7A7A7A]">Valor do imóvel + Impostos</p>
+                <p className="font-medium" style={{ color: 'var(--color-text)' }}>Custo Total de Aquisição</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Valor do imóvel + Impostos</p>
               </div>
-              <p className="text-xl font-bold text-[#E10600]">
+              <p className="text-xl font-bold" style={{ color: 'var(--color-primary)' }}>
                 {custoTotal.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </p>
             </div>
@@ -230,7 +253,7 @@ export function TaxCalculator({ valorImovel, onClose }: TaxCalculatorProps) {
         </div>
 
         {/* Notas */}
-        <div className="space-y-1 text-xs text-[#7A7A7A]">
+        <div className="space-y-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
           <p>• Valores para Portugal Continental (2025)</p>
           <p>• Regiões Autónomas podem ter taxas diferentes</p>
           <p>• Isenções aplicáveis não são consideradas</p>

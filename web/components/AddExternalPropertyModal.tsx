@@ -204,20 +204,25 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       
       <div
-        className="relative w-full max-w-lg rounded-2xl border border-[#2A2A2E] bg-[#151518] p-6 shadow-2xl my-8"
+        className="relative w-full max-w-lg rounded-2xl p-6 shadow-2xl my-8"
+        style={{
+          backgroundColor: 'var(--color-background-secondary)',
+          border: '1px solid var(--color-border)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-white">Adicionar Imóvel Externo</h2>
-            <p className="mt-1 text-sm text-[#7A7A7A]">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Adicionar Imóvel Externo</h2>
+            <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Cole o link e extraímos os dados automaticamente
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="rounded-lg p-2 text-[#7A7A7A] transition hover:bg-[#2A2A2E] hover:text-white"
+            className="rounded-lg p-2 transition"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -226,22 +231,22 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
         </div>
 
         {/* Portais suportados */}
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-[#7A7A7A]">
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
           <span>Portais suportados:</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">Idealista</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">Imovirtual</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">Casa Sapo</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">Supercasa</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">RE/MAX</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">ERA</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">C21</span>
-          <span className="rounded bg-[#2A2A2E] px-2 py-0.5">KW</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>Idealista</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>Imovirtual</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>Casa Sapo</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>Supercasa</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>RE/MAX</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>ERA</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>C21</span>
+          <span className="rounded px-2 py-0.5" style={{ backgroundColor: 'var(--color-border)' }}>KW</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* URL do imóvel */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+            <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
               Link do Imóvel
             </label>
             <div className="flex gap-2">
@@ -250,7 +255,12 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                 value={url}
                 onChange={handleUrlChange}
                 placeholder="Cole aqui o link do anúncio..."
-                className="flex-1 rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                className="flex-1 rounded-lg px-4 py-2.5 outline-none"
+                style={{
+                  backgroundColor: 'var(--color-background)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                }}
                 autoFocus
               />
               <button
@@ -294,7 +304,7 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
 
               {/* Título */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                   Título / Descrição
                 </label>
                 <input
@@ -303,14 +313,19 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                   value={formData.titulo}
                   onChange={handleChange}
                   placeholder="Ex: T3 com vista mar em Cascais"
-                  className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                  className="w-full rounded-lg px-4 py-2.5 outline-none"
+                  style={{
+                    backgroundColor: 'var(--color-background)',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 />
               </div>
 
               {/* Preço e Tipo de Negócio */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Preço (€) *
                   </label>
                   <input
@@ -320,18 +335,28 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                     onChange={handleChange}
                     placeholder="250000"
                     min="0"
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Tipo de Negócio
                   </label>
                   <select
                     name="tipo_negocio"
                     value={formData.tipo_negocio}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
                     <option value="Venda">Venda</option>
                     <option value="Arrendamento">Arrendamento</option>
@@ -342,14 +367,19 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
               {/* Tipologia e Tipo de Imóvel */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Tipologia
                   </label>
                   <select
                     name="tipologia"
                     value={formData.tipologia}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
                     <option value="">Selecionar</option>
                     <option value="T0">T0</option>
@@ -362,14 +392,19 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Tipo de Imóvel
                   </label>
                   <select
                     name="tipo_imovel"
                     value={formData.tipo_imovel}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
                     <option value="">Selecionar</option>
                     <option value="Apartamento">Apartamento</option>
@@ -386,7 +421,7 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
               {/* Área, Quartos, WCs */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Área (m²)
                   </label>
                   <input
@@ -396,11 +431,16 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                     onChange={handleChange}
                     placeholder="120"
                     min="0"
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     Quartos
                   </label>
                   <input
@@ -410,11 +450,16 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                     onChange={handleChange}
                     placeholder="3"
                     min="0"
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                  <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                     WCs
                   </label>
                   <input
@@ -424,14 +469,19 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                     onChange={handleChange}
                     placeholder="2"
                     min="0"
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                    className="w-full rounded-lg px-4 py-2.5 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
               </div>
 
               {/* Localização */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#D1D5DB]">
+                <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                   Localização
                 </label>
                 <input
@@ -440,7 +490,12 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
                   value={formData.localizacao}
                   onChange={handleChange}
                   placeholder="Ex: Lisboa, Cascais"
-                  className="w-full rounded-lg border border-[#2A2A2E] bg-[#1C1C1F] px-4 py-2.5 text-white placeholder-[#7A7A7A] focus:border-[#E10600] focus:outline-none focus:ring-1 focus:ring-[#E10600]"
+                  className="w-full rounded-lg px-4 py-2.5 outline-none"
+                  style={{
+                    backgroundColor: 'var(--color-background)',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 />
               </div>
             </>
@@ -463,7 +518,11 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 rounded-lg border border-[#2A2A2E] px-4 py-2.5 text-sm font-medium text-[#D1D5DB] transition hover:bg-[#2A2A2E]"
+              className="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition"
+              style={{
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
+              }}
             >
               Cancelar
             </button>
@@ -471,7 +530,8 @@ export function AddExternalPropertyModal({ isOpen, onClose }: AddExternalPropert
               <button
                 type="submit"
                 disabled={!canAddMore || !formData.preco}
-                className="flex-1 rounded-lg bg-[#E10600] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#C10500] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 Adicionar à Comparação
               </button>

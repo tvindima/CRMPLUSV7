@@ -51,14 +51,21 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
 
   if (!agent) {
     return (
-      <div className="rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
-        <h3 className="mb-2 text-sm font-semibold text-white">Consultor Responsável</h3>
-        <p className="text-sm text-[#C5C5C5]">
+      <div 
+        className="rounded-2xl p-6"
+        style={{ 
+          backgroundColor: 'var(--color-background-secondary)',
+          boxShadow: 'inset 0 0 0 1px var(--color-border)',
+        }}
+      >
+        <h3 className="mb-2 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Consultor Responsável</h3>
+        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
           Informação temporariamente indisponível.
         </p>
         <Link
           href="/contactos"
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#E10600] hover:underline"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold hover:underline"
+          style={{ color: 'var(--color-primary)' }}
         >
           Contactar agência
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,9 +77,18 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
+    <div 
+      className="space-y-4 rounded-2xl p-6"
+      style={{ 
+        backgroundColor: 'var(--color-background-secondary)',
+        boxShadow: 'inset 0 0 0 1px var(--color-border)',
+      }}
+    >
       <Link href={`/agentes/${normalizeForFilename(agent.name)}`} className="flex items-center gap-4 transition hover:opacity-80">
-        <div className="relative h-16 w-16 overflow-hidden rounded-full bg-[#0B0B0D]">
+        <div 
+          className="relative h-16 w-16 overflow-hidden rounded-full"
+          style={{ backgroundColor: 'var(--color-background)' }}
+        >
           <Image 
             src={agent.avatar || `/avatars/${normalizeForFilename(agent.name)}.png`} 
             alt={agent.name} 
@@ -81,9 +97,9 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
           />
         </div>
         <div className="flex-1">
-          <p className="text-lg font-semibold text-white hover:text-[#E10600]">{agent.name}</p>
-          <p className="text-sm text-[#C5C5C5]">Consultor Imobiliário</p>
-          {agent.team && <p className="text-xs text-[#E10600]">Equipa {agent.team}</p>}
+          <p className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{agent.name}</p>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Consultor Imobiliário</p>
+          {agent.team && <p className="text-xs" style={{ color: 'var(--color-primary)' }}>Equipa {agent.team}</p>}
         </div>
       </Link>
 
@@ -91,7 +107,8 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
         {agent.email && (
           <a
             href={`mailto:${agent.email}?subject=Interesse no imóvel: ${propertyTitle}`}
-            className="flex items-center gap-2 text-[#C5C5C5] hover:text-white"
+            className="flex items-center gap-2"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -102,7 +119,8 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
         {agent.phone && (
           <a
             href={`tel:${agent.phone}`}
-            className="flex items-center gap-2 text-[#C5C5C5] hover:text-white"
+            className="flex items-center gap-2"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -116,7 +134,8 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
         {agent.phone && (
           <a
             href={`tel:${agent.phone}`}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#E10600] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#c10500]"
+            className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -141,7 +160,12 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
 
         <button
           onClick={() => setShowContactForm(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#0B0B0D] px-4 py-3 text-sm font-semibold text-white ring-1 ring-[#2A2A2E] transition hover:ring-[#E10600]"
+          className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition"
+          style={{
+            backgroundColor: 'var(--color-background)',
+            color: 'var(--color-text)',
+            boxShadow: 'inset 0 0 0 1px var(--color-border)',
+          }}
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -154,12 +178,13 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
       {showContactForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setShowContactForm(false)}>
           <div
-            className="w-full max-w-md rounded-2xl bg-[#151518] p-6 shadow-xl"
+            className="w-full max-w-md rounded-2xl p-6 shadow-xl"
+            style={{ backgroundColor: 'var(--color-background-secondary)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Contactar {agent.name}</h3>
-              <button onClick={() => setShowContactForm(false)} className="text-[#C5C5C5] hover:text-white">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Contactar {agent.name}</h3>
+              <button onClick={() => setShowContactForm(false)} style={{ color: 'var(--color-text-muted)' }}>
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -171,12 +196,12 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
                 <svg className="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <p className="mt-4 text-white">Mensagem enviada com sucesso!</p>
+                <p className="mt-4" style={{ color: 'var(--color-text)' }}>Mensagem enviada com sucesso!</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="contact-name" className="mb-1 block text-sm text-[#C5C5C5]">Nome</label>
+                  <label htmlFor="contact-name" className="mb-1 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Nome</label>
                   <input
                     type="text"
                     id="contact-name"
@@ -185,11 +210,16 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                    className="w-full rounded-lg px-3 py-2 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-email" className="mb-1 block text-sm text-[#C5C5C5]">Email</label>
+                  <label htmlFor="contact-email" className="mb-1 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Email</label>
                   <input
                     type="email"
                     id="contact-email"
@@ -198,11 +228,16 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                    className="w-full rounded-lg px-3 py-2 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-phone" className="mb-1 block text-sm text-[#C5C5C5]">Telefone</label>
+                  <label htmlFor="contact-phone" className="mb-1 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Telefone</label>
                   <input
                     type="tel"
                     id="contact-phone"
@@ -210,11 +245,16 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
                     autoComplete="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                    className="w-full rounded-lg px-3 py-2 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-message" className="mb-1 block text-sm text-[#C5C5C5]">Mensagem</label>
+                  <label htmlFor="contact-message" className="mb-1 block text-sm" style={{ color: 'var(--color-text-muted)' }}>Mensagem</label>
                   <textarea
                     id="contact-message"
                     name="message"
@@ -223,13 +263,19 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     placeholder={`Tenho interesse no imóvel: ${propertyTitle}`}
-                    className="w-full rounded-lg border border-[#2A2A2E] bg-[#0B0B0D] px-3 py-2 text-white outline-none focus:border-[#E10600]"
+                    className="w-full rounded-lg px-3 py-2 outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={sending}
-                  className="w-full rounded-lg bg-[#E10600] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#c10500] disabled:opacity-50"
+                  className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
                   {sending ? 'A enviar...' : 'Enviar mensagem'}
                 </button>
