@@ -32,7 +32,12 @@ fi
 
 # Always run alembic migrations to keep schema up to date
 echo "🔄 Running database migrations..."
-alembic upgrade head || echo "⚠️ Migration failed or already up to date"
+if alembic upgrade head; then
+    echo "✅ Migrations applied successfully"
+else
+    echo "⚠️ Alembic migration failed, trying direct SQL fix..."
+    python fix_clients_columns.py || echo "❌ Direct SQL fix also failed"
+fi
 
 echo "🌐 Starting Uvicorn..."
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
