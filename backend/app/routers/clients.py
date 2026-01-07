@@ -10,6 +10,7 @@ from datetime import datetime, date, timedelta
 from pydantic import BaseModel, Field
 from app.database import get_db
 from app.models.client import Client
+from app.leads.models import Lead
 
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -177,6 +178,121 @@ def list_clients(
     return {
         "total": total,
         "items": [c.to_dict() for c in clients]
+    }
+
+
+@router.get("/with-leads")
+def list_clients_with_leads(
+    agent_id: Optional[int] = Query(None, description="Filtrar por agente"),
+    agency_id: Optional[int] = Query(None, description="Filtrar por agência (admin)"),
+    include_leads: bool = Query(True, description="Incluir leads do site não sincronizadas"),
+    search: Optional[str] = Query(None, description="Pesquisar por nome ou telefone"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    Listar clientes + leads do site não sincronizadas.
+    
+    - Admin: vê todos os clientes + todas as leads
+    - Agente: vê apenas os seus clientes + as suas leads atribuídas
+    
+    Leads aparecem como clientes virtuais com source="website_lead"
+    """
+    results = []
+    
+    # 1. Buscar clientes
+    client_query = db.query(Client).filter(Client.is_active == True)
+    
+    if agent_id:
+        client_query = client_query.filter(Client.agent_id == agent_id)
+    if agency_id:
+        client_query = client_query.filter(Client.agency_id == agency_id)
+    
+    if search:
+        search_term = f"%{search}%"
+        client_query = client_query.filter(
+            or_(
+                Client.nome.ilike(search_term),
+                Client.telefone.ilike(search_term),
+                Client.email.ilike(search_term)
+            )
+        )
+    
+    clients = client_query.order_by(Client.nome.asc()).all()
+    
+    # IDs de leads já sincronizadas
+    synced_lead_ids = set(c.lead_id for c in clients if c.lead_id)
+    
+    for client in clients:
+        results.append({
+            **client.to_dict(),
+            "source_type": "client"
+        })
+    
+    # 2. Buscar leads do site não sincronizadas
+    if include_leads:
+        lead_query = db.query(Lead).filter(
+            ~Lead.id.in_(synced_lead_ids) if synced_lead_ids else True
+        )
+        
+        if agent_id:
+            lead_query = lead_query.filter(Lead.assigned_agent_id == agent_id)
+        
+        if search:
+            search_term = f"%{search}%"
+            lead_query = lead_query.filter(
+                or_(
+                    Lead.name.ilike(search_term),
+                    Lead.phone.ilike(search_term),
+                    Lead.email.ilike(search_term)
+                )
+            )
+        
+        leads = lead_query.order_by(Lead.created_at.desc()).all()
+        
+        for lead in leads:
+            # Converter lead para formato de cliente
+            results.append({
+                "id": f"lead_{lead.id}",  # Prefixo para distinguir
+                "lead_id": lead.id,
+                "agent_id": lead.assigned_agent_id,
+                "agency_id": None,
+                "nome": lead.name,
+                "email": lead.email,
+                "telefone": lead.phone,
+                "notas": lead.message,
+                "client_type": "lead",
+                "origin": "website",
+                "source_type": "website_lead",  # Identificador especial
+                "property_id": lead.property_id,
+                "status": lead.status,
+                "created_at": lead.created_at.isoformat() if lead.created_at else None,
+                "is_active": True,
+                # Campos vazios para compatibilidade
+                "nif": None,
+                "cc": None,
+                "cc_validade": None,
+                "data_nascimento": None,
+                "telefone_alt": None,
+                "morada": None,
+                "codigo_postal": None,
+                "localidade": None,
+                "distrito": None,
+                "tags": [],
+            })
+    
+    # Ordenar resultados por nome
+    results.sort(key=lambda x: x.get("nome", "").lower())
+    
+    total = len(results)
+    paginated = results[skip:skip + limit]
+    
+    return {
+        "total": total,
+        "items": paginated,
+        "clients_count": len([r for r in results if r.get("source_type") == "client"]),
+        "leads_count": len([r for r in results if r.get("source_type") == "website_lead"])
     }
 
 
@@ -401,6 +517,88 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return {"success": True, "message": "Cliente removido"}
+
+
+@router.post("/sync-from-leads")
+def sync_leads_to_clients(
+    agent_id: Optional[int] = Query(None, description="Sincronizar leads de um agente específico"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sincronizar leads do site para o sistema de clientes.
+    Cria clientes a partir de leads que ainda não foram convertidos.
+    
+    - Admin: sincroniza todas as leads
+    - Agente: sincroniza apenas as suas leads
+    """
+    query = db.query(Lead)
+    
+    if agent_id:
+        query = query.filter(Lead.assigned_agent_id == agent_id)
+    
+    leads = query.all()
+    
+    created = 0
+    updated = 0
+    skipped = 0
+    
+    for lead in leads:
+        # Verificar se já existe cliente com esta lead_id
+        existing_by_lead = db.query(Client).filter(
+            Client.lead_id == lead.id
+        ).first()
+        
+        if existing_by_lead:
+            skipped += 1
+            continue
+        
+        # Verificar se já existe cliente com mesmo email ou telefone para o mesmo agente
+        existing = None
+        if lead.email:
+            existing = db.query(Client).filter(
+                Client.agent_id == lead.assigned_agent_id,
+                Client.email == lead.email,
+                Client.is_active == True
+            ).first()
+        
+        if not existing and lead.phone:
+            existing = db.query(Client).filter(
+                Client.agent_id == lead.assigned_agent_id,
+                Client.telefone == lead.phone,
+                Client.is_active == True
+            ).first()
+        
+        if existing:
+            # Atualizar cliente existente com lead_id
+            existing.lead_id = lead.id
+            existing.ultima_interacao = datetime.utcnow()
+            updated += 1
+        else:
+            # Criar novo cliente a partir da lead
+            client = Client(
+                agent_id=lead.assigned_agent_id,
+                lead_id=lead.id,
+                nome=lead.name,
+                email=lead.email,
+                telefone=lead.phone,
+                notas=lead.message,
+                client_type="lead",
+                origin="website" if lead.source == "WEBSITE" else (lead.source.lower() if lead.source else "website"),
+                property_id=lead.property_id,
+            )
+            db.add(client)
+            created += 1
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": f"Sincronização concluída",
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+        "total_processed": created + updated + skipped
+    }
 
 
 @router.post("/from-angariacao")

@@ -44,7 +44,7 @@ const CLIENT_TYPES = [
 ];
 
 interface Client {
-  id: number;
+  id: number | string;  // Pode ser "lead_123" para leads do site
   agent_id: number;
   client_type: string;
   origin: string;
@@ -63,6 +63,9 @@ interface Client {
   tags?: string[];
   created_at?: string;
   angariacao_id?: number;
+  source_type?: string;  // "client" ou "website_lead"
+  lead_id?: number;      // ID original da lead (se veio do site)
+  status?: string;       // Status da lead (NEW, CONTACTED, etc.)
 }
 
 interface ClientFormData {
@@ -113,13 +116,14 @@ const ClientsScreen: React.FC = () => {
   });
   const [saving, setSaving] = useState(false);
 
-  // Fetch clients
+  // Fetch clients (incluindo leads do site)
   const fetchClients = useCallback(async () => {
     if (!user?.agent_id) return;
     
     try {
       const params = new URLSearchParams({
         agent_id: user.agent_id.toString(),
+        include_leads: 'true',
       });
       
       if (selectedType !== 'todos') {
@@ -129,7 +133,8 @@ const ClientsScreen: React.FC = () => {
         params.append('search', searchText);
       }
       
-      const response = await fetch(`${API_URL}/clients/?${params}`, {
+      // Usar endpoint que inclui leads do site
+      const response = await fetch(`${API_URL}/clients/with-leads?${params}`, {
         headers: { 'Accept': 'application/json' },
       });
       
@@ -260,12 +265,74 @@ const ClientsScreen: React.FC = () => {
     }
   };
 
+  // Convert website lead to client
+  const convertLeadToClient = async (lead: Client): Promise<number | null> => {
+    if (!user?.agent_id) return null;
+    
+    try {
+      // Criar cliente a partir da lead
+      const body = {
+        nome: formData.nome,
+        client_type: formData.client_type,
+        origin: 'website',
+        email: formData.email || null,
+        telefone: formData.telefone || null,
+        telefone_alt: formData.telefone_alt || null,
+        morada: formData.morada || null,
+        codigo_postal: formData.codigo_postal || null,
+        localidade: formData.localidade || null,
+        notas: formData.notas || null,
+        lead_id: lead.lead_id,  // Referência à lead original
+      };
+      
+      const params = new URLSearchParams({
+        agent_id: user.agent_id.toString(),
+      });
+      
+      const response = await fetch(
+        `${API_URL}/clients/?${params}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      
+      if (response.ok) {
+        const newClient = await response.json();
+        return newClient.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error converting lead to client:', error);
+      return null;
+    }
+  };
+
   // Update client
   const handleUpdateClient = async () => {
     if (!selectedClient) return;
     
     setSaving(true);
     try {
+      // Se for lead do site, converter primeiro para cliente
+      if (selectedClient.source_type === 'website_lead') {
+        const newClientId = await convertLeadToClient(selectedClient);
+        if (newClientId) {
+          Alert.alert('Sucesso', 'Lead convertida em cliente com sucesso');
+          setShowClientDetailModal(false);
+          setSelectedClient(null);
+          loadData();
+        } else {
+          Alert.alert('Erro', 'Erro ao converter lead em cliente');
+        }
+        return;
+      }
+      
+      // Atualizar cliente normal
       const body = {
         nome: formData.nome,
         client_type: formData.client_type,
@@ -313,6 +380,16 @@ const ClientsScreen: React.FC = () => {
   // Delete client
   const handleDeleteClient = () => {
     if (!selectedClient) return;
+    
+    // Não permitir eliminar leads do site diretamente
+    if (selectedClient.source_type === 'website_lead') {
+      Alert.alert(
+        'Lead do Site',
+        'Esta é uma lead do site. Para remover, gerencie pelo backoffice na seção de Leads.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     
     Alert.alert(
       'Eliminar Cliente',
@@ -434,22 +511,39 @@ const ClientsScreen: React.FC = () => {
   // Render client item
   const renderClientItem = ({ item }: { item: Client }) => {
     const typeInfo = getTypeInfo(item.client_type);
+    const isWebsiteLead = item.source_type === 'website_lead';
     
     return (
       <TouchableOpacity
-        style={styles.clientCard}
+        style={[styles.clientCard, isWebsiteLead && styles.clientCardLead]}
         onPress={() => openClientDetail(item)}
       >
         <View style={[styles.clientAvatar, { backgroundColor: typeInfo.color + '20' }]}>
           <Ionicons name={typeInfo.icon as any} size={24} color={typeInfo.color} />
         </View>
         <View style={styles.clientInfo}>
-          <Text style={styles.clientName}>{item.nome}</Text>
+          <View style={styles.clientNameRow}>
+            <Text style={styles.clientName}>{item.nome}</Text>
+            {isWebsiteLead && (
+              <View style={styles.websiteLeadBadge}>
+                <Text style={styles.websiteLeadBadgeText}>Site</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.clientType}>
-            {typeInfo.label} • {item.origin === 'angariacao' ? 'Via Angariação' : 'Manual'}
+            {typeInfo.label} • {
+              isWebsiteLead ? 'Lead do Site' : 
+              item.origin === 'angariacao' ? 'Via Angariação' : 
+              item.origin === 'website' ? 'Site' : 'Manual'
+            }
           </Text>
           {item.telefone && (
             <Text style={styles.clientContact}>📱 {item.telefone}</Text>
+          )}
+          {isWebsiteLead && item.status && (
+            <Text style={[styles.clientContact, { color: '#f59e0b' }]}>
+              Estado: {item.status}
+            </Text>
           )}
         </View>
         <Ionicons name="chevron-forward" size={20} color="#666" />
@@ -683,10 +777,28 @@ const ClientsScreen: React.FC = () => {
                     {typeInfo.label}
                   </Text>
                 </View>
+                {selectedClient.source_type === 'website_lead' && (
+                  <View style={styles.websiteLeadInfoBanner}>
+                    <Ionicons name="globe-outline" size={16} color="#f59e0b" />
+                    <Text style={styles.websiteLeadInfoText}>
+                      Lead do Site • {selectedClient.status || 'Nova'}
+                    </Text>
+                  </View>
+                )}
                 {selectedClient.origin === 'angariacao' && (
                   <Text style={styles.detailOrigin}>Via Angariação</Text>
                 )}
               </View>
+              
+              {/* Banner de conversão para leads do site */}
+              {selectedClient.source_type === 'website_lead' && (
+                <View style={styles.convertBanner}>
+                  <Ionicons name="information-circle" size={20} color="#f59e0b" />
+                  <Text style={styles.convertBannerText}>
+                    Esta é uma lead do site. Ao guardar, será convertida em cliente.
+                  </Text>
+                </View>
+              )}
               
               {/* Quick Actions */}
               <View style={styles.quickActions}>
@@ -1047,6 +1159,10 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
+  clientCardLead: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+  },
   clientAvatar: {
     width: 50,
     height: 50,
@@ -1058,10 +1174,28 @@ const styles = StyleSheet.create({
   clientInfo: {
     flex: 1,
   },
+  clientNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   clientName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  websiteLeadBadge: {
+    backgroundColor: '#f59e0b20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+  },
+  websiteLeadBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#f59e0b',
   },
   clientType: {
     fontSize: 13,
@@ -1225,6 +1359,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#888',
     marginTop: 8,
+  },
+  websiteLeadInfoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f59e0b15',
+    borderRadius: 20,
+  },
+  websiteLeadInfoText: {
+    fontSize: 12,
+    color: '#f59e0b',
+    fontWeight: '500',
+  },
+  convertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f59e0b15',
+    borderWidth: 1,
+    borderColor: '#f59e0b40',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+    marginHorizontal: 16,
+  },
+  convertBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#f59e0b',
   },
   quickActions: {
     flexDirection: 'row',
