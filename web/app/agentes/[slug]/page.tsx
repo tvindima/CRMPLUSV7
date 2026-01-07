@@ -353,17 +353,18 @@ export default async function AgentPage({ params }: Props) {
               <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>Microsite Pessoal</p>
               <h1 className="text-lg font-semibold sm:text-3xl">{agent.name}</h1>
               {/* Botão Ver Perfil */}
-              <Link
-                href={`/agentes/${normalizeSlug(agent.name)}/perfil`}
-                className="mt-1 inline-flex items-center gap-1.5 text-xs transition"
-                style={{ color: 'var(--color-text-muted)' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
-              >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Ver Perfil Completo
+              <Link href={`/agentes/${normalizeSlug(agent.name)}/perfil`} legacyBehavior>
+                <a
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs transition"
+                  style={{ color: 'var(--color-text-muted)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Ver Perfil Completo
+                </a>
               </Link>
               <p className="mt-1 text-xs sm:text-sm" style={{ color: 'var(--color-text-muted)' }}>
                 <Link 
@@ -509,17 +510,16 @@ export default async function AgentPage({ params }: Props) {
               {agents
                 .filter(a => teamConfig.members.includes(a.id) && a.id !== agent.id)
                 .map((member) => (
-                  <Link
-                    key={member.id}
-                    href={`/agentes/${normalizeSlug(member.name)}`}
-                    className="flex items-center gap-4 rounded-xl border p-4 transition"
-                    style={{ 
-                      borderColor: 'var(--color-border)',
-                      backgroundColor: 'var(--color-background-secondary)'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)'}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-                  >
+                  <Link key={member.id} href={`/agentes/${normalizeSlug(member.name)}`} legacyBehavior>
+                    <a
+                      className="flex items-center gap-4 rounded-xl border p-4 transition"
+                      style={{ 
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-background-secondary)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                    >
                     <div 
                       className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2"
                       style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
@@ -539,6 +539,7 @@ export default async function AgentPage({ params }: Props) {
                       )}
                       <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{member.phone || member.email}</p>
                     </div>
+                    </a>
                   </Link>
                 ))}
             </div>
@@ -600,14 +601,17 @@ export default async function AgentPage({ params }: Props) {
                 <Link
                   key={member.id}
                   href={member.isAgent ? `/agentes/${normalizeSlug(member.name)}` : '#'}
-                  className={`flex items-center gap-4 rounded-xl border p-4 transition ${!member.isAgent && 'cursor-default'}`}
-                  style={{ 
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-background-secondary)'
-                  }}
-                  onMouseEnter={(e) => member.isAgent && (e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)')}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                  legacyBehavior
                 >
+                  <a
+                    className={`flex items-center gap-4 rounded-xl border p-4 transition ${!member.isAgent && 'cursor-default'}`}
+                    style={{ 
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-background-secondary)'
+                    }}
+                    onMouseEnter={(e) => member.isAgent && (e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)')}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                  >
                   <div className="relative h-16 w-16 overflow-hidden rounded-full">
                     <Image
                       src={member.avatar || "/avatars/placeholder.png"}
@@ -624,6 +628,7 @@ export default async function AgentPage({ params }: Props) {
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{member.phone}</p>
                     )}
                   </div>
+                  </a>
                 </Link>
               ))}
             </div>
