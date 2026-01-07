@@ -232,9 +232,11 @@ def list_clients_with_leads(
     
     # 2. Buscar leads do site não sincronizadas
     if include_leads:
-        lead_query = db.query(Lead).filter(
-            ~Lead.id.in_(synced_lead_ids) if synced_lead_ids else True
-        )
+        lead_query = db.query(Lead)
+        
+        # Excluir leads já sincronizadas
+        if synced_lead_ids:
+            lead_query = lead_query.filter(~Lead.id.in_(synced_lead_ids))
         
         if agent_id:
             lead_query = lead_query.filter(Lead.assigned_agent_id == agent_id)
