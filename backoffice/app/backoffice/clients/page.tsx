@@ -27,7 +27,7 @@ export default function ClientsPage() {
         const response = await fetch(`${API_URL}/clients/?limit=100`);
         if (response.ok) {
           const data = await response.json();
-          setClients(data);
+          setClients(data.items || []);
         }
       } catch (error) {
         console.error('Erro ao carregar clientes:', error);
