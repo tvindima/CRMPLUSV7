@@ -31,6 +31,10 @@ interface SuperAdmin {
 const permissionsToArray = (permissions: Record<string, boolean> | string[] | null): string[] => {
   if (!permissions) return [];
   if (Array.isArray(permissions)) return permissions;
+  // Se for objeto com "all: true", retorna todas as permissões
+  if (permissions.all === true) {
+    return ALL_PERMISSIONS;
+  }
   // Se for objeto, retorna as chaves que têm valor true
   return Object.entries(permissions)
     .filter(([_, value]) => value === true)
@@ -39,6 +43,10 @@ const permissionsToArray = (permissions: Record<string, boolean> | string[] | nu
 
 // Helper para converter array para objeto
 const permissionsToObject = (permissions: string[]): Record<string, boolean> => {
+  // Se tem super_admin ou todas as permissões, usar "all"
+  if (permissions.includes('super_admin') || permissions.length === ALL_PERMISSIONS.length) {
+    return { all: true };
+  }
   const obj: Record<string, boolean> = {};
   permissions.forEach(p => obj[p] = true);
   return obj;
@@ -195,15 +203,33 @@ export default function AdminsPage() {
   };
 
   const togglePermission = (permission: string) => {
+    // Se clicar em "super_admin", dar/tirar todas as permissões
+    if (permission === 'super_admin') {
+      if (form.permissions.includes('super_admin')) {
+        // Remover todas
+        setForm({ ...form, permissions: [] });
+      } else {
+        // Dar todas
+        setForm({ ...form, permissions: [...ALL_PERMISSIONS] });
+      }
+      return;
+    }
+    
     if (form.permissions.includes(permission)) {
       setForm({
         ...form,
-        permissions: form.permissions.filter((p) => p !== permission),
+        permissions: form.permissions.filter((p) => p !== permission && p !== 'super_admin'),
       });
     } else {
+      const newPermissions = [...form.permissions, permission];
+      // Se tem todas as outras permissões, adicionar super_admin também
+      const hasAll = ALL_PERMISSIONS.filter(p => p !== 'super_admin').every(p => newPermissions.includes(p));
+      if (hasAll) {
+        newPermissions.push('super_admin');
+      }
       setForm({
         ...form,
-        permissions: [...form.permissions, permission],
+        permissions: newPermissions,
       });
     }
   };
@@ -285,18 +311,26 @@ export default function AdminsPage() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1">
-                    {permissionsToArray(admin.permissions).slice(0, 3).map((perm) => (
-                      <span
-                        key={perm}
-                        className="px-2 py-1 bg-primary/20 text-primary rounded text-xs"
-                      >
-                        {PERMISSION_LABELS[perm] || perm}
+                    {admin.permissions?.all === true || permissionsToArray(admin.permissions).includes('super_admin') ? (
+                      <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-semibold">
+                        Super Admin (Todas)
                       </span>
-                    ))}
-                    {permissionsToArray(admin.permissions).length > 3 && (
-                      <span className="px-2 py-1 bg-text-muted/20 text-text-muted rounded text-xs">
-                        +{permissionsToArray(admin.permissions).length - 3}
-                      </span>
+                    ) : (
+                      <>
+                        {permissionsToArray(admin.permissions).slice(0, 3).map((perm) => (
+                          <span
+                            key={perm}
+                            className="px-2 py-1 bg-primary/20 text-primary rounded text-xs"
+                          >
+                            {PERMISSION_LABELS[perm] || perm}
+                          </span>
+                        ))}
+                        {permissionsToArray(admin.permissions).length > 3 && (
+                          <span className="px-2 py-1 bg-text-muted/20 text-text-muted rounded text-xs">
+                            +{permissionsToArray(admin.permissions).length - 3}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </td>
