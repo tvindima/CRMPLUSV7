@@ -12,6 +12,16 @@ const nextConfig = {
         hostname: 'crm-plus-production.up.railway.app',
         pathname: '/media/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.up.railway.app',
+        pathname: '/media/**',
+      },
     ],
   },
   compress: true,
