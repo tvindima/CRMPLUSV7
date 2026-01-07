@@ -675,6 +675,13 @@ def criar_de_first_impression(
             detail=f"Já existe CMI ({existing.numero_contrato}) para esta 1ª Impressão"
         )
     
+    # Validar cliente_nome (obrigatório)
+    if not fi.client_name or not fi.client_name.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="A 1ª Impressão não tem nome do cliente preenchido. Preencha o nome antes de criar o CMI."
+        )
+    
     # Gerar número
     ano = datetime.now().year
     count = db.query(ContratoMediacaoImobiliaria).filter(

@@ -22,8 +22,8 @@ class FirstImpressionBase(BaseModel):
     ano_construcao: Optional[int] = Field(None, ge=1500, le=2100)
     valor_patrimonial: Optional[Decimal] = Field(None, ge=0, description="Valor patrimonial em €")
     
-    # Dados Cliente
-    client_name: str = Field(..., min_length=2, max_length=255, description="Nome completo do cliente")
+    # Dados Cliente (todos opcionais - pode ser preenchido depois por OCR)
+    client_name: Optional[str] = Field(None, max_length=255, description="Nome completo do cliente (opcional - pode ser preenchido depois)")
     client_nif: Optional[str] = Field(None, max_length=20, description="NIF do cliente (opcional)")
     client_phone: Optional[str] = Field(None, min_length=9, max_length=50, description="Telefone (opcional)")
     client_email: Optional[str] = Field(None, max_length=255, description="Email (opcional)")
@@ -61,7 +61,7 @@ class FirstImpressionCreate(FirstImpressionBase):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "client_name": "João Silva",
+                "client_name": "João Silva",  # Opcional - pode ser None
                 "client_nif": "123456789",
                 "client_phone": "+351912345678",
                 "client_email": "joao@example.com",
@@ -210,7 +210,7 @@ class FirstImpressionListItem(BaseModel):
     property_id: Optional[int] = None
     lead_id: Optional[int] = None
     
-    client_name: str
+    client_name: Optional[str] = None  # ✅ Opcional - pode ser preenchido depois
     client_nif: Optional[str] = None
     client_phone: Optional[str] = None  # ✅ Corrigido: era str obrigatório, mas DB permite NULL
     

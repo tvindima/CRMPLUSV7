@@ -39,7 +39,7 @@ class FirstImpression(Base):
     valor_patrimonial = Column(DECIMAL(15, 2), nullable=True)  # €
     
     # === Dados do Cliente ===
-    client_name = Column(String(255), nullable=False)
+    client_name = Column(String(255), nullable=True)  # ✅ Opcional - pode ser preenchido depois por OCR
     client_nif = Column(String(20), nullable=True, index=True)
     client_phone = Column(String(50), nullable=True)  # ✅ Opcional
     client_email = Column(String(255), nullable=True)  # ✅ Opcional
