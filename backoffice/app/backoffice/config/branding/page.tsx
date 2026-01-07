@@ -23,7 +23,7 @@ function BrandingForm() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { showToast } = useToast();
+  const toast = useToast();
   
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
 
@@ -40,7 +40,7 @@ function BrandingForm() {
       }
     } catch (error) {
       console.error('Error fetching branding:', error);
-      showToast('Erro ao carregar configurações', 'error');
+      toast.push('Erro ao carregar configurações', 'error');
     } finally {
       setLoading(false);
     }
@@ -65,14 +65,14 @@ function BrandingForm() {
       });
 
       if (response.ok) {
-        showToast('Configurações guardadas com sucesso!', 'success');
+        toast.push('Configurações guardadas com sucesso!', 'success');
       } else {
         const error = await response.json();
-        showToast(error.detail || 'Erro ao guardar', 'error');
+        toast.push(error.detail || 'Erro ao guardar', 'error');
       }
     } catch (error) {
       console.error('Error saving branding:', error);
-      showToast('Erro ao guardar configurações', 'error');
+      toast.push('Erro ao guardar configurações', 'error');
     } finally {
       setSaving(false);
     }
@@ -84,13 +84,13 @@ function BrandingForm() {
 
     // Validar tipo
     if (!file.type.startsWith('image/')) {
-      showToast('Por favor selecione uma imagem', 'error');
+      toast.push('Por favor selecione uma imagem', 'error');
       return;
     }
 
     // Validar tamanho (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      showToast('Imagem muito grande. Máximo 2MB', 'error');
+      toast.push('Imagem muito grande. Máximo 2MB', 'error');
       return;
     }
 
@@ -111,14 +111,14 @@ function BrandingForm() {
       if (response.ok) {
         const data = await response.json();
         setSettings(prev => ({ ...prev, agency_logo_url: data.url }));
-        showToast('Logo carregado com sucesso!', 'success');
+        toast.push('Logo carregado com sucesso!', 'success');
       } else {
         const error = await response.json();
-        showToast(error.detail || 'Erro ao carregar logo', 'error');
+        toast.push(error.detail || 'Erro ao carregar logo', 'error');
       }
     } catch (error) {
       console.error('Error uploading logo:', error);
-      showToast('Erro ao carregar logo', 'error');
+      toast.push('Erro ao carregar logo', 'error');
     } finally {
       setUploading(false);
     }
