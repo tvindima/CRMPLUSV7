@@ -21,17 +21,17 @@ export function CompareFloatingBar() {
 
   return (
     <>
-    <div
-      className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-full px-6 py-3 shadow-2xl backdrop-blur-md"
-      style={{
-        backgroundColor: 'rgba(10, 10, 12, 0.95)',
-        borderColor: 'var(--color-border)',
-        borderWidth: '1px',
-        minWidth: 'min(90vw, 600px)',
-        maxWidth: 'min(90vw, 900px)',
-      }}
-    >
-      <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+      <div
+        className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-full px-6 py-3 shadow-2xl backdrop-blur-md"
+        style={{
+          backgroundColor: 'rgba(10, 10, 12, 0.95)',
+          borderColor: 'var(--color-border)',
+          borderWidth: '1px',
+          minWidth: 'min(90vw, 600px)',
+          maxWidth: 'min(90vw, 900px)',
+        }}
+      >
+        <div className="flex flex-1 items-center gap-2 overflow-x-auto">
             {compareList.map((property) => (
               <div
                 key={property.id}
@@ -102,7 +102,7 @@ export function CompareFloatingBar() {
                 )}
               </button>
             ))}
-          </div>
+        </div>
 
         {/* Contador */}
         <div className="hidden sm:block text-center">
@@ -142,13 +142,12 @@ export function CompareFloatingBar() {
           </Link>
         </div>
       </div>
-    </div>
 
-    {/* Modal para adicionar imóvel externo */}
-    <AddExternalPropertyModal
-      isOpen={showExternalModal}
-      onClose={() => setShowExternalModal(false)}
-    />
+      {/* Modal para adicionar imóvel externo */}
+      <AddExternalPropertyModal
+        isOpen={showExternalModal}
+        onClose={() => setShowExternalModal(false)}
+      />
     </>
   );
 }
