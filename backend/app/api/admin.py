@@ -381,6 +381,67 @@ def audit_database(
 
 
 # =====================================================
+# DATABASE MIGRATION - THEME COLORS
+# =====================================================
+
+@router.post("/migrate/theme-colors")
+def migrate_theme_colors(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff)
+):
+    """
+    Adiciona as colunas de cores do tema à tabela crm_settings.
+    Seguro para executar múltiplas vezes (idempotente).
+    """
+    try:
+        # Verificar e adicionar cada coluna se não existir
+        columns_to_add = [
+            ("secondary_color", "'#C5C5C5'"),
+            ("background_color", "'#0B0B0D'"),
+            ("background_secondary", "'#1A1A1F'"),
+            ("text_color", "'#FFFFFF'"),
+            ("text_muted", "'#9CA3AF'"),
+            ("border_color", "'#2A2A2E'"),
+            ("accent_color", "'#E10600'"),
+        ]
+        
+        added = []
+        already_exists = []
+        
+        for col_name, default_val in columns_to_add:
+            # Verificar se coluna existe
+            check_sql = text(f"""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'crm_settings' AND column_name = '{col_name}'
+            """)
+            result = db.execute(check_sql).fetchone()
+            
+            if not result:
+                # Adicionar coluna
+                alter_sql = text(f"""
+                    ALTER TABLE crm_settings 
+                    ADD COLUMN {col_name} VARCHAR DEFAULT {default_val}
+                """)
+                db.execute(alter_sql)
+                added.append(col_name)
+            else:
+                already_exists.append(col_name)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "added_columns": added,
+            "existing_columns": already_exists,
+            "message": f"Migration concluída. Adicionadas: {len(added)}, Já existiam: {len(already_exists)}"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro na migration: {str(e)}")
+
+
+# =====================================================
 # CRM SETTINGS - WATERMARK & BRANDING
 # =====================================================
 
