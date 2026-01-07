@@ -27,6 +27,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import { cloudinaryService } from '../services/cloudinary';
 import { preAngariacaoService } from '../services/preAngariacaoService';
+import { clientService } from '../services/clientService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/config';
 import * as FileSystem from 'expo-file-system';
@@ -839,6 +840,28 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                 morada: dados.morada || clienteMorada || '',
               }]);
               camposPreenchidos++;
+            }
+          }
+          
+          // === AUTO-CRIAR CLIENTE NA BD ===
+          // Criar automaticamente o proprietário como cliente "vendedor"
+          if (user?.agent_id && dados.nome && preAngariacaoId) {
+            try {
+              const clientResult = await clientService.createFromAngariacao(
+                user.agent_id,
+                preAngariacaoId,
+                {
+                  nome: dados.nome,
+                  nif: dados.nif,
+                  cc: dados.numero_documento,
+                  cc_validade: dados.validade,
+                  data_nascimento: dados.data_nascimento,
+                  morada: dados.morada || clienteMorada,
+                }
+              );
+              console.log('[OCR] Cliente criado/atualizado:', clientResult.action, clientResult.client?.nome);
+            } catch (clientError) {
+              console.warn('[OCR] Erro ao criar cliente (não crítico):', clientError);
             }
           }
         } else if (tipoDocumento === 'caderneta_predial') {

@@ -188,15 +188,24 @@ export default function LeadsScreenV4() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Leads</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Perfil')}>
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-          ) : (
-            <LinearGradient colors={['#00d9ff', '#d946ef']} style={styles.avatarGradient}>
-              <Text style={styles.avatarInitial}>{user?.name?.[0] || 'A'}</Text>
-            </LinearGradient>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {/* Botão para Os Meus Clientes */}
+          <TouchableOpacity 
+            style={styles.clientsButton}
+            onPress={() => navigation.navigate('Clients')}
+          >
+            <Ionicons name="people" size={22} color="#00d9ff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Perfil')}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <LinearGradient colors={['#00d9ff', '#d946ef']} style={styles.avatarGradient}>
+                <Text style={styles.avatarInitial}>{user?.name?.[0] || 'A'}</Text>
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}
@@ -337,6 +346,21 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: '#00d9ff',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clientsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1a1f2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#00d9ff33',
   },
   avatarImage: {
     width: 48,

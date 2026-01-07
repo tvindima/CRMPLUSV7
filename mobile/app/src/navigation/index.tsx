@@ -32,6 +32,7 @@ import FirstImpressionSignatureScreen from '../screens/FirstImpressionSignatureS
 import CMIFormScreen from '../screens/CMIFormScreen';
 import TaxCalculatorScreen from '../screens/TaxCalculatorScreen';
 import MortgageSimulatorScreen from '../screens/MortgageSimulatorScreen';
+import ClientsScreen from '../screens/ClientsScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   CMIForm: { cmiId?: number; firstImpressionId?: number };
   TaxCalculator: undefined;
   MortgageSimulator: undefined;
+  Clients: undefined;
 };
 
 export type TabParamList = {
@@ -97,6 +99,7 @@ function LeadsStackNavigator() {
       <LeadsStack.Screen name="LeadsMain" component={LeadsScreenV4} options={{ headerShown: false }} />
       <LeadsStack.Screen name="NewLead" component={NewLeadScreenV4} options={{ title: 'Novo Lead' }} />
       <LeadsStack.Screen name="LeadDetail" component={LeadDetailScreenV4} options={{ title: 'Detalhe do Lead' }} />
+      <LeadsStack.Screen name="Clients" component={ClientsScreen} options={{ headerShown: false }} />
     </LeadsStack.Navigator>
   );
 }

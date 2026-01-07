@@ -16,6 +16,8 @@ export interface User {
   avatar_url?: string;
   avatar?: string;
   is_active: boolean;
+  agent_id?: number;
+  agency_id?: number;
 }
 
 export interface AuthTokens {

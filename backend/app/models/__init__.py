@@ -12,5 +12,6 @@ from app.models.agent_site_preferences import AgentSitePreferences  # Preferênc
 from app.models.pre_angariacao import PreAngariacao  # Pré-angariação / Dossier
 from app.models.contrato_mediacao import ContratoMediacaoImobiliaria  # CMI
 from app.models.crm_settings import CRMSettings  # Configurações globais CRM (watermark, branding, etc.)
+from app.models.client import Client  # Base de dados de clientes por agente
 
-__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao", "ContratoMediacaoImobiliaria", "CRMSettings"]
+__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao", "ContratoMediacaoImobiliaria", "CRMSettings", "Client"]
