@@ -62,8 +62,12 @@ def get_current_user(req: Request, db: Session = Depends(lambda: None)):
     from app.database import get_db
     from app.users.models import User
     
-    if db is None:
-        db = next(get_db())
+    try:
+        if db is None:
+            db = next(get_db())
+    except Exception as e:
+        print(f"[GET_CURRENT_USER] DB connection error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro de conexão à BD")
     
     token = extract_token(req)
     if not token:
@@ -74,43 +78,59 @@ def get_current_user(req: Request, db: Session = Depends(lambda: None)):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token inválido: {str(e)}")
     
-    user_id = payload.get("user_id")
-    
-    if not user_id:
-        # Fallback para sistema antigo (email)
-        email = payload.get("email")
-        if not email:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido - sem user_id nem email")
-        user = db.query(User).filter(User.email == email).first()
+    try:
+        user_id = payload.get("user_id")
+        
+        if not user_id:
+            # Fallback para sistema antigo (email)
+            email = payload.get("email")
+            if not email:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido - sem user_id nem email")
+            user = db.query(User).filter(User.email == email).first()
+            if not user:
+                # Se o user não existe, criar automaticamente (migração)
+                print(f"[WARN] Criando user automático para {email}")
+                user = User(
+                    email=email,
+                    name=email.split('@')[0],
+                    password_hash="legacy_hash",
+                    role="admin",
+                    is_active=True
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+        else:
+            user = db.query(User).filter(User.id == user_id).first()
+        
         if not user:
-            # Se o user não existe, criar automaticamente (migração)
-            print(f"[WARN] Criando user automático para {email}")
-            user = User(
-                email=email,
-                name=email.split('@')[0],
-                password_hash="legacy_hash",
-                role="admin",
-                is_active=True
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-    else:
-        user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilizador não encontrado")
-    
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilizador inativo")
-    
-    return user
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilizador não encontrado")
+        
+        if not user.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilizador inativo")
+        
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[GET_CURRENT_USER] Error querying user: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao obter utilizador: {str(e)}")
 
 
 def require_staff(req: Request, db: Session = Depends(lambda: None)):
     """Requer qualquer utilizador autenticado (staff, admin, coordinator, agent)"""
-    user = get_current_user(req, db)
-    return user
+    try:
+        user = get_current_user(req, db)
+        return user
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        print(f"[REQUIRE_STAFF] Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro de autenticação: {str(e)}")
 
 
 def get_optional_user(req: Request, db: Session = Depends(lambda: None)) -> Optional["User"]:
