@@ -184,12 +184,77 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   // Refs
   const signatureRef = useRef<any>(null);
+  const hasUnsavedChanges = useRef(false);
 
   useEffect(() => {
     loadData();
     loadAgentData();
     ensurePreAngariacao();
   }, []);
+
+  // Auto-save quando sai do ecrã
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async (e: any) => {
+      if (!hasUnsavedChanges.current || !cmi?.id) return;
+      
+      // Guardar automaticamente antes de sair
+      try {
+        await handleAutoSave();
+        console.log('[CMI] ✅ Auto-save ao sair');
+      } catch (error) {
+        console.warn('[CMI] ⚠️ Auto-save falhou:', error);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, cmi?.id]);
+
+  // Marcar como tendo alterações não guardadas
+  const markUnsaved = () => {
+    hasUnsavedChanges.current = true;
+  };
+
+  // Auto-save silencioso (sem alerts)
+  const handleAutoSave = async () => {
+    if (!cmi?.id) return;
+    
+    const convertDateToISO = (dateStr: string | undefined): string | undefined => {
+      if (!dateStr) return undefined;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return undefined;
+    };
+
+    await cmiService.update(cmi.id, {
+      cliente_nome: clienteNome || undefined,
+      cliente_estado_civil: clienteEstadoCivil || undefined,
+      cliente_nif: clienteNif || undefined,
+      cliente_cc: clienteCc || undefined,
+      cliente_cc_validade: convertDateToISO(clienteCcValidade),
+      cliente_morada: clienteMorada || undefined,
+      cliente_codigo_postal: clienteCodigoPostal || undefined,
+      cliente_localidade: clienteLocalidade || undefined,
+      cliente_telefone: clienteTelefone || undefined,
+      cliente_email: clienteEmail || undefined,
+      cliente2_nome: cliente2Nome || undefined,
+      cliente2_nif: cliente2Nif || undefined,
+      cliente2_cc: cliente2Cc || undefined,
+      imovel_tipo: imovelTipo || undefined,
+      imovel_tipologia: imovelTipologia || undefined,
+      imovel_morada: imovelMorada || undefined,
+      imovel_codigo_postal: imovelCodigoPostal || undefined,
+      imovel_freguesia: imovelFreguesia || undefined,
+      imovel_concelho: imovelConcelho || undefined,
+      imovel_artigo_matricial: imovelArtigoMatricial || undefined,
+      valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
+      valor_minimo: valorMinimo ? parseFloat(valorMinimo) : undefined,
+    });
+    
+    hasUnsavedChanges.current = false;
+  };
 
   const mapDocs = (docs?: any[]) => {
     const counts: Record<string, number> = {};
@@ -947,8 +1012,40 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     }
   };
 
+  // === CÁLCULO DE PROGRESSO ===
+  const calculateProgress = () => {
+    const requiredFields = [
+      { name: 'Nome do Cliente', value: clienteNome },
+      { name: 'NIF do Cliente', value: clienteNif },
+      { name: 'CC do Cliente', value: clienteCc },
+      { name: 'Morada do Cliente', value: clienteMorada },
+      { name: 'Telefone do Cliente', value: clienteTelefone },
+      { name: 'Morada do Imóvel', value: imovelMorada },
+      { name: 'Tipo de Imóvel', value: imovelTipo },
+      { name: 'Valor Pretendido', value: valorPretendido },
+    ];
+    const filledCount = requiredFields.filter(f => f.value?.trim()).length;
+    return {
+      percentage: Math.round((filledCount / requiredFields.length) * 100),
+      filled: filledCount,
+      total: requiredFields.length,
+      missingFields: requiredFields.filter(f => !f.value?.trim()).map(f => f.name),
+    };
+  };
+
+  const progress = calculateProgress();
+
   // === ASSINATURAS ===
   const openSignatureModal = () => {
+    // Validar campos obrigatórios antes de permitir assinatura
+    if (progress.percentage < 75) {
+      Alert.alert(
+        'Campos em Falta',
+        `Por favor preencha pelo menos 75% dos campos obrigatórios antes de assinar.\n\nProgresso atual: ${progress.percentage}%\n\nCampos em falta:\n• ${progress.missingFields.slice(0, 5).join('\n• ')}`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     setShowSignatureModal(true);
   };
 
@@ -958,9 +1055,14 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     setShowSignatureModal(false);
 
     try {
-      await cmiService.addClientSignature(cmi.id, signature);
+      // Capturar local da assinatura automaticamente
+      const local = imovelConcelho || imovelFreguesia || 'Leiria';
+      await cmiService.addClientSignature(cmi.id, signature, local);
       setAssinaturaCliente(signature);
-      Alert.alert('Sucesso', 'Assinatura do cliente registada!');
+      Alert.alert(
+        '✅ Assinatura Registada',
+        `Assinatura do cliente guardada com sucesso!\n\nLocal: ${local}\nData: ${new Date().toLocaleDateString('pt-PT')}`
+      );
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao guardar assinatura');
     }
@@ -987,6 +1089,29 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           <Text style={styles.contractNumber}>{cmi?.numero_contrato}</Text>
           <View style={[styles.statusBadge, { backgroundColor: cmi?.status === 'assinado' ? '#34C759' : '#FF9500' }]}>
             <Text style={styles.statusText}>{cmi?.status?.toUpperCase()}</Text>
+          </View>
+          
+          {/* BARRA DE PROGRESSO */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>Preenchimento</Text>
+              <Text style={[styles.progressValue, progress.percentage === 100 && { color: '#34C759' }]}>
+                {progress.percentage}%
+              </Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View style={[
+                styles.progressBarFill,
+                { width: `${progress.percentage}%` },
+                progress.percentage === 100 && { backgroundColor: '#34C759' },
+                progress.percentage >= 75 && progress.percentage < 100 && { backgroundColor: '#00d9ff' },
+                progress.percentage < 75 && { backgroundColor: '#FF9500' },
+              ]} />
+            </View>
+            <Text style={styles.progressHint}>
+              {progress.percentage < 75 ? `${progress.missingFields.length} campos em falta para assinar` :
+               progress.percentage < 100 ? 'Pronto para assinar!' : '✓ Completo'}
+            </Text>
           </View>
         </View>
 
@@ -1067,7 +1192,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             <TextInput
               style={styles.input}
               value={clienteNome}
-              onChangeText={setClienteNome}
+              onChangeText={(v) => { setClienteNome(v); markUnsaved(); }}
               placeholder="Nome completo"
               placeholderTextColor="#666"
             />
@@ -1079,7 +1204,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               <TextInput
                 style={styles.input}
                 value={clienteNif}
-                onChangeText={setClienteNif}
+                onChangeText={(v) => { setClienteNif(v); markUnsaved(); }}
                 placeholder="123456789"
                 placeholderTextColor="#666"
                 keyboardType="number-pad"
@@ -1817,6 +1942,45 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     marginTop: 8,
+  },
+  progressContainer: {
+    width: '100%',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressLabel: {
+    color: '#888',
+    fontSize: 12,
+  },
+  progressValue: {
+    color: '#00d9ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: '#333',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#00d9ff',
+    borderRadius: 3,
+  },
+  progressHint: {
+    color: '#666',
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
   },
   statusText: {
     color: '#fff',
