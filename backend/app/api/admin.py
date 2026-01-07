@@ -711,8 +711,6 @@ def get_branding_settings(
     
     Retorna configurações de branding e tema do site.
     """
-    settings = db.query(CRMSettings).first()
-    
     # Defaults
     defaults = {
         "agency_name": "CRM Plus",
@@ -727,26 +725,62 @@ def get_branding_settings(
         "accent_color": "#E10600"
     }
     
-    if not settings:
-        # Criar settings padrão se não existir
-        settings = CRMSettings(**defaults)
-        db.add(settings)
-        db.commit()
-        db.refresh(settings)
-    
-    return BrandingSettingsOut(
-        agency_name=settings.agency_name or defaults["agency_name"],
-        agency_slogan=settings.agency_slogan or defaults["agency_slogan"],
-        agency_logo_url=settings.agency_logo_url,
-        primary_color=getattr(settings, 'primary_color', None) or defaults["primary_color"],
-        secondary_color=getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
-        background_color=getattr(settings, 'background_color', None) or defaults["background_color"],
-        background_secondary=getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
-        text_color=getattr(settings, 'text_color', None) or defaults["text_color"],
-        text_muted=getattr(settings, 'text_muted', None) or defaults["text_muted"],
-        border_color=getattr(settings, 'border_color', None) or defaults["border_color"],
-        accent_color=getattr(settings, 'accent_color', None) or defaults["accent_color"]
-    )
+    try:
+        settings = db.query(CRMSettings).first()
+        
+        if not settings:
+            # Retornar defaults se não existir (não criar automaticamente)
+            return BrandingSettingsOut(
+                agency_name=defaults["agency_name"],
+                agency_slogan=defaults["agency_slogan"],
+                agency_logo_url=None,
+                primary_color=defaults["primary_color"],
+                secondary_color=defaults["secondary_color"],
+                background_color=defaults["background_color"],
+                background_secondary=defaults["background_secondary"],
+                text_color=defaults["text_color"],
+                text_muted=defaults["text_muted"],
+                border_color=defaults["border_color"],
+                accent_color=defaults["accent_color"]
+            )
+        
+        # Helper para obter valor com fallback
+        def safe_get(attr, default):
+            try:
+                val = getattr(settings, attr, None)
+                return val if val is not None else default
+            except:
+                return default
+        
+        return BrandingSettingsOut(
+            agency_name=safe_get('agency_name', defaults["agency_name"]),
+            agency_slogan=safe_get('agency_slogan', defaults["agency_slogan"]),
+            agency_logo_url=safe_get('agency_logo_url', None),
+            primary_color=safe_get('primary_color', defaults["primary_color"]),
+            secondary_color=safe_get('secondary_color', defaults["secondary_color"]),
+            background_color=safe_get('background_color', defaults["background_color"]),
+            background_secondary=safe_get('background_secondary', defaults["background_secondary"]),
+            text_color=safe_get('text_color', defaults["text_color"]),
+            text_muted=safe_get('text_muted', defaults["text_muted"]),
+            border_color=safe_get('border_color', defaults["border_color"]),
+            accent_color=safe_get('accent_color', defaults["accent_color"])
+        )
+    except Exception as e:
+        print(f"[ADMIN BRANDING GET] Error: {e}")
+        # Retornar defaults em caso de erro
+        return BrandingSettingsOut(
+            agency_name=defaults["agency_name"],
+            agency_slogan=defaults["agency_slogan"],
+            agency_logo_url=None,
+            primary_color=defaults["primary_color"],
+            secondary_color=defaults["secondary_color"],
+            background_color=defaults["background_color"],
+            background_secondary=defaults["background_secondary"],
+            text_color=defaults["text_color"],
+            text_muted=defaults["text_muted"],
+            border_color=defaults["border_color"],
+            accent_color=defaults["accent_color"]
+        )
 
 
 @router.put("/settings/branding", response_model=BrandingSettingsOut)
@@ -760,51 +794,10 @@ def update_branding_settings(
     
     Requer autenticação de staff.
     """
-    settings = db.query(CRMSettings).first()
-    
-    if not settings:
-        settings = CRMSettings()
-        db.add(settings)
-    
-    # Atualizar campos fornecidos
-    if update.agency_name is not None:
-        settings.agency_name = update.agency_name
-    
-    if update.agency_slogan is not None:
-        settings.agency_slogan = update.agency_slogan
-    
-    if update.agency_logo_url is not None:
-        settings.agency_logo_url = update.agency_logo_url
-    
-    if update.primary_color is not None:
-        settings.primary_color = update.primary_color
-        
-    if update.secondary_color is not None:
-        settings.secondary_color = update.secondary_color
-        
-    if update.background_color is not None:
-        settings.background_color = update.background_color
-        
-    if update.background_secondary is not None:
-        settings.background_secondary = update.background_secondary
-        
-    if update.text_color is not None:
-        settings.text_color = update.text_color
-        
-    if update.text_muted is not None:
-        settings.text_muted = update.text_muted
-        
-    if update.border_color is not None:
-        settings.border_color = update.border_color
-        
-    if update.accent_color is not None:
-        settings.accent_color = update.accent_color
-    
-    db.commit()
-    db.refresh(settings)
-    
     # Defaults para resposta
     defaults = {
+        "agency_name": "CRM Plus",
+        "agency_slogan": "Sistema Imobiliário",
         "primary_color": "#E10600",
         "secondary_color": "#C5C5C5",
         "background_color": "#0B0B0D",
@@ -815,19 +808,75 @@ def update_branding_settings(
         "accent_color": "#E10600"
     }
     
-    return BrandingSettingsOut(
-        agency_name=settings.agency_name or "CRM Plus",
-        agency_slogan=settings.agency_slogan or "Sistema Imobiliário",
-        agency_logo_url=settings.agency_logo_url,
-        primary_color=getattr(settings, 'primary_color', None) or defaults["primary_color"],
-        secondary_color=getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
-        background_color=getattr(settings, 'background_color', None) or defaults["background_color"],
-        background_secondary=getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
-        text_color=getattr(settings, 'text_color', None) or defaults["text_color"],
-        text_muted=getattr(settings, 'text_muted', None) or defaults["text_muted"],
-        border_color=getattr(settings, 'border_color', None) or defaults["border_color"],
-        accent_color=getattr(settings, 'accent_color', None) or defaults["accent_color"]
-    )
+    try:
+        settings = db.query(CRMSettings).first()
+        
+        if not settings:
+            settings = CRMSettings()
+            db.add(settings)
+    
+        # Atualizar campos fornecidos
+        if update.agency_name is not None:
+            settings.agency_name = update.agency_name
+        
+        if update.agency_slogan is not None:
+            settings.agency_slogan = update.agency_slogan
+        
+        if update.agency_logo_url is not None:
+            settings.agency_logo_url = update.agency_logo_url
+        
+        if update.primary_color is not None:
+            settings.primary_color = update.primary_color
+            
+        if update.secondary_color is not None:
+            settings.secondary_color = update.secondary_color
+            
+        if update.background_color is not None:
+            settings.background_color = update.background_color
+            
+        if update.background_secondary is not None:
+            settings.background_secondary = update.background_secondary
+            
+        if update.text_color is not None:
+            settings.text_color = update.text_color
+            
+        if update.text_muted is not None:
+            settings.text_muted = update.text_muted
+            
+        if update.border_color is not None:
+            settings.border_color = update.border_color
+            
+        if update.accent_color is not None:
+            settings.accent_color = update.accent_color
+        
+        db.commit()
+        db.refresh(settings)
+        
+        # Helper para obter valor com fallback
+        def safe_get(attr, default):
+            try:
+                val = getattr(settings, attr, None)
+                return val if val is not None else default
+            except:
+                return default
+        
+        return BrandingSettingsOut(
+            agency_name=safe_get('agency_name', defaults["agency_name"]),
+            agency_slogan=safe_get('agency_slogan', defaults["agency_slogan"]),
+            agency_logo_url=safe_get('agency_logo_url', None),
+            primary_color=safe_get('primary_color', defaults["primary_color"]),
+            secondary_color=safe_get('secondary_color', defaults["secondary_color"]),
+            background_color=safe_get('background_color', defaults["background_color"]),
+            background_secondary=safe_get('background_secondary', defaults["background_secondary"]),
+            text_color=safe_get('text_color', defaults["text_color"]),
+            text_muted=safe_get('text_muted', defaults["text_muted"]),
+            border_color=safe_get('border_color', defaults["border_color"]),
+            accent_color=safe_get('accent_color', defaults["accent_color"])
+        )
+    except Exception as e:
+        print(f"[ADMIN BRANDING PUT] Error: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar branding: {str(e)}")
 
 
 @router.post("/settings/branding/upload-logo")
