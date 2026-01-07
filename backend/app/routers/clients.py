@@ -10,7 +10,6 @@ from datetime import datetime, date, timedelta
 from pydantic import BaseModel, Field
 from app.database import get_db
 from app.models.client import Client
-from app.leads.models import Lead
 
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -199,6 +198,9 @@ def list_clients_with_leads(
     
     Leads aparecem como clientes virtuais com source="website_lead"
     """
+    # Import local para evitar importação circular
+    from app.leads.models import Lead
+    
     results = []
     
     # 1. Buscar clientes
@@ -533,6 +535,9 @@ def sync_leads_to_clients(
     - Admin: sincroniza todas as leads
     - Agente: sincroniza apenas as suas leads
     """
+    # Import local para evitar importação circular
+    from app.leads.models import Lead
+    
     query = db.query(Lead)
     
     if agent_id:
