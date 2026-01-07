@@ -1,7 +1,7 @@
 """add client fields escrituras
 
 Revision ID: 20260107_175959
-Revises: 
+Revises: add_clients_table
 Create Date: 2026-01-07 17:59:59.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20260107_175959'
-down_revision = None
+down_revision = 'add_clients_table'
 branch_labels = None
 depends_on = None
 
