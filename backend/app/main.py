@@ -75,10 +75,25 @@ async def lifespan(app: FastAPI):
         exists = result.scalar()
         if not exists:
             print("📊 [LIFESPAN] Tabela 'clients' não existe. Criando...")
-            from app.models.client import Client
+            from app.models.client import Client, ClientTransacao
             from app.database import Base, engine
-            Base.metadata.create_all(bind=engine, tables=[Client.__table__])
+            Base.metadata.create_all(bind=engine, tables=[Client.__table__, ClientTransacao.__table__])
             print("✅ [LIFESPAN] Tabela 'clients' criada com sucesso!")
+        
+        # Tabela client_transacoes
+        result = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'client_transacoes'
+            )
+        """))
+        exists = result.scalar()
+        if not exists:
+            print("📊 [LIFESPAN] Tabela 'client_transacoes' não existe. Criando...")
+            from app.models.client import ClientTransacao
+            from app.database import Base, engine
+            Base.metadata.create_all(bind=engine, tables=[ClientTransacao.__table__])
+            print("✅ [LIFESPAN] Tabela 'client_transacoes' criada com sucesso!")
         
         # Tabela escrituras
         result = db.execute(text("""

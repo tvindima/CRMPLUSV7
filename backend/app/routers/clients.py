@@ -5,11 +5,12 @@ CRUD completo + auto-criação via angariações + lembretes aniversários
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, extract, func
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date, timedelta
+from decimal import Decimal
 from pydantic import BaseModel, Field
 from app.database import get_db
-from app.models.client import Client
+from app.models.client import Client, ClientTransacao
 
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -17,20 +18,57 @@ router = APIRouter(prefix="/clients", tags=["clients"])
 
 # === Pydantic Schemas ===
 
+class DocumentoSchema(BaseModel):
+    """Schema para documento"""
+    tipo: str  # cc_frente, cc_verso, nif, comprovativo_morada, procuracao, etc.
+    nome: str
+    url: str
+    data_upload: Optional[str] = None
+
+
 class ClientCreate(BaseModel):
     """Schema para criar cliente"""
     nome: str = Field(..., min_length=2)
     client_type: str = Field(default="lead")  # vendedor, comprador, investidor, etc.
     origin: str = Field(default="manual")
+    is_empresa: bool = Field(default=False)
     
     # Dados pessoais (opcionais)
     nif: Optional[str] = None
     cc: Optional[str] = None
     cc_validade: Optional[date] = None
     data_nascimento: Optional[date] = None
+    naturalidade: Optional[str] = None
     nacionalidade: Optional[str] = None
-    estado_civil: Optional[str] = None
     profissao: Optional[str] = None
+    entidade_empregadora: Optional[str] = None
+    
+    # Estado civil
+    estado_civil: Optional[str] = None
+    regime_casamento: Optional[str] = None
+    data_casamento: Optional[date] = None
+    
+    # Dados cônjuge
+    conjuge_nome: Optional[str] = None
+    conjuge_nif: Optional[str] = None
+    conjuge_cc: Optional[str] = None
+    conjuge_cc_validade: Optional[date] = None
+    conjuge_data_nascimento: Optional[date] = None
+    conjuge_naturalidade: Optional[str] = None
+    conjuge_nacionalidade: Optional[str] = None
+    conjuge_profissao: Optional[str] = None
+    conjuge_email: Optional[str] = None
+    conjuge_telefone: Optional[str] = None
+    
+    # Dados empresa
+    empresa_nome: Optional[str] = None
+    empresa_nipc: Optional[str] = None
+    empresa_sede: Optional[str] = None
+    empresa_capital_social: Optional[Decimal] = None
+    empresa_conservatoria: Optional[str] = None
+    empresa_matricula: Optional[str] = None
+    empresa_cargo: Optional[str] = None
+    empresa_poderes: Optional[str] = None
     
     # Contactos
     email: Optional[str] = None
@@ -39,13 +77,21 @@ class ClientCreate(BaseModel):
     
     # Morada
     morada: Optional[str] = None
+    numero_porta: Optional[str] = None
+    andar: Optional[str] = None
     codigo_postal: Optional[str] = None
     localidade: Optional[str] = None
+    concelho: Optional[str] = None
     distrito: Optional[str] = None
+    pais: Optional[str] = "Portugal"
+    
+    # Documentos
+    documentos: Optional[List[DocumentoSchema]] = []
     
     # CRM
     notas: Optional[str] = None
     tags: Optional[List[str]] = []
+    preferencias: Optional[Dict[str, Any]] = {}
     
     # Relações
     angariacao_id: Optional[int] = None
@@ -57,15 +103,44 @@ class ClientUpdate(BaseModel):
     """Schema para atualizar cliente"""
     nome: Optional[str] = None
     client_type: Optional[str] = None
+    is_empresa: Optional[bool] = None
     
     # Dados pessoais
     nif: Optional[str] = None
     cc: Optional[str] = None
     cc_validade: Optional[date] = None
     data_nascimento: Optional[date] = None
+    naturalidade: Optional[str] = None
     nacionalidade: Optional[str] = None
-    estado_civil: Optional[str] = None
     profissao: Optional[str] = None
+    entidade_empregadora: Optional[str] = None
+    
+    # Estado civil
+    estado_civil: Optional[str] = None
+    regime_casamento: Optional[str] = None
+    data_casamento: Optional[date] = None
+    
+    # Dados cônjuge
+    conjuge_nome: Optional[str] = None
+    conjuge_nif: Optional[str] = None
+    conjuge_cc: Optional[str] = None
+    conjuge_cc_validade: Optional[date] = None
+    conjuge_data_nascimento: Optional[date] = None
+    conjuge_naturalidade: Optional[str] = None
+    conjuge_nacionalidade: Optional[str] = None
+    conjuge_profissao: Optional[str] = None
+    conjuge_email: Optional[str] = None
+    conjuge_telefone: Optional[str] = None
+    
+    # Dados empresa
+    empresa_nome: Optional[str] = None
+    empresa_nipc: Optional[str] = None
+    empresa_sede: Optional[str] = None
+    empresa_capital_social: Optional[Decimal] = None
+    empresa_conservatoria: Optional[str] = None
+    empresa_matricula: Optional[str] = None
+    empresa_cargo: Optional[str] = None
+    empresa_poderes: Optional[str] = None
     
     # Contactos
     email: Optional[str] = None
@@ -74,18 +149,43 @@ class ClientUpdate(BaseModel):
     
     # Morada
     morada: Optional[str] = None
+    numero_porta: Optional[str] = None
+    andar: Optional[str] = None
     codigo_postal: Optional[str] = None
     localidade: Optional[str] = None
+    concelho: Optional[str] = None
     distrito: Optional[str] = None
+    pais: Optional[str] = None
+    
+    # Documentos
+    documentos: Optional[List[DocumentoSchema]] = None
     
     # CRM
     notas: Optional[str] = None
     tags: Optional[List[str]] = None
+    preferencias: Optional[Dict[str, Any]] = None
     proxima_acao: Optional[str] = None
     proxima_acao_data: Optional[datetime] = None
     
     # Estado
     is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None
+
+
+class TransacaoCreate(BaseModel):
+    """Schema para criar transação"""
+    tipo: str  # venda, compra, arrendamento_senhorio, arrendamento_inquilino
+    descricao: Optional[str] = None
+    referencia_imovel: Optional[str] = None
+    property_id: Optional[int] = None
+    valor: Optional[Decimal] = None
+    comissao: Optional[Decimal] = None
+    data: date
+    data_contrato: Optional[date] = None
+    outra_parte_nome: Optional[str] = None
+    outra_parte_nif: Optional[str] = None
+    notas: Optional[str] = None
+    documentos: Optional[List[DocumentoSchema]] = []
 
 
 class ClientResponse(BaseModel):
@@ -95,6 +195,7 @@ class ClientResponse(BaseModel):
     agency_id: Optional[int]
     client_type: str
     origin: str
+    is_empresa: bool
     nome: str
     nif: Optional[str]
     cc: Optional[str]
@@ -753,4 +854,261 @@ def create_client_from_angariacao(
         "success": True,
         "action": "created",
         "client": client.to_dict()
+    }
+
+
+# ====================================================
+# TRANSAÇÕES DO CLIENTE
+# ====================================================
+
+@router.get("/{client_id}/transacoes")
+def list_client_transacoes(
+    client_id: int,
+    tipo: Optional[str] = Query(None, description="Filtrar por tipo: venda, compra, etc."),
+    db: Session = Depends(get_db)
+):
+    """
+    Listar histórico de transações de um cliente
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    query = db.query(ClientTransacao).filter(ClientTransacao.client_id == client_id)
+    
+    if tipo:
+        query = query.filter(ClientTransacao.tipo == tipo)
+    
+    transacoes = query.order_by(ClientTransacao.data.desc()).all()
+    
+    return {
+        "client_id": client_id,
+        "total": len(transacoes),
+        "items": [t.to_dict() for t in transacoes]
+    }
+
+
+@router.post("/{client_id}/transacoes")
+def create_client_transacao(
+    client_id: int,
+    data: TransacaoCreate,
+    agent_id: int = Query(..., description="ID do agente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Registar nova transação para um cliente
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    transacao = ClientTransacao(
+        client_id=client_id,
+        agent_id=agent_id,
+        property_id=data.property_id,
+        tipo=data.tipo,
+        descricao=data.descricao,
+        referencia_imovel=data.referencia_imovel,
+        valor=data.valor,
+        comissao=data.comissao,
+        data=data.data,
+        data_contrato=data.data_contrato,
+        outra_parte_nome=data.outra_parte_nome,
+        outra_parte_nif=data.outra_parte_nif,
+        notas=data.notas,
+        documentos=[d.model_dump() for d in data.documentos] if data.documentos else []
+    )
+    
+    db.add(transacao)
+    
+    # Atualizar última interação do cliente
+    client.ultima_interacao = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(transacao)
+    
+    return {
+        "success": True,
+        "message": "Transação registada com sucesso",
+        "transacao": transacao.to_dict()
+    }
+
+
+@router.delete("/{client_id}/transacoes/{transacao_id}")
+def delete_client_transacao(
+    client_id: int,
+    transacao_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Eliminar transação de um cliente
+    """
+    transacao = db.query(ClientTransacao).filter(
+        ClientTransacao.id == transacao_id,
+        ClientTransacao.client_id == client_id
+    ).first()
+    
+    if not transacao:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    db.delete(transacao)
+    db.commit()
+    
+    return {"success": True, "message": "Transação eliminada"}
+
+
+# ====================================================
+# DOCUMENTOS DO CLIENTE
+# ====================================================
+
+@router.get("/{client_id}/documentos")
+def list_client_documentos(
+    client_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Listar documentos de um cliente
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    return {
+        "client_id": client_id,
+        "documentos": client.documentos or []
+    }
+
+
+@router.post("/{client_id}/documentos")
+def add_client_documento(
+    client_id: int,
+    documento: DocumentoSchema,
+    db: Session = Depends(get_db)
+):
+    """
+    Adicionar documento ao cliente
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Adicionar data de upload se não tiver
+    doc_dict = documento.model_dump()
+    if not doc_dict.get("data_upload"):
+        doc_dict["data_upload"] = datetime.utcnow().isoformat()
+    
+    # Inicializar lista se for None
+    if client.documentos is None:
+        client.documentos = []
+    
+    # Verificar se já existe documento do mesmo tipo
+    existing_idx = None
+    for idx, d in enumerate(client.documentos):
+        if d.get("tipo") == documento.tipo:
+            existing_idx = idx
+            break
+    
+    if existing_idx is not None:
+        # Substituir documento existente
+        client.documentos[existing_idx] = doc_dict
+    else:
+        # Adicionar novo
+        client.documentos.append(doc_dict)
+    
+    # Marcar campo como modificado (necessário para JSON em SQLAlchemy)
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(client, "documentos")
+    
+    db.commit()
+    db.refresh(client)
+    
+    return {
+        "success": True,
+        "message": "Documento adicionado",
+        "documentos": client.documentos
+    }
+
+
+@router.delete("/{client_id}/documentos/{tipo}")
+def remove_client_documento(
+    client_id: int,
+    tipo: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Remover documento do cliente por tipo
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    if not client.documentos:
+        raise HTTPException(status_code=404, detail="Cliente não tem documentos")
+    
+    # Filtrar documento pelo tipo
+    original_len = len(client.documentos)
+    client.documentos = [d for d in client.documentos if d.get("tipo") != tipo]
+    
+    if len(client.documentos) == original_len:
+        raise HTTPException(status_code=404, detail=f"Documento do tipo '{tipo}' não encontrado")
+    
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(client, "documentos")
+    
+    db.commit()
+    
+    return {"success": True, "message": f"Documento '{tipo}' removido"}
+
+
+# ====================================================
+# ESTATÍSTICAS DO CLIENTE
+# ====================================================
+
+@router.get("/{client_id}/stats")
+def get_client_stats(
+    client_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obter estatísticas de um cliente
+    - Total de transações
+    - Volume total negociado
+    - Comissões geradas
+    - Documentos pendentes
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    transacoes = db.query(ClientTransacao).filter(
+        ClientTransacao.client_id == client_id
+    ).all()
+    
+    total_vendas = sum(t.valor or 0 for t in transacoes if t.tipo == "venda")
+    total_compras = sum(t.valor or 0 for t in transacoes if t.tipo == "compra")
+    total_comissoes = sum(t.comissao or 0 for t in transacoes)
+    
+    # Verificar documentos obrigatórios
+    docs_existentes = {d.get("tipo") for d in (client.documentos or [])}
+    docs_obrigatorios = {"cc_frente", "cc_verso", "comprovativo_morada"}
+    docs_pendentes = docs_obrigatorios - docs_existentes
+    
+    return {
+        "client_id": client_id,
+        "total_transacoes": len(transacoes),
+        "transacoes_por_tipo": {
+            "vendas": len([t for t in transacoes if t.tipo == "venda"]),
+            "compras": len([t for t in transacoes if t.tipo == "compra"]),
+            "arrendamentos": len([t for t in transacoes if "arrendamento" in t.tipo]),
+            "outros": len([t for t in transacoes if t.tipo not in ["venda", "compra"] and "arrendamento" not in t.tipo])
+        },
+        "volume_vendas": float(total_vendas),
+        "volume_compras": float(total_compras),
+        "total_comissoes": float(total_comissoes),
+        "documentos_total": len(client.documentos or []),
+        "documentos_pendentes": list(docs_pendentes),
+        "is_verified": client.is_verified,
+        "estado_civil": client.estado_civil,
+        "tem_conjuge": bool(client.conjuge_nome),
+        "is_empresa": client.is_empresa,
     }
