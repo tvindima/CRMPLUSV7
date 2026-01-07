@@ -59,6 +59,27 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 [LIFESPAN] Aplicação iniciada")
     
+    # Verificar/criar tabela clients se não existir
+    try:
+        from sqlalchemy import text
+        db = next(get_db())
+        result = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'clients'
+            )
+        """))
+        exists = result.scalar()
+        if not exists:
+            print("📊 [LIFESPAN] Tabela 'clients' não existe. Criando...")
+            from app.models.client import Client
+            from app.database import Base, engine
+            Base.metadata.create_all(bind=engine, tables=[Client.__table__])
+            print("✅ [LIFESPAN] Tabela 'clients' criada com sucesso!")
+        db.close()
+    except Exception as e:
+        print(f"⚠️ [LIFESPAN] Erro ao verificar tabela clients: {e}")
+    
     yield
     
     # Shutdown
