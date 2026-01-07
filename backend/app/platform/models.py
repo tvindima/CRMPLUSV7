@@ -54,6 +54,16 @@ class Tenant(Base):
     is_trial = Column(Boolean, default=False)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
     
+    # Provisioning status - estados: pending, provisioning, ready, failed
+    status = Column(String(20), default='pending', nullable=False)
+    provisioning_error = Column(Text, nullable=True)
+    provisioned_at = Column(DateTime(timezone=True), nullable=True)
+    failed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Schema tracking
+    schema_name = Column(String(100), nullable=True)  # ex: 'tenant_imoveismais'
+    schema_revision = Column(String(100), nullable=True)  # última migration aplicada
+    
     # Branding override (se diferente do padrão)
     logo_url = Column(String(500), nullable=True)
     primary_color = Column(String(20), nullable=True)
@@ -62,8 +72,21 @@ class Tenant(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Status helpers
+    @property
+    def is_ready(self) -> bool:
+        return self.status == 'ready'
+    
+    @property
+    def is_failed(self) -> bool:
+        return self.status == 'failed'
+    
+    @property
+    def needs_provisioning(self) -> bool:
+        return self.status in ('pending', 'failed')
+    
     def __repr__(self):
-        return f"<Tenant {self.slug}: {self.name}>"
+        return f"<Tenant {self.slug}: {self.name} ({self.status})>"
 
 
 class SuperAdmin(Base):

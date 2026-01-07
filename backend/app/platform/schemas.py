@@ -61,6 +61,28 @@ class TenantOut(TenantBase):
     features: Dict[str, Any] = {}
     created_at: Optional[datetime] = None
     
+    # Provisioning status
+    status: str = "pending"
+    provisioning_error: Optional[str] = None
+    provisioned_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    schema_name: Optional[str] = None
+    schema_revision: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TenantProvisioningStatus(BaseModel):
+    """Status de provisionamento de um tenant"""
+    tenant_id: int
+    tenant_slug: str
+    status: str  # pending, provisioning, ready, failed
+    provisioning_error: Optional[str] = None
+    provisioned_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    schema_name: Optional[str] = None
+    schema_revision: Optional[str] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
 

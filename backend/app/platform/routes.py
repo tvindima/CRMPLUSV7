@@ -24,7 +24,19 @@ from app.platform import schemas
 router = APIRouter(prefix="/platform", tags=["platform"])
 
 # Secret key para tokens de super admin (diferente do token normal)
-PLATFORM_SECRET = os.environ.get("PLATFORM_SECRET", "platform_super_secret_change_me")
+# FAIL-FAST: Não há fallback - aplicação não inicia sem secret definido
+PLATFORM_SECRET = os.environ.get("PLATFORM_SECRET")
+if not PLATFORM_SECRET:
+    import sys
+    print("[FATAL] PLATFORM_SECRET não está definido. Configure a variável de ambiente.")
+    print("[FATAL] A aplicação não pode iniciar sem PLATFORM_SECRET.")
+    # Em produção, falhar imediatamente. Em desenvolvimento, permitir continuar com aviso.
+    if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("VERCEL"):
+        sys.exit(1)
+    else:
+        print("[WARN] Modo desenvolvimento detectado - usando secret temporário (NÃO USAR EM PRODUÇÃO)")
+        PLATFORM_SECRET = "dev_only_secret_not_for_production"
+
 PLATFORM_TOKEN_EXPIRE_HOURS = 24
 
 
@@ -65,6 +77,12 @@ def ensure_platform_tables(db: Session):
                     is_active BOOLEAN DEFAULT true,
                     is_trial BOOLEAN DEFAULT false,
                     trial_ends_at TIMESTAMP WITH TIME ZONE,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    provisioning_error TEXT,
+                    provisioned_at TIMESTAMP WITH TIME ZONE,
+                    failed_at TIMESTAMP WITH TIME ZONE,
+                    schema_name VARCHAR(100),
+                    schema_revision VARCHAR(100),
                     logo_url VARCHAR(500),
                     primary_color VARCHAR(20),
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -517,6 +535,61 @@ def get_tenant_by_domain(domain: str, db: Session = Depends(get_db)):
     return tenant
 
 
+def provision_tenant_schema_internal(db: Session, tenant: Tenant) -> dict:
+    """
+    Função interna para provisionar schema de um tenant.
+    Usada tanto na criação inicial como no retry.
+    
+    Returns:
+        dict com status e detalhes
+    """
+    schema_name = f"tenant_{tenant.slug}"
+    
+    try:
+        # Marcar como provisioning
+        tenant.status = 'provisioning'
+        tenant.provisioning_error = None
+        db.commit()
+        
+        # Criar schema
+        create_tenant_schema(db, schema_name)
+        
+        # Copiar estrutura das tabelas principais para o novo schema
+        result = copy_tables_to_schema(db, schema_name)
+        
+        # Marcar como ready
+        tenant.status = 'ready'
+        tenant.schema_name = schema_name
+        tenant.provisioned_at = datetime.utcnow()
+        tenant.failed_at = None
+        tenant.provisioning_error = None
+        db.commit()
+        
+        print(f"[PLATFORM] ✅ Schema '{schema_name}' provisionado com sucesso para tenant {tenant.slug}")
+        
+        return {
+            "success": True,
+            "schema_name": schema_name,
+            "tables_created": result.get("created", []),
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        # Marcar como failed
+        tenant.status = 'failed'
+        tenant.provisioning_error = str(e)
+        tenant.failed_at = datetime.utcnow()
+        db.commit()
+        
+        print(f"[PLATFORM] ❌ Erro ao provisionar schema para tenant {tenant.slug}: {e}")
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "schema_name": schema_name
+        }
+
+
 @router.post("/tenants", response_model=schemas.TenantOut, status_code=201)
 async def create_tenant(
     tenant_data: schemas.TenantCreate,
@@ -531,9 +604,9 @@ async def create_tenant(
     Este endpoint:
     1. Valida que o slug não está em uso
     2. Valida que os domínios não estão em uso
-    3. Cria o registo do tenant na tabela principal
-    4. Cria um schema PostgreSQL isolado para o tenant
-    5. Copia a estrutura das tabelas para o novo schema
+    3. Cria o registo do tenant na tabela principal (status=pending)
+    4. Tenta provisionar o schema PostgreSQL isolado
+    5. Actualiza status para ready ou failed
     """
     # Verificar se slug já existe
     existing = db.query(Tenant).filter(Tenant.slug == tenant_data.slug).first()
@@ -554,31 +627,96 @@ async def create_tenant(
                 detail=f"Domínio '{tenant_data.primary_domain}' já está em uso"
             )
     
+    # Criar tenant com status pending
     tenant = Tenant(**tenant_data.model_dump())
+    tenant.status = 'pending'
+    tenant.schema_name = f"tenant_{tenant_data.slug}"
     db.add(tenant)
     db.commit()
     db.refresh(tenant)
     
-    # ===========================================
-    # CRIAR SCHEMA ISOLADO PARA O TENANT
-    # ===========================================
-    try:
-        schema_name = f"tenant_{tenant.slug}"
-        
-        # Criar schema
-        create_tenant_schema(db, schema_name)
-        
-        # Copiar estrutura das tabelas principais para o novo schema
-        copy_tables_to_schema(db, schema_name)
-        
-        print(f"[PLATFORM] Schema '{schema_name}' criado com sucesso para tenant {tenant.slug}")
-        
-    except Exception as e:
-        # Se falhar a criação do schema, log mas não falha o endpoint
-        # O tenant foi criado, o schema pode ser criado manualmente depois
-        print(f"[PLATFORM] AVISO: Erro ao criar schema para tenant {tenant.slug}: {e}")
+    # Provisionar schema (síncrono mas com tracking de estado)
+    provision_result = provision_tenant_schema_internal(db, tenant)
+    
+    # Refresh para obter estado actualizado
+    db.refresh(tenant)
+    
+    # Se falhou, ainda retornamos o tenant mas com status failed
+    # O caller pode verificar tenant.status
+    if not provision_result["success"]:
+        print(f"[PLATFORM] Tenant criado mas provisionamento falhou: {provision_result['error']}")
     
     return tenant
+
+
+@router.post("/tenants/{tenant_id}/retry-provisioning", response_model=schemas.TenantProvisioningStatus)
+async def retry_tenant_provisioning(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Retry de provisionamento de schema para tenant que falhou.
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    
+    Apenas tenants com status 'pending' ou 'failed' podem ser re-provisionados.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    if tenant.status not in ('pending', 'failed'):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tenant está com status '{tenant.status}'. Apenas tenants 'pending' ou 'failed' podem ser re-provisionados."
+        )
+    
+    # Tentar provisionar
+    provision_result = provision_tenant_schema_internal(db, tenant)
+    
+    # Refresh para obter estado actualizado
+    db.refresh(tenant)
+    
+    return schemas.TenantProvisioningStatus(
+        tenant_id=tenant.id,
+        tenant_slug=tenant.slug,
+        status=tenant.status,
+        provisioning_error=tenant.provisioning_error,
+        provisioned_at=tenant.provisioned_at,
+        failed_at=tenant.failed_at,
+        schema_name=tenant.schema_name,
+        schema_revision=tenant.schema_revision
+    )
+
+
+@router.get("/tenants/provisioning-status", response_model=list[schemas.TenantProvisioningStatus])
+async def get_tenants_provisioning_status(
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Listar status de provisionamento de todos os tenants.
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    
+    Útil para dashboard de monitorização.
+    """
+    tenants = db.query(Tenant).all()
+    
+    return [
+        schemas.TenantProvisioningStatus(
+            tenant_id=t.id,
+            tenant_slug=t.slug,
+            status=t.status or 'unknown',
+            provisioning_error=t.provisioning_error,
+            provisioned_at=t.provisioned_at,
+            failed_at=t.failed_at,
+            schema_name=t.schema_name,
+            schema_revision=t.schema_revision
+        )
+        for t in tenants
+    ]
 
 
 @router.put("/tenants/{tenant_id}", response_model=schemas.TenantOut)
@@ -649,38 +787,11 @@ async def provision_tenant_schema(
     current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """
-    Provisionar schema para tenant existente - PROTEGIDO.
+    DEPRECATED - Use POST /tenants/{tenant_id}/retry-provisioning
     
-    Útil para:
-    - Tenants criados antes do multi-tenancy
-    - Recriação de schema após problemas
-    - Migração manual de dados
+    Mantido para compatibilidade. Redireciona internamente para retry-provisioning.
     """
-    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant não encontrado")
-    
-    schema_name = f"tenant_{tenant.slug}"
-    
-    try:
-        # Criar schema
-        create_tenant_schema(db, schema_name)
-        
-        # Copiar estrutura das tabelas
-        result = copy_tables_to_schema(db, schema_name)
-        
-        return {
-            "message": f"Schema '{schema_name}' provisionado com sucesso",
-            "tenant_slug": tenant.slug,
-            "schema_name": schema_name,
-            "tables_created": result.get("created", [])
-        }
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao provisionar schema: {str(e)}"
-        )
+    return await retry_tenant_provisioning(tenant_id, db, current_admin)
 
 
 # ===========================================
