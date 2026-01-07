@@ -196,7 +196,7 @@ export default async function ImovelDetail({ params }: Props) {
 
       <div className="space-y-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-[#C5C5C5]" itemScope itemType="https://schema.org/BreadcrumbList">
+        <nav className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }} itemScope itemType="https://schema.org/BreadcrumbList">
           <Link href="/" className="hover:text-white" itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
             <span itemProp="name">Início</span>
             <meta itemProp="position" content="1" />
@@ -225,7 +225,7 @@ export default async function ImovelDetail({ params }: Props) {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 {property.reference && (
-                  <span className="mb-2 inline-block rounded bg-[#E10600]/20 px-3 py-1 text-sm font-bold uppercase tracking-wider text-[#E10600] ring-1 ring-[#E10600]/30">
+                  <span className="mb-2 inline-block rounded px-3 py-1 text-sm font-bold uppercase tracking-wider ring-1" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', color: 'var(--color-primary)', borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
                     {property.reference}
                   </span>
                 )}
@@ -239,18 +239,18 @@ export default async function ImovelDetail({ params }: Props) {
                     ✓ VENDIDO
                   </span>
                 )}
-                <p className="text-sm uppercase tracking-[0.2em] text-[#E10600]">
+                <p className="text-sm uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>
                   {property.business_type || "Venda"}
                 </p>
                 <h1 className="text-2xl font-semibold text-white md:text-4xl">
                   {property.property_type || "Imóvel"} {property.typology}
                 </h1>
-                <p className="mt-2 text-lg text-[#C5C5C5]">{fullLocation}</p>
+                <p className="mt-2 text-lg" style={{ color: 'var(--color-text-muted)' }}>{fullLocation}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-white md:text-3xl">{price}</p>
                 {property.usable_area && property.price && (
-                  <p className="text-sm text-[#C5C5C5]">
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {Math.round(property.price / property.usable_area).toLocaleString("pt-PT")} €/m²
                   </p>
                 )}
@@ -260,27 +260,27 @@ export default async function ImovelDetail({ params }: Props) {
             {/* Quick Info Pills */}
             <div className="flex flex-wrap gap-3">
               {property.typology && (
-                <span className="rounded-full bg-[#E10600]/20 px-4 py-2 text-sm font-semibold text-[#E10600]">
+                <span className="rounded-full px-4 py-2 text-sm font-semibold" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', color: 'var(--color-primary)' }}>
                   {property.typology}
                 </span>
               )}
               {property.usable_area && (
-                <span className="rounded-full bg-[#151518] px-4 py-2 text-sm text-[#C5C5C5]">
+                <span className="rounded-full px-4 py-2 text-sm" style={{ backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }}>
                   {property.usable_area} m² úteis
                 </span>
               )}
               {property.area && property.area !== property.usable_area && (
-                <span className="rounded-full bg-[#151518] px-4 py-2 text-sm text-[#C5C5C5]">
+                <span className="rounded-full px-4 py-2 text-sm" style={{ backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }}>
                   {property.area} m² brutos
                 </span>
               )}
               {property.energy_certificate && (
-                <span className="rounded-full bg-[#151518] px-4 py-2 text-sm text-[#C5C5C5]">
+                <span className="rounded-full px-4 py-2 text-sm" style={{ backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }}>
                   Cert. Energético: {property.energy_certificate}
                 </span>
               )}
               {property.condition && (
-                <span className="rounded-full bg-[#151518] px-4 py-2 text-sm text-[#C5C5C5]">
+                <span className="rounded-full px-4 py-2 text-sm" style={{ backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }}>
                   {property.condition}
                 </span>
               )}
@@ -310,23 +310,23 @@ export default async function ImovelDetail({ params }: Props) {
 
           {/* Description */}
           {property.description && (
-            <div className="space-y-3 rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
-              <h2 className="text-lg font-semibold text-white">Descrição</h2>
-              <p className="whitespace-pre-line text-[#C5C5C5]">{property.description}</p>
+            <div className="space-y-3 rounded-2xl p-6 ring-1" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Descrição</h2>
+              <p className="whitespace-pre-line" style={{ color: 'var(--color-text-muted)' }}>{property.description}</p>
             </div>
           )}
 
           {/* Observations */}
           {property.observations && (
-            <div className="space-y-3 rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
-              <h2 className="text-lg font-semibold text-white">Observações</h2>
-              <p className="whitespace-pre-line text-[#C5C5C5]">{property.observations}</p>
+            <div className="space-y-3 rounded-2xl p-6 ring-1" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Observações</h2>
+              <p className="whitespace-pre-line" style={{ color: 'var(--color-text-muted)' }}>{property.observations}</p>
             </div>
           )}
 
           {/* Details Table */}
-          <div className="rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
-            <h2 className="mb-4 text-lg font-semibold text-white">Detalhes do Imóvel</h2>
+          <div className="rounded-2xl p-6 ring-1" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+            <h2 className="mb-4 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Detalhes do Imóvel</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <DetailRow label="Referência" value={property.reference || property.title} />
               <DetailRow label="Tipo de Imóvel" value={property.property_type} />
@@ -346,7 +346,7 @@ export default async function ImovelDetail({ params }: Props) {
           </div>
 
           {/* Map Section */}
-          <div className="rounded-2xl bg-[#151518] p-6 ring-1 ring-[#1F1F22]">
+          <div className="rounded-2xl p-6 ring-1" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
             <PropertyMap
               location={property.location || ""}
               municipality={property.municipality}
@@ -372,14 +372,14 @@ export default async function ImovelDetail({ params }: Props) {
                 propertyTitle={property.title}
               />
 
-              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B0B0D]/70 px-4 py-3 text-sm font-semibold text-white ring-1 ring-[#1F1F22] transition hover:ring-[#E10600]">
+              <button className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold ring-1 transition" style={{ backgroundColor: 'color-mix(in srgb, var(--color-background) 70%, transparent)', color: 'var(--color-text)', borderColor: 'var(--color-border)' }}>
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
                 Partilhar imóvel
               </button>
 
-              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B0B0D]/70 px-4 py-3 text-sm font-semibold text-white ring-1 ring-[#1F1F22] transition hover:ring-[#E10600]">
+              <button className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold ring-1 transition" style={{ backgroundColor: 'color-mix(in srgb, var(--color-background) 70%, transparent)', color: 'var(--color-text)', borderColor: 'var(--color-border)' }}>
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
@@ -406,9 +406,9 @@ export default async function ImovelDetail({ params }: Props) {
 function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
   return (
-    <div className="flex justify-between border-b border-[#1F1F22] pb-2">
-      <span className="text-sm text-[#C5C5C5]">{label}</span>
-      <span className="text-sm font-medium text-white">{value}</span>
+    <div className="flex justify-between border-b pb-2" style={{ borderColor: 'var(--color-border)' }}>
+      <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{value}</span>
     </div>
   );
 }

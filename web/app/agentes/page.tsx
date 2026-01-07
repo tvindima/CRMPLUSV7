@@ -50,11 +50,11 @@ export default async function EquipaPage() {
     <div className="space-y-12">
       {/* Hero Section */}
       <section className="text-center">
-        <p className="text-sm uppercase tracking-[0.3em] text-[#E10600]">A Nossa Equipa</p>
+        <p className="text-sm uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>A Nossa Equipa</p>
         <h1 className="mt-2 text-2xl font-bold text-white md:text-5xl">
           Profissionais dedicados ao seu sucesso
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-[#C5C5C5]">
+        <p className="mx-auto mt-4 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
           Conheça os consultores e colaboradores que fazem da Imóveis Mais uma referência no mercado imobiliário.
           Cada membro da nossa equipa está comprometido em proporcionar-lhe a melhor experiência.
         </p>
@@ -75,17 +75,26 @@ export default async function EquipaPage() {
       />
 
       {/* CTA Section */}
-      <section className="rounded-3xl border border-[#2A2A2E] bg-gradient-to-br from-[#151518] to-[#0B0B0D] p-8 text-center md:p-12">
+      <section 
+        className="rounded-3xl border p-8 text-center md:p-12"
+        style={{ 
+          borderColor: 'var(--color-border)',
+          background: 'linear-gradient(to bottom right, var(--color-background-secondary), var(--color-background))'
+        }}
+      >
         <h2 className="text-2xl font-semibold text-white md:text-3xl">
           Quer fazer parte da nossa equipa?
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-[#C5C5C5]">
+        <p className="mx-auto mt-4 max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
           Estamos sempre à procura de talentos para se juntarem à família Imóveis Mais.
           Se tem paixão pelo imobiliário, entre em contacto connosco.
         </p>
         <a
           href="/contactos"
-          className="mt-6 inline-block rounded-full bg-[#E10600] px-6 py-2.5 font-semibold text-white transition hover:bg-[#C10500] md:px-8 md:py-3"
+          className="mt-6 inline-block rounded-full px-6 py-2.5 font-semibold text-white transition md:px-8 md:py-3"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+          onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.85)'}
+          onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
         >
           Contacte-nos
         </a>

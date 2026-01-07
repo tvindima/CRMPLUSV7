@@ -19,10 +19,11 @@ export default function BlogPage() {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="rounded-xl border border-[#2A2A2E] bg-[#151518] p-4 hover:border-[#E10600]"
+            className="rounded-xl border p-4 transition"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-[#E10600]">{post.date}</p>
-            <h3 className="text-lg font-semibold text-white">{post.title}</h3>
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>{post.date}</p>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{post.title}</h3>
           </Link>
         ))}
       </div>

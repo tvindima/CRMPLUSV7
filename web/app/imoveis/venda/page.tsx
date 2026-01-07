@@ -27,7 +27,7 @@ export default function VendaPage() {
   return (
     <div className="space-y-6">
       <SectionHeader eyebrow="Imóveis" title="Imóveis para Venda" subtitle="Filtrados por negócio: venda." />
-      {loading && <p className="text-[#C5C5C5]">A carregar…</p>}
+      {loading && <p style={{ color: 'var(--color-text-muted)' }}>A carregar…</p>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (
           <PropertyCard key={p.id} property={p} />

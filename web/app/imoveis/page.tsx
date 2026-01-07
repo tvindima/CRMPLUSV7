@@ -110,9 +110,9 @@ function ImoveisContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#E10600]">Portefólio</p>
-          <h1 className="text-xl font-semibold md:text-3xl">Imóveis em destaque</h1>
-          <p className="text-sm text-[#C5C5C5]">Explora a montra visual ao estilo catálogo Netflix.</p>
+          <p className="text-sm uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>Portefólio</p>
+          <h1 className="text-xl font-semibold md:text-3xl" style={{ color: 'var(--color-text)' }}>Imóveis em destaque</h1>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Explora a montra visual ao estilo catálogo Netflix.</p>
         </div>
       </div>
 
@@ -121,21 +121,24 @@ function ImoveisContent() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar por referência ou localização"
-          className="w-full max-w-sm rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-full max-w-sm rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         />
-        <label className="flex items-center gap-2 rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white cursor-pointer hover:border-[#E10600] transition">
+        <label className="flex items-center gap-2 rounded border px-3 py-2 text-sm cursor-pointer transition" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}>
           <input
             type="checkbox"
             checked={showReservedSold}
             onChange={(e) => setShowReservedSold(e.target.checked)}
-            className="h-4 w-4 accent-[#E10600]"
+            className="h-4 w-4"
+            style={{ accentColor: 'var(--color-primary)' }}
           />
           <span>Mostrar Reservados/Vendidos</span>
         </label>
         <select
           value={filterBusiness}
           onChange={(e) => setFilterBusiness(e.target.value)}
-          className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
           <option value="">Compra / Arrendamento</option>
           {businessTypes.map(type => (
@@ -145,7 +148,8 @@ function ImoveisContent() {
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
           <option value="">Todos os tipos</option>
           {propertyTypes.map(type => (
@@ -155,7 +159,8 @@ function ImoveisContent() {
         <select
           value={filterTypology}
           onChange={(e) => setFilterTypology(e.target.value)}
-          className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
           <option value="">Todas tipologias</option>
           {typologies.map(typ => (
@@ -165,7 +170,8 @@ function ImoveisContent() {
         <select
           value={filterMunicipality}
           onChange={(e) => setFilterMunicipality(e.target.value)}
-          className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
           <option value="">Todos concelhos</option>
           {municipalities.map(mun => (
@@ -177,26 +183,28 @@ function ImoveisContent() {
           onChange={(e) => setPriceMin(e.target.value)}
           type="number"
           placeholder="Preço mín"
-          className="w-32 rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-32 rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         />
         <input
           value={priceMax}
           onChange={(e) => setPriceMax(e.target.value)}
           type="number"
           placeholder="Preço máx"
-          className="w-32 rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+          className="w-32 rounded border px-3 py-2 text-sm outline-none"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         />
       </div>
 
-      <div className="flex items-center justify-between text-sm text-[#C5C5C5]">
+      <div className="flex items-center justify-between text-sm" style={{ color: 'var(--color-text-muted)' }}>
         <p>{filtered.length} imóveis encontrados</p>
         {totalPages > 1 && <p>Página {currentPage} de {totalPages}</p>}
       </div>
 
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2A2A2E] border-t-[#E10600]"></div>
-          <p className="text-sm text-[#C5C5C5]">A carregar imóveis…</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-4" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }}></div>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>A carregar imóveis…</p>
         </div>
       )}
       
@@ -206,11 +214,12 @@ function ImoveisContent() {
           <div className="text-center">
             <p className="text-lg font-semibold text-red-400">Erro ao carregar imóveis</p>
             <p className="text-sm text-red-300/70">{error}</p>
-            <p className="mt-2 text-xs text-[#C5C5C5]">Verifique a sua ligação à internet</p>
+            <p className="mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>Verifique a sua ligação à internet</p>
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-lg bg-[#E10600] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+            className="rounded-lg px-6 py-2 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             Tentar novamente
           </button>
@@ -224,7 +233,8 @@ function ImoveisContent() {
               <Link
                 href={`/imovel/${encodeURIComponent(p.reference || p.title || "")}`}
                 key={p.id}
-                className="group overflow-hidden rounded-2xl border border-[#1F1F22] bg-[#0F0F10] shadow-lg shadow-[#E10600]/10 transition hover:-translate-y-1 hover:shadow-[#E10600]/25"
+                className="group overflow-hidden rounded-2xl border shadow-lg transition hover:-translate-y-1"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}
               >
               <div className="relative h-48 w-full overflow-hidden">
                 <SafeImage
@@ -235,7 +245,7 @@ function ImoveisContent() {
                 />
                 <div className="absolute left-3 top-3 flex gap-2">
                   {p.typology && (
-                    <span className="rounded-full bg-[#E10600]/90 px-3 py-1 text-xs font-semibold text-white">{p.typology}</span>
+                    <span className="rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 90%, transparent)' }}>{p.typology}</span>
                   )}
                   <span className="rounded-full bg-black/70 px-3 py-1 text-xs text-white">{p.business_type || "—"}</span>
                 </div>
@@ -250,20 +260,20 @@ function ImoveisContent() {
               </div>
               <div className="space-y-2 p-4">
                 {p.reference && (
-                  <p className="text-xs font-mono font-semibold text-[#E10600] uppercase tracking-wider">
+                  <p className="text-xs font-mono font-semibold uppercase tracking-wider" style={{ color: 'var(--color-primary)' }}>
                     {p.reference}
                   </p>
                 )}
-                <h3 className="text-lg font-semibold text-white group-hover:text-[#E10600] transition">{p.title || "Imóvel"}</h3>
-                <p className="text-sm text-[#C5C5C5]">
+                <h3 className="text-lg font-semibold transition" style={{ color: 'var(--color-text)' }}>{p.title || "Imóvel"}</h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                   {p.location || [p.municipality, p.parish].filter(Boolean).join(", ") || "Localização não disponível"}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-white">
+                <div className="flex flex-wrap items-center gap-3 text-sm" style={{ color: 'var(--color-text)' }}>
                   <span className="font-semibold">
                     {p.price ? `${p.price.toLocaleString("pt-PT")} €` : "Preço sob consulta"}
                   </span>
-                  {p.usable_area && <span className="text-[#C5C5C5]">{p.usable_area} m²</span>}
-                  {p.energy_certificate && <span className="text-[#C5C5C5]">CCE {p.energy_certificate}</span>}
+                  {p.usable_area && <span style={{ color: 'var(--color-text-muted)' }}>{p.usable_area} m²</span>}
+                  {p.energy_certificate && <span style={{ color: 'var(--color-text-muted)' }}>CCE {p.energy_certificate}</span>}
                 </div>
               </div>
             </Link>
@@ -276,7 +286,8 @@ function ImoveisContent() {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded border border-[#2A2A2E] px-4 py-2 text-sm text-white transition hover:border-[#E10600] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded border px-4 py-2 text-sm transition disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
             >
               Anterior
             </button>
@@ -285,11 +296,11 @@ function ImoveisContent() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`h-10 w-10 rounded text-sm font-semibold transition ${
-                    page === currentPage
-                      ? 'bg-[#E10600] text-white'
-                      : 'border border-[#2A2A2E] text-[#C5C5C5] hover:border-[#E10600] hover:text-white'
-                  }`}
+                  className={`h-10 w-10 rounded text-sm font-semibold transition`}
+                  style={page === currentPage
+                    ? { backgroundColor: 'var(--color-primary)', color: 'var(--color-text)' }
+                    : { borderWidth: '1px', borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }
+                  }
                 >
                   {page}
                 </button>
@@ -298,7 +309,8 @@ function ImoveisContent() {
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded border border-[#2A2A2E] px-4 py-2 text-sm text-white transition hover:border-[#E10600] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded border px-4 py-2 text-sm transition disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
             >
               Próxima
             </button>
@@ -308,11 +320,11 @@ function ImoveisContent() {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-[#2A2A2E] bg-[#0F0F10] p-12">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border p-12" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}>
           <div className="text-6xl opacity-30">🔍</div>
           <div className="text-center">
-            <p className="text-lg font-semibold text-white">Nenhum imóvel encontrado</p>
-            <p className="mt-2 text-sm text-[#C5C5C5]">
+            <p className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Nenhum imóvel encontrado</p>
+            <p className="mt-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Experimente ajustar os filtros ou limpar a pesquisa
             </p>
           </div>
@@ -326,7 +338,8 @@ function ImoveisContent() {
               setPriceMin("");
               setPriceMax("");
             }}
-            className="mt-2 rounded-lg border border-[#E10600] px-6 py-2 text-sm font-semibold text-[#E10600] transition hover:bg-[#E10600] hover:text-white"
+            className="mt-2 rounded-lg border px-6 py-2 text-sm font-semibold transition"
+            style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
           >
             Limpar filtros
           </button>

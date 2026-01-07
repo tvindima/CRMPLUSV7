@@ -18,10 +18,11 @@ export default function EmpreendimentosPage() {
           <Link
             key={item.slug}
             href={`/empreendimentos/${item.slug}`}
-            className="rounded-xl border border-[#2A2A2E] bg-[#151518] p-4 hover:border-[#E10600]"
+            className="rounded-xl border p-4 transition"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}
           >
-            <h3 className="text-lg font-semibold text-white">{item.nome}</h3>
-            <p className="text-sm text-[#C5C5C5]">{item.status}</p>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{item.nome}</h3>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{item.status}</p>
           </Link>
         ))}
       </div>

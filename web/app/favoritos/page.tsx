@@ -79,7 +79,7 @@ export default function FavoritosPage() {
   if (!isClient) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E10600] border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
       </div>
     );
   }
@@ -97,7 +97,7 @@ export default function FavoritosPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Os Meus Favoritos</h1>
-          <p className="text-[#7A7A7A]">
+          <p style={{ color: 'var(--color-text-muted)' }}>
             {favorites.length} {favorites.length === 1 ? "imóvel guardado" : "imóveis guardados"}
           </p>
         </div>
@@ -115,21 +115,22 @@ export default function FavoritosPage() {
       </div>
 
       {favorites.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-[#2A2A2E] bg-[#1A1A1E]/50 py-16">
-          <div className="rounded-full bg-[#E10600]/10 p-6">
-            <svg className="h-12 w-12 text-[#E10600]" fill="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed py-16" style={{ borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-background-secondary) 50%, transparent)' }}>
+          <div className="rounded-full p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}>
+            <svg className="h-12 w-12" style={{ color: 'var(--color-primary)' }} fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>
           </div>
           <div className="text-center">
             <h2 className="text-xl font-semibold">Ainda não tem favoritos</h2>
-            <p className="mt-2 text-[#7A7A7A]">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Explore os nossos imóveis e guarde os que mais gostar!
             </p>
           </div>
           <Link
             href="/imoveis"
-            className="rounded-full bg-[#E10600] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+            className="rounded-full px-6 py-3 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             Explorar imóveis
           </Link>
@@ -138,14 +139,14 @@ export default function FavoritosPage() {
         <>
           {/* Tabs for lists */}
           {customLists.length > 1 && (
-            <div className="flex flex-wrap gap-2 border-b border-[#2A2A2E] pb-4">
+            <div className="flex flex-wrap gap-2 border-b pb-4" style={{ borderColor: 'var(--color-border)' }}>
               <button
                 onClick={() => setActiveTab("all")}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  activeTab === "all"
-                    ? "bg-[#E10600] text-white"
-                    : "bg-[#1A1A1E] text-[#C5C5C5] hover:text-white"
-                }`}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition`}
+                style={activeTab === "all" 
+                  ? { backgroundColor: 'var(--color-primary)', color: 'var(--color-text)' }
+                  : { backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }
+                }
               >
                 Todos ({favorites.length})
               </button>
@@ -153,11 +154,12 @@ export default function FavoritosPage() {
                 <button
                   key={list.name}
                   onClick={() => setActiveTab(list.name)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    activeTab === list.name
-                      ? "bg-[#E10600] text-white"
-                      : "bg-[#1A1A1E] text-[#C5C5C5] hover:text-white"
-                  }`}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition`}
+                  style={activeTab === list.name 
+                    ? { backgroundColor: 'var(--color-primary)', color: 'var(--color-text)' }
+                    : { backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }
+                  }
+                >
                 >
                   {list.name} ({list.properties.length})
                 </button>
@@ -170,7 +172,8 @@ export default function FavoritosPage() {
             {displayFavorites.map((property) => (
               <div
                 key={property.reference}
-                className="group relative overflow-hidden rounded-2xl border border-[#2A2A2E] bg-[#1A1A1E] transition hover:border-[#E10600]/30"
+                className="group relative overflow-hidden rounded-2xl border transition"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}
               >
                 <Link href={`/imovel/${encodeURIComponent(property.reference)}`}>
                   <div className="relative aspect-[4/3] overflow-hidden">
@@ -198,25 +201,25 @@ export default function FavoritosPage() {
 
                 {/* List badge */}
                 {property.listName && property.listName !== "Favoritos" && (
-                  <span className="absolute left-3 top-3 rounded-full bg-[#E10600]/90 px-3 py-1 text-xs font-medium text-white">
+                  <span className="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-medium text-white" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 90%, transparent)' }}>
                     {property.listName}
                   </span>
                 )}
 
                 <div className="p-4">
                   <Link href={`/imovel/${encodeURIComponent(property.reference)}`}>
-                    <h3 className="font-semibold text-white transition hover:text-[#E10600]">
+                    <h3 className="font-semibold transition" style={{ color: 'var(--color-text)' }}>
                       {property.title}
                     </h3>
                   </Link>
-                  <p className="mt-1 text-sm text-[#7A7A7A]">{property.location}</p>
+                  <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>{property.location}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-lg font-bold text-[#E10600]">
+                    <span className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>
                       {property.price > 0
                         ? property.price.toLocaleString("pt-PT", { style: "currency", currency: "EUR" })
                         : "Sob consulta"}
                     </span>
-                    <span className="text-xs text-[#7A7A7A]">
+                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                       Adicionado em {new Date(property.addedAt).toLocaleDateString("pt-PT")}
                     </span>
                   </div>

@@ -67,7 +67,8 @@ function RailCard({ property, index, showRanking }: { property: Property; index:
   return (
     <Link
       href={`/imovel/${encodeURIComponent(property.reference || property.title || `imovel-${property.id}`)}`}
-      className="group relative min-w-[160px] sm:min-w-[200px] md:min-w-[220px] snap-start overflow-hidden rounded-xl md:rounded-2xl bg-[#101012] transition hover:-translate-y-1"
+      className="group relative min-w-[160px] sm:min-w-[200px] md:min-w-[220px] snap-start overflow-hidden rounded-xl md:rounded-2xl transition hover:-translate-y-1"
+      style={{ backgroundColor: 'var(--color-background-secondary)' }}
     >
       <div className="relative h-36 sm:h-44 md:h-48 w-full overflow-hidden">
         <SafeImage
@@ -83,10 +84,10 @@ function RailCard({ property, index, showRanking }: { property: Property; index:
         )}
         <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
           <p className="text-xs sm:text-sm font-semibold text-white line-clamp-1">{property.title || property.reference}</p>
-          <p className="text-[10px] sm:text-xs text-[#C5C5C5] line-clamp-1">{property.location || property.municipality || "Localização reservada"}</p>
+          <p className="text-[10px] sm:text-xs line-clamp-1" style={{ color: 'var(--color-text-muted)' }}>{property.location || property.municipality || "Localização reservada"}</p>
         </div>
       </div>
-      <div className="flex items-center justify-between px-2 sm:px-3 md:px-3 py-2 md:py-3 text-[10px] sm:text-xs text-[#C5C5C5]">
+      <div className="flex items-center justify-between px-2 sm:px-3 md:px-3 py-2 md:py-3 text-[10px] sm:text-xs" style={{ color: 'var(--color-text-muted)' }}>
         <span className="font-semibold text-white">{price}</span>
         {property.typology && <span>{property.typology}</span>}
       </div>
@@ -110,13 +111,13 @@ function SpotlightCardVertical({ property }: { property: Property }) {
           sizes="300px"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-        <span className="absolute left-4 top-4 rounded-full bg-[#E10600] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+        <span className="absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
           Destaque
         </span>
       </div>
       <div className="absolute inset-0 flex flex-col justify-end p-5">
         <h3 className="text-xl font-semibold text-white line-clamp-2">{property.title || property.reference}</h3>
-        <div className="mt-2 space-y-1 text-sm text-[#C5C5C5]">
+        <div className="mt-2 space-y-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
           <p>{property.typology || property.property_type || "Tipologia —"}</p>
           <p className="font-semibold text-white">{price}</p>
           <p className="text-xs">{property.location || property.municipality || "Localização reservada"}</p>
@@ -313,13 +314,20 @@ export default async function AgentPage({ params }: Props) {
   const rails = getRailData(availableForRails);
 
   return (
-    <div className="min-h-screen bg-[#050506] text-white">
+    <div className="min-h-screen text-white" style={{ backgroundColor: 'var(--color-background)' }}>
       {/* Agent Header Banner */}
-      <div className="relative border-b border-[#111113] bg-gradient-to-br from-[#E10600]/10 via-[#0B0B0D] to-[#050506]">
+      <div 
+        className="relative border-b"
+        style={{ 
+          borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+          background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--color-primary) 10%, transparent), var(--color-background), var(--color-background))'
+        }}
+      >
         <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-8">
           <Link
             href="/agentes"
-            className="mb-4 inline-flex items-center gap-2 text-sm text-[#C5C5C5] transition hover:text-white"
+            className="mb-4 inline-flex items-center gap-2 text-sm transition hover:text-white"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -328,7 +336,10 @@ export default async function AgentPage({ params }: Props) {
           </Link>
 
           <div className="flex flex-row flex-wrap items-start gap-3 sm:gap-6">
-            <div className="relative h-14 w-14 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-[#E10600]/30">
+            <div 
+              className="relative h-14 w-14 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-full border-4"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
+            >
               <Image
                 src={optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeSlug(agent.name)}.png`}
                 alt={agent.name}
@@ -339,22 +350,26 @@ export default async function AgentPage({ params }: Props) {
               />
             </div>
             <div className="flex-1 min-w-[220px]">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">Microsite Pessoal</p>
+              <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>Microsite Pessoal</p>
               <h1 className="text-lg font-semibold sm:text-3xl">{agent.name}</h1>
               {/* Botão Ver Perfil */}
               <Link
                 href={`/agentes/${normalizeSlug(agent.name)}/perfil`}
-                className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#C5C5C5] transition hover:text-[#E10600]"
+                className="mt-1 inline-flex items-center gap-1.5 text-xs transition"
+                style={{ color: 'var(--color-text-muted)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Ver Perfil Completo
               </Link>
-              <p className="mt-1 text-xs sm:text-sm text-[#C5C5C5]">
+              <p className="mt-1 text-xs sm:text-sm" style={{ color: 'var(--color-text-muted)' }}>
                 <Link 
                   href={teamConfig ? `/imoveis?team=${encodeURIComponent(teamConfig.members.join(','))}` : `/imoveis?agent_id=${agent.id}`}
-                  className="font-semibold text-[#E10600] hover:underline"
+                  className="font-semibold hover:underline"
+                  style={{ color: 'var(--color-primary)' }}
                 >
                   {properties.length} imóveis
                 </Link>
@@ -364,15 +379,17 @@ export default async function AgentPage({ params }: Props) {
                 {agent.phone && (
                   <a
                     href={`tel:${(phoneToCall || '').replace(/\s/g, '')}`}
-                    className="text-xs font-semibold text-[#E10600] hover:underline"
+                    className="text-xs font-semibold hover:underline"
+                    style={{ color: 'var(--color-primary)' }}
                   >
                     {phoneToCall || agent.phone}
                   </a>
                 )}
-                <span className="text-[#2A2A2E]">•</span>
+                <span style={{ color: 'var(--color-border)' }}>•</span>
                 <a
                   href={`mailto:${agent.email}`}
-                  className="text-xs text-[#C5C5C5] hover:text-white"
+                  className="text-xs hover:text-white"
+                  style={{ color: 'var(--color-text-muted)' }}
                 >
                   {agent.email}
                 </a>
@@ -394,7 +411,10 @@ export default async function AgentPage({ params }: Props) {
                 ) : (
                   <a
                     href={`mailto:${agent.email}?subject=Contacto via Imóveis Mais`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#E10600] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#B80500]"
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white transition"
+                    style={{ backgroundColor: 'var(--color-primary)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.85)'}
+                    onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -405,7 +425,13 @@ export default async function AgentPage({ params }: Props) {
                 {agent.phone && (
                   <a
                     href={`tel:${(phoneToCall || '').replace(/\s/g, '')}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[#E10600] px-3 py-2 text-xs font-semibold text-[#E10600] transition hover:bg-[#E10600]/10"
+                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition"
+                    style={{ 
+                      borderColor: 'var(--color-primary)',
+                      color: 'var(--color-primary)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary) 10%, transparent)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -456,7 +482,7 @@ export default async function AgentPage({ params }: Props) {
               </div>
               {/* Bio do Agente */}
               {agent.bio && (
-                <p className="mt-4 max-w-xl text-sm text-[#C5C5C5] line-clamp-2">
+                <p className="mt-4 max-w-xl text-sm line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
                   {agent.bio}
                 </p>
               )}
@@ -472,7 +498,7 @@ export default async function AgentPage({ params }: Props) {
         {teamConfig && (
           <section className="mx-auto max-w-6xl space-y-6 px-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">
+              <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>
                 Equipa {agents.find(a => a.id === teamConfig.teamLeader)?.name.split(' ')[0]}
               </p>
               <h2 className="text-lg font-semibold sm:text-3xl">
@@ -486,9 +512,18 @@ export default async function AgentPage({ params }: Props) {
                   <Link
                     key={member.id}
                     href={`/agentes/${normalizeSlug(member.name)}`}
-                    className="flex items-center gap-4 rounded-xl border border-[#2A2A2E] bg-[#151518] p-4 transition hover:border-[#E10600]/50"
+                    className="flex items-center gap-4 rounded-xl border p-4 transition"
+                    style={{ 
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-background-secondary)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
                   >
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-[#E10600]/30">
+                    <div 
+                      className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2"
+                      style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
+                    >
                       <Image
                         src={member.avatar || `/avatars/${normalizeSlug(member.name)}.png`}
                         alt={member.name}
@@ -500,9 +535,9 @@ export default async function AgentPage({ params }: Props) {
                     <div className="flex-1">
                       <p className="font-semibold text-white">{member.name}</p>
                       {member.id === teamConfig.teamLeader && (
-                        <p className="text-xs text-[#E10600]">Chefe de Equipa</p>
+                        <p className="text-xs" style={{ color: 'var(--color-primary)' }}>Chefe de Equipa</p>
                       )}
-                      <p className="text-xs text-[#C5C5C5]">{member.phone || member.email}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{member.phone || member.email}</p>
                     </div>
                   </Link>
                 ))}
@@ -517,9 +552,9 @@ export default async function AgentPage({ params }: Props) {
                 <div key={rail.title} className="space-y-4 px-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">{rail.title.includes("Top") ? "Top 10" : "Coleção"}</p>
+                      <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>{rail.title.includes("Top") ? "Top 10" : "Coleção"}</p>
                       <h3 className="text-lg font-semibold md:text-2xl">
-                        {rail.title} <span className="text-sm text-[#666]">({rail.totalItems} imóveis)</span>
+                        {rail.title} <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>({rail.totalItems} imóveis)</span>
                       </h3>
                     </div>
                     {rail.totalItems > MAX_ITEMS_PER_RAIL && (
@@ -528,7 +563,8 @@ export default async function AgentPage({ params }: Props) {
                           ? `/imoveis?team=${encodeURIComponent(teamConfig.members.join(','))}${rail.filterQuery ? '&' + rail.filterQuery.slice(1) : ''}`
                           : `/imoveis?agent_id=${agent.id}${rail.filterQuery ? '&' + rail.filterQuery.slice(1) : ''}`
                         }
-                        className="flex items-center gap-2 text-sm font-semibold text-[#E10600] transition hover:text-white"
+                        className="flex items-center gap-2 text-sm font-semibold transition hover:text-white"
+                        style={{ color: 'var(--color-primary)' }}
                       >
                         Ver Todos
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -552,7 +588,7 @@ export default async function AgentPage({ params }: Props) {
         {teamMembers.length > 0 && (
           <section className="mx-auto max-w-6xl space-y-6 px-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">
+              <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>
                 Equipa Imóveis Mais
               </p>
               <h2 className="text-lg font-semibold sm:text-3xl">
@@ -564,9 +600,13 @@ export default async function AgentPage({ params }: Props) {
                 <Link
                   key={member.id}
                   href={member.isAgent ? `/agentes/${normalizeSlug(member.name)}` : '#'}
-                  className={`flex items-center gap-4 rounded-xl border border-[#2A2A2E] bg-[#151518] p-4 transition ${
-                    member.isAgent ? 'hover:border-[#E10600]/50' : 'cursor-default'
-                  }`}
+                  className={`flex items-center gap-4 rounded-xl border p-4 transition ${!member.isAgent && 'cursor-default'}`}
+                  style={{ 
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-background-secondary)'
+                  }}
+                  onMouseEnter={(e) => member.isAgent && (e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 50%, transparent)')}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
                 >
                   <div className="relative h-16 w-16 overflow-hidden rounded-full">
                     <Image
@@ -579,9 +619,9 @@ export default async function AgentPage({ params }: Props) {
                   </div>
                   <div>
                     <h4 className="font-semibold text-white">{member.name}</h4>
-                    <p className="text-sm text-[#E10600]">{member.role}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-primary)' }}>{member.role}</p>
                     {member.phone && (
-                      <p className="text-sm text-[#C5C5C5]">{member.phone}</p>
+                      <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{member.phone}</p>
                     )}
                   </div>
                 </Link>
@@ -591,11 +631,17 @@ export default async function AgentPage({ params }: Props) {
         )}
 
         <section className="mx-auto max-w-6xl px-6">
-          <div className="grid gap-6 rounded-3xl border border-[#2A2A2E] bg-gradient-to-br from-[#0F0F10] to-[#070708] p-6 md:grid-cols-[1.1fr_0.9fr]">
+          <div 
+            className="grid gap-6 rounded-3xl border p-6 md:grid-cols-[1.1fr_0.9fr]"
+            style={{ 
+              borderColor: 'var(--color-border)',
+              background: 'linear-gradient(to bottom right, var(--color-background-secondary), var(--color-background))'
+            }}
+          >
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">Contacto direto</p>
+              <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>Contacto direto</p>
               <h2 className="text-lg font-semibold sm:text-3xl">Fale com {agent.name.split(" ")[0]}</h2>
-              <p className="text-sm text-[#C5C5C5]">
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                 Tem questões sobre um imóvel ou pretende agendar uma visita? 
                 Preencha o formulário e entrarei em contacto consigo brevemente.
               </p>
@@ -605,7 +651,14 @@ export default async function AgentPage({ params }: Props) {
         </section>
       </main>
 
-      <footer className="border-t border-[#111113] bg-[#050506] px-6 py-8 text-sm text-[#C5C5C5]">
+      <footer 
+        className="border-t px-6 py-8 text-sm"
+        style={{ 
+          borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+          backgroundColor: 'var(--color-background)',
+          color: 'var(--color-text-muted)'
+        }}
+      >
         <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="font-semibold text-white">Microsite de {agent.name}</p>

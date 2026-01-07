@@ -38,13 +38,20 @@ export default async function AgentProfilePage({ params }: Props) {
   const avatarUrl = optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeSlug(agent.name)}.png`;
 
   return (
-    <div className="min-h-screen bg-[#050506] text-white">
+    <div className="min-h-screen text-white" style={{ backgroundColor: 'var(--color-background)' }}>
       {/* Header */}
-      <div className="border-b border-[#111113] bg-gradient-to-br from-[#E10600]/10 via-[#0B0B0D] to-[#050506]">
+      <div 
+        className="border-b"
+        style={{ 
+          borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+          background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--color-primary) 10%, transparent), var(--color-background), var(--color-background))'
+        }}
+      >
         <div className="mx-auto max-w-4xl px-6 py-6">
           <Link
             href={`/agentes/${params.slug}`}
-            className="inline-flex items-center gap-2 text-sm text-[#C5C5C5] transition hover:text-white"
+            className="inline-flex items-center gap-2 text-sm transition hover:text-white"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -58,7 +65,10 @@ export default async function AgentProfilePage({ params }: Props) {
       <main className="mx-auto max-w-4xl px-6 py-12">
         {/* Avatar e Info Principal */}
         <div className="flex flex-col items-center text-center">
-          <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-[#E10600]/30 md:h-52 md:w-52">
+          <div 
+            className="relative h-40 w-40 overflow-hidden rounded-full border-4 md:h-52 md:w-52"
+            style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
+          >
             <Image
               src={avatarUrl}
               alt={agent.name}
@@ -72,8 +82,8 @@ export default async function AgentProfilePage({ params }: Props) {
           <h1 className="mt-6 text-3xl font-bold md:text-4xl">{agent.name}</h1>
           
           {agent.license_ami && (
-            <p className="mt-2 text-sm text-[#888]">
-              Licença AMI: <span className="font-semibold text-[#C5C5C5]">{agent.license_ami}</span>
+            <p className="mt-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Licença AMI: <span className="font-semibold" style={{ color: 'var(--color-text-muted)' }}>{agent.license_ami}</span>
             </p>
           )}
 
@@ -82,7 +92,10 @@ export default async function AgentProfilePage({ params }: Props) {
             {agent.phone && (
               <a
                 href={`tel:${agent.phone.replace(/\s/g, "")}`}
-                className="flex items-center gap-2 text-[#C5C5C5] transition hover:text-[#E10600]"
+                className="flex items-center gap-2 transition"
+                style={{ color: 'var(--color-text-muted)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -92,7 +105,10 @@ export default async function AgentProfilePage({ params }: Props) {
             )}
             <a
               href={`mailto:${agent.email}`}
-              className="flex items-center gap-2 text-[#C5C5C5] transition hover:text-[#E10600]"
+              className="flex items-center gap-2 transition"
+              style={{ color: 'var(--color-text-muted)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -187,9 +203,15 @@ export default async function AgentProfilePage({ params }: Props) {
         {/* Biografia */}
         {agent.bio && (
           <section className="mt-12">
-            <div className="rounded-2xl border border-[#1F1F22] bg-gradient-to-br from-[#151518] to-[#0B0B0D] p-6 md:p-8">
+            <div 
+              className="rounded-2xl border p-6 md:p-8"
+              style={{ 
+                borderColor: 'var(--color-border)',
+                background: 'linear-gradient(to bottom right, var(--color-background-secondary), var(--color-background))'
+              }}
+            >
               <h2 className="mb-4 text-xl font-semibold text-white">Sobre {agent.name.split(' ')[0]}</h2>
-              <p className="whitespace-pre-line text-[#C5C5C5] leading-relaxed">{agent.bio}</p>
+              <p className="whitespace-pre-line leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{agent.bio}</p>
             </div>
           </section>
         )}
@@ -211,7 +233,10 @@ export default async function AgentProfilePage({ params }: Props) {
           ) : (
             <a
               href={`mailto:${agent.email}?subject=Contacto via Imóveis Mais`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#E10600] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#B80500] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white transition sm:w-auto"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.85)'}
+              onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -221,7 +246,13 @@ export default async function AgentProfilePage({ params }: Props) {
           )}
           <Link
             href={`/agentes/${params.slug}`}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#E10600] px-6 py-3 text-sm font-semibold text-[#E10600] transition hover:bg-[#E10600]/10 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold transition sm:w-auto"
+            style={{ 
+              borderColor: 'var(--color-primary)',
+              color: 'var(--color-primary)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-primary) 10%, transparent)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -232,7 +263,14 @@ export default async function AgentProfilePage({ params }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#111113] bg-[#050506] px-6 py-8 text-sm text-[#C5C5C5]">
+      <footer 
+        className="border-t px-6 py-8 text-sm"
+        style={{ 
+          borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)',
+          backgroundColor: 'var(--color-background)',
+          color: 'var(--color-text-muted)'
+        }}
+      >
         <div className="mx-auto flex max-w-4xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="font-semibold text-white">Perfil de {agent.name}</p>

@@ -64,7 +64,7 @@ export default function PesquisasPage() {
   if (!isClient) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E10600] border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
       </div>
     );
   }
@@ -73,27 +73,28 @@ export default function PesquisasPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Pesquisas Guardadas</h1>
-        <p className="text-[#7A7A7A]">
+        <p style={{ color: 'var(--color-text-muted)' }}>
           Guarde as suas pesquisas para aceder rapidamente aos imóveis que lhe interessam.
         </p>
       </div>
 
       {searches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-[#2A2A2E] bg-[#1A1A1E]/50 py-16">
-          <div className="rounded-full bg-[#E10600]/10 p-6">
-            <svg className="h-12 w-12 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed py-16" style={{ borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-background-secondary) 50%, transparent)' }}>
+          <div className="rounded-full p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}>
+            <svg className="h-12 w-12" style={{ color: 'var(--color-primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           <div className="text-center">
             <h2 className="text-xl font-semibold">Sem pesquisas guardadas</h2>
-            <p className="mt-2 text-[#7A7A7A]">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Faça uma pesquisa e guarde-a para aceder mais tarde.
             </p>
           </div>
           <Link
             href="/imoveis"
-            className="rounded-full bg-[#E10600] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+            className="rounded-full px-6 py-3 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             Pesquisar imóveis
           </Link>
@@ -103,12 +104,13 @@ export default function PesquisasPage() {
           {searches.map((search) => (
             <div
               key={search.id}
-              className="flex flex-col gap-4 rounded-xl border border-[#2A2A2E] bg-[#1A1A1E] p-4 transition hover:border-[#E10600]/30 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-4 rounded-xl border p-4 transition md:flex-row md:items-center md:justify-between"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}
             >
               <div className="space-y-1">
-                <h3 className="font-semibold text-white">{search.name}</h3>
-                <p className="text-sm text-[#7A7A7A]">{formatFilters(search.filters)}</p>
-                <p className="text-xs text-[#7A7A7A]">
+                <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{search.name}</h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{formatFilters(search.filters)}</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                   Guardada em {new Date(search.createdAt).toLocaleDateString("pt-PT")}
                   {search.resultsCount !== undefined && ` • ${search.resultsCount} resultados`}
                 </p>
@@ -116,13 +118,15 @@ export default function PesquisasPage() {
               <div className="flex items-center gap-3">
                 <Link
                   href={buildSearchUrl(search.filters)}
-                  className="rounded-lg bg-[#E10600] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#C10500]"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
                   Ver resultados
                 </Link>
                 <button
                   onClick={() => deleteSearch(search.id)}
-                  className="rounded-lg border border-[#2A2A2E] px-4 py-2 text-sm text-[#7A7A7A] transition hover:border-red-500 hover:text-red-400"
+                  className="rounded-lg border px-4 py-2 text-sm transition hover:border-red-500 hover:text-red-400"
+                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
                 >
                   Eliminar
                 </button>

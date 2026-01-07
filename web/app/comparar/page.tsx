@@ -43,17 +43,18 @@ export default function CompararPage() {
   if (compareList.length === 0) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#2A2A2E]">
-          <svg className="h-12 w-12 text-[#7A7A7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+          <svg className="h-12 w-12" style={{ color: 'var(--color-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
         </div>
-        <h1 className="mb-2 text-2xl font-bold text-white">Nenhum imóvel para comparar</h1>
-        <p className="mb-6 text-[#7A7A7A]">Adicione até 5 imóveis para comparar as suas características.</p>
+        <h1 className="mb-2 text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Nenhum imóvel para comparar</h1>
+        <p className="mb-6" style={{ color: 'var(--color-text-muted)' }}>Adicione até 5 imóveis para comparar as suas características.</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href="/imoveis"
-            className="rounded-full bg-[#E10600] px-6 py-3 font-semibold text-white transition hover:bg-[#C10500]"
+            className="rounded-full px-6 py-3 font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             Explorar Imóveis
           </Link>
@@ -82,24 +83,24 @@ export default function CompararPage() {
   };
 
   const CompareRow = ({ label, values }: { label: string; values: (string | number | boolean | undefined)[] }) => (
-    <tr className="border-b border-[#2A2A2E]">
-      <td className="py-3 pr-4 text-sm font-medium text-[#C5C5C5] whitespace-nowrap">{label}</td>
+    <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <td className="py-3 pr-4 text-sm font-medium whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>{label}</td>
       {values.map((value, idx) => (
-        <td key={idx} className="py-3 px-4 text-sm text-white text-center">
+        <td key={idx} className="py-3 px-4 text-sm text-center" style={{ color: 'var(--color-text)' }}>
           {typeof value === "boolean" ? (
             value ? (
               <svg className="mx-auto h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             ) : (
-              <svg className="mx-auto h-5 w-5 text-[#7A7A7A]" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="mx-auto h-5 w-5" style={{ color: 'var(--color-text-muted)' }} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             )
           ) : value !== undefined && value !== null ? (
             value
           ) : (
-            <span className="text-[#7A7A7A]">—</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>—</span>
           )}
         </td>
       ))}
@@ -111,8 +112,8 @@ export default function CompararPage() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">Comparar Imóveis</h1>
-          <p className="text-[#7A7A7A]">{compareList.length} de 5 imóveis selecionados</p>
+          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: 'var(--color-text)' }}>Comparar Imóveis</h1>
+          <p style={{ color: 'var(--color-text-muted)' }}>{compareList.length} de 5 imóveis selecionados</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {canAddMore && (
@@ -128,7 +129,8 @@ export default function CompararPage() {
           )}
           <button
             onClick={clearCompare}
-            className="flex items-center gap-2 rounded-lg border border-[#2A2A2E] px-4 py-2 text-sm text-[#C5C5C5] transition hover:border-red-500 hover:text-red-500"
+            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition hover:border-red-500 hover:text-red-500"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -139,11 +141,11 @@ export default function CompararPage() {
       </div>
 
       {/* Tabela de Comparação */}
-      <div className="overflow-x-auto rounded-xl border border-[#2A2A2E] bg-[#151518]">
+      <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}>
         <table className="w-full min-w-[800px]">
           <thead>
-            <tr className="border-b border-[#2A2A2E]">
-              <th className="p-4 text-left text-sm font-medium text-[#7A7A7A] w-40"></th>
+            <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <th className="p-4 text-left text-sm font-medium w-40" style={{ color: 'var(--color-text-muted)' }}></th>
               {compareList.map((property) => {
                 const external = isExternal(property.imagem);
                 const externalUrl = getExternalUrl(property.imagem);
@@ -154,7 +156,8 @@ export default function CompararPage() {
                     {/* Botão remover */}
                     <button
                       onClick={() => removeFromCompare(property.id)}
-                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#2A2A2E] text-[#7A7A7A] hover:bg-red-500 hover:text-white transition z-10"
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full hover:bg-red-500 hover:text-white transition z-10"
+                      style={{ backgroundColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -169,7 +172,7 @@ export default function CompararPage() {
                     )}
                     
                     {/* Imagem */}
-                    <div className={`relative mb-3 h-32 w-full overflow-hidden rounded-lg bg-[#2A2A2E] ${external ? "ring-2 ring-blue-500" : ""}`}>
+                    <div className={`relative mb-3 h-32 w-full overflow-hidden rounded-lg ${external ? "ring-2 ring-blue-500" : ""}`} style={{ backgroundColor: 'var(--color-border)' }}>
                       {property.imagem && !external ? (
                         <Image
                           src={property.imagem}
@@ -186,7 +189,7 @@ export default function CompararPage() {
                         </div>
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <svg className="h-10 w-10 text-[#7A7A7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="h-10 w-10" style={{ color: 'var(--color-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                           </svg>
                         </div>
@@ -211,8 +214,8 @@ export default function CompararPage() {
                       </a>
                     ) : (
                       <Link href={`/imovel/${property.referencia}`} className="block">
-                        <span className="text-xs text-[#E10600]">{property.referencia}</span>
-                        <p className="text-sm font-semibold text-white hover:text-[#E10600] transition line-clamp-2">
+                        <span className="text-xs" style={{ color: 'var(--color-primary)' }}>{property.referencia}</span>
+                        <p className="text-sm font-semibold transition line-clamp-2" style={{ color: 'var(--color-text)' }}>
                           {property.titulo || property.referencia}
                         </p>
                       </Link>
@@ -236,7 +239,7 @@ export default function CompararPage() {
             
             {/* Ações */}
             <tr>
-              <td className="py-4 pr-4 text-sm font-medium text-[#C5C5C5]">Ferramentas</td>
+              <td className="py-4 pr-4 text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Ferramentas</td>
               {compareList.map((property) => {
                 const external = isExternal(property.imagem);
                 const externalUrl = getExternalUrl(property.imagem);
@@ -246,28 +249,30 @@ export default function CompararPage() {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => handleToolClick("simulator", property.preco)}
-                      className="flex items-center justify-center gap-2 rounded-lg bg-[#2A2A2E] px-3 py-2 text-xs text-white transition hover:bg-[#E10600]"
+                      className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-white transition"
+                      style={{ backgroundColor: 'var(--color-border)' }}
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                       Simular Prestação
                       {!isAuthenticated && (
-                        <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-3 w-3" style={{ color: 'var(--color-primary)' }} fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       )}
                     </button>
                     <button
                       onClick={() => handleToolClick("tax", property.preco)}
-                      className="flex items-center justify-center gap-2 rounded-lg bg-[#2A2A2E] px-3 py-2 text-xs text-white transition hover:bg-[#E10600]"
+                      className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-white transition"
+                      style={{ backgroundColor: 'var(--color-border)' }}
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Calcular IMT
                       {!isAuthenticated && (
-                        <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-3 w-3" style={{ color: 'var(--color-primary)' }} fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -287,7 +292,8 @@ export default function CompararPage() {
                     ) : (
                       <Link
                         href={`/imovel/${property.referencia}`}
-                        className="flex items-center justify-center gap-2 rounded-lg border border-[#E10600] px-3 py-2 text-xs text-[#E10600] transition hover:bg-[#E10600] hover:text-white"
+                        className="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs transition"
+                        style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
                       >
                         Ver Detalhes
                       </Link>
@@ -301,20 +307,20 @@ export default function CompararPage() {
       </div>
 
       {/* Preço por m² */}
-      <div className="mt-6 rounded-xl border border-[#2A2A2E] bg-[#151518] p-6">
-        <h3 className="mb-4 text-lg font-semibold text-white">Preço por m²</h3>
+      <div className="mt-6 rounded-xl border p-6" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}>
+        <h3 className="mb-4 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Preço por m²</h3>
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${compareList.length}, 1fr)` }}>
           {compareList.map((property) => {
             const precoM2 = property.area_util ? property.preco / property.area_util : null;
             return (
               <div key={property.id} className="text-center">
-                <p className="text-xs text-[#7A7A7A] mb-1">{property.referencia}</p>
+                <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>{property.referencia}</p>
                 {precoM2 ? (
-                  <p className="text-2xl font-bold text-[#E10600]">
+                  <p className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
                     {precoM2.toLocaleString("pt-PT", { maximumFractionDigits: 0 })} €/m²
                   </p>
                 ) : (
-                  <p className="text-[#7A7A7A]">N/D</p>
+                  <p style={{ color: 'var(--color-text-muted)' }}>N/D</p>
                 )}
               </div>
             );

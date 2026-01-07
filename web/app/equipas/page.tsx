@@ -15,10 +15,16 @@ export default function EquipasPage() {
           <Link
             key={team.slug}
             href={`/equipas/${team.slug}`}
-            className="rounded-xl border border-[#2A2A2E] bg-[#151518] p-4 hover:border-[#E10600]"
+            className="rounded-xl border p-4 transition-colors"
+            style={{ 
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-background-secondary)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
           >
             <h3 className="text-lg font-semibold text-white">{team.name}</h3>
-            <p className="text-sm text-[#C5C5C5]">Team lead: {team.lead}</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Team lead: {team.lead}</p>
           </Link>
         ))}
       </div>

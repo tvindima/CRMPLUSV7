@@ -75,7 +75,7 @@ export default function AlertasPage() {
   if (!isClient) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E10600] border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}></div>
       </div>
     );
   }
@@ -85,13 +85,14 @@ export default function AlertasPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Alertas de Imóveis</h1>
-          <p className="text-[#7A7A7A]">
+          <p style={{ color: 'var(--color-text-muted)' }}>
             Receba notificações quando novos imóveis corresponderem às suas preferências.
           </p>
         </div>
         <Link
           href="/imoveis"
-          className="flex items-center gap-2 rounded-full bg-[#E10600] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+          className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -108,7 +109,7 @@ export default function AlertasPage() {
           </svg>
           <div>
             <p className="font-medium text-blue-400">Como funcionam os alertas?</p>
-            <p className="mt-1 text-sm text-[#C5C5C5]">
+            <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Ao pesquisar imóveis, pode guardar os filtros como alerta. Quando novos imóveis corresponderem 
               aos seus critérios, será notificado por email de acordo com a frequência escolhida.
             </p>
@@ -117,21 +118,22 @@ export default function AlertasPage() {
       </div>
 
       {alerts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-[#2A2A2E] bg-[#1A1A1E]/50 py-16">
-          <div className="rounded-full bg-[#E10600]/10 p-6">
-            <svg className="h-12 w-12 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed py-16" style={{ borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-background-secondary) 50%, transparent)' }}>
+          <div className="rounded-full p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}>
+            <svg className="h-12 w-12" style={{ color: 'var(--color-primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
           <div className="text-center">
             <h2 className="text-xl font-semibold">Sem alertas configurados</h2>
-            <p className="mt-2 text-[#7A7A7A]">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Crie o seu primeiro alerta para não perder nenhuma oportunidade!
             </p>
           </div>
           <Link
             href="/imoveis"
-            className="rounded-full bg-[#E10600] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#C10500]"
+            className="rounded-full px-6 py-3 text-sm font-semibold text-white transition"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             Pesquisar e criar alerta
           </Link>
@@ -141,18 +143,19 @@ export default function AlertasPage() {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`rounded-xl border bg-[#1A1A1E] p-4 transition ${
-                alert.enabled ? "border-[#E10600]/30" : "border-[#2A2A2E] opacity-60"
-              }`}
+              className={`rounded-xl border p-4 transition ${!alert.enabled && 'opacity-60'}`}
+              style={{ 
+                backgroundColor: 'var(--color-background-secondary)',
+                borderColor: alert.enabled ? 'color-mix(in srgb, var(--color-primary) 30%, transparent)' : 'var(--color-border)'
+              }}
             >
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-4">
                   {/* Toggle */}
                   <button
                     onClick={() => toggleAlert(alert.id)}
-                    className={`mt-1 relative h-6 w-11 rounded-full transition ${
-                      alert.enabled ? "bg-[#E10600]" : "bg-[#2A2A2E]"
-                    }`}
+                    className="mt-1 relative h-6 w-11 rounded-full transition"
+                    style={{ backgroundColor: alert.enabled ? 'var(--color-primary)' : 'var(--color-border)' }}
                   >
                     <span
                       className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
@@ -164,16 +167,18 @@ export default function AlertasPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-white">{alert.name}</h3>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${
-                        alert.enabled 
-                          ? "bg-green-500/20 text-green-400" 
-                          : "bg-[#2A2A2E] text-[#7A7A7A]"
-                      }`}>
+                      <span 
+                        className="rounded-full px-2 py-0.5 text-xs"
+                        style={{ 
+                          backgroundColor: alert.enabled ? 'rgba(34, 197, 94, 0.2)' : 'var(--color-border)',
+                          color: alert.enabled ? 'rgb(74, 222, 128)' : 'var(--color-text-muted)'
+                        }}
+                      >
                         {alert.enabled ? "Ativo" : "Pausado"}
                       </span>
                     </div>
-                    <p className="text-sm text-[#7A7A7A]">{formatFilters(alert.filters)}</p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-[#7A7A7A]">
+                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{formatFilters(alert.filters)}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                       <span className="flex items-center gap-1">
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -191,7 +196,8 @@ export default function AlertasPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => deleteAlert(alert.id)}
-                    className="rounded-lg border border-[#2A2A2E] p-2 text-[#7A7A7A] transition hover:border-red-500 hover:text-red-400"
+                    className="rounded-lg border p-2 transition hover:border-red-500 hover:text-red-400"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
                     title="Eliminar alerta"
                   >
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
