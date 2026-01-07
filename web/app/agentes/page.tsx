@@ -91,10 +91,8 @@ export default async function EquipaPage() {
         </p>
         <a
           href="/contactos"
-          className="mt-6 inline-block rounded-full px-6 py-2.5 font-semibold text-white transition md:px-8 md:py-3"
+          className="mt-6 inline-block rounded-full px-6 py-2.5 font-semibold text-white transition hover:brightness-85 md:px-8 md:py-3"
           style={{ backgroundColor: 'var(--color-primary)' }}
-          onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.85)'}
-          onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
         >
           Contacte-nos
         </a>

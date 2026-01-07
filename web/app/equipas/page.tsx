@@ -15,19 +15,17 @@ export default function EquipasPage() {
       <SectionHeader eyebrow="Equipas" title="Microsites de equipa" subtitle="Navegação Agency → Team → Agent → Property." />
       <div className="grid gap-4 md:grid-cols-2">
         {teams.map((team) => (
-          <Link key={team.slug} href={`/equipas/${team.slug}`} legacyBehavior>
-            <a
-              className="rounded-xl border p-4 transition-colors"
-              style={{ 
-                borderColor: 'var(--color-border)',
-                backgroundColor: 'var(--color-background-secondary)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-            >
-              <h3 className="text-lg font-semibold text-white">{team.name}</h3>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Team lead: {team.lead}</p>
-            </a>
+          <Link
+            key={team.slug}
+            href={`/equipas/${team.slug}`}
+            className="rounded-xl border p-4 transition-colors hover:border-[var(--color-primary)]"
+            style={{ 
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-background-secondary)'
+            }}
+          >
+            <h3 className="text-lg font-semibold text-white">{team.name}</h3>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Team lead: {team.lead}</p>
           </Link>
         ))}
       </div>
