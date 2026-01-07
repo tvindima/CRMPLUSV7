@@ -160,7 +160,6 @@ export default function FavoritosPage() {
                     : { backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text-muted)' }
                   }
                 >
-                >
                   {list.name} ({list.properties.length})
                 </button>
               ))}
