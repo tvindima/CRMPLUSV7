@@ -44,7 +44,11 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
         {/* Simular Prestação */}
         <button
           onClick={() => handleToolClick("simulator")}
-          className="flex items-center gap-2 rounded-full bg-[#2A2A2E] px-4 py-2 text-sm text-white transition hover:bg-[#E10600]"
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition"
+          style={{
+            backgroundColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+          }}
           title="Simular Prestação"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +56,7 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
           </svg>
           <span className="hidden sm:inline">Simular Prestação</span>
           {!isAuthenticated && (
-            <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'var(--color-primary)' }}>
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
           )}
@@ -61,7 +65,11 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
         {/* Calcular IMT */}
         <button
           onClick={() => handleToolClick("tax")}
-          className="flex items-center gap-2 rounded-full bg-[#2A2A2E] px-4 py-2 text-sm text-white transition hover:bg-[#E10600]"
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition"
+          style={{
+            backgroundColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+          }}
           title="Calcular IMT"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +77,7 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
           </svg>
           <span className="hidden sm:inline">Calcular IMT</span>
           {!isAuthenticated && (
-            <svg className="h-3 w-3 text-[#E10600]" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'var(--color-primary)' }}>
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
           )}

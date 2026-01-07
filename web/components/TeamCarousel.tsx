@@ -48,14 +48,18 @@ export function TeamCarousel({ title, eyebrow, members }: Props) {
       <div className="flex items-center justify-between">
         <div>
           {eyebrow && (
-            <p className="text-xs uppercase tracking-[0.3em] text-[#E10600]">{eyebrow}</p>
+            <p className="text-xs uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>{eyebrow}</p>
           )}
-          <h2 className="text-xl font-semibold text-white md:text-2xl">{title}</h2>
+          <h2 className="text-xl font-semibold md:text-2xl" style={{ color: 'var(--color-text)' }}>{title}</h2>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => scroll("left")}
-            className="rounded-full border border-[#2A2A2E] p-2 text-[#C5C5C5] transition hover:border-[#E10600] hover:text-white"
+            className="rounded-full p-2 transition"
+            style={{
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+            }}
             aria-label="Anterior"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +68,11 @@ export function TeamCarousel({ title, eyebrow, members }: Props) {
           </button>
           <button
             onClick={() => scroll("right")}
-            className="rounded-full border border-[#2A2A2E] p-2 text-[#C5C5C5] transition hover:border-[#E10600] hover:text-white"
+            className="rounded-full p-2 transition"
+            style={{
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+            }}
             aria-label="Seguinte"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +100,10 @@ function TeamCard({ member }: { member: TeamMember }) {
   const href = member.isAgent ? `/agentes/${slug}` : "#";
   
   const CardContent = (
-    <div className="group relative h-[380px] w-[280px] flex-shrink-0 overflow-hidden rounded-2xl bg-[#151518]">
+    <div 
+      className="group relative h-[380px] w-[280px] flex-shrink-0 overflow-hidden rounded-2xl"
+      style={{ backgroundColor: 'var(--color-background-secondary)' }}
+    >
       {/* Avatar Background */}
       <div className="absolute inset-0">
         <Image
@@ -108,12 +119,13 @@ function TeamCard({ member }: { member: TeamMember }) {
 
       {/* Content at bottom */}
       <div className="absolute bottom-0 left-0 right-0 p-5">
-        <h3 className="text-base font-semibold text-white md:text-xl">{member.name}</h3>
-        <p className="text-sm text-[#E10600]">{member.role}</p>
+        <h3 className="text-base font-semibold md:text-xl" style={{ color: 'var(--color-text)' }}>{member.name}</h3>
+        <p className="text-sm" style={{ color: 'var(--color-primary)' }}>{member.role}</p>
         {member.phone && (
           <a
             href={`tel:${member.phone.replace(/\s/g, "")}`}
-            className="mt-2 flex items-center gap-2 text-sm text-[#C5C5C5] transition hover:text-white"
+            className="mt-2 flex items-center gap-2 text-sm transition"
+            style={{ color: 'var(--color-text-muted)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,13 +135,16 @@ function TeamCard({ member }: { member: TeamMember }) {
           </a>
         )}
         {member.team && (
-          <p className="mt-1 text-xs text-[#7A7A7A]">Equipa: {member.team}</p>
+          <p className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>Equipa: {member.team}</p>
         )}
       </div>
 
       {/* Hover indicator for agents */}
       {member.isAgent && (
-        <div className="absolute right-4 top-4 rounded-full bg-[#E10600] p-2 opacity-0 transition group-hover:opacity-100">
+        <div 
+          className="absolute right-4 top-4 rounded-full p-2 opacity-0 transition group-hover:opacity-100"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
           <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
