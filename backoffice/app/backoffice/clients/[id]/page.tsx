@@ -10,9 +10,11 @@ type Client = {
   nome: string;
   email?: string;
   telefone?: string;
+  telefone_alt?: string;
   tipo_cliente?: string;
   client_type?: string;
   origin?: string;
+  is_empresa?: boolean;
   nif?: string;
   cc?: string;
   cc_validade?: string;
@@ -23,15 +25,49 @@ type Client = {
   entidade_empregadora?: string;
   estado_civil?: string;
   regime_casamento?: string;
+  data_casamento?: string;
+  // Cônjuge
+  conjuge_nome?: string;
+  conjuge_nif?: string;
+  conjuge_cc?: string;
+  conjuge_cc_validade?: string;
+  conjuge_data_nascimento?: string;
+  conjuge_naturalidade?: string;
+  conjuge_nacionalidade?: string;
+  conjuge_profissao?: string;
+  conjuge_email?: string;
+  conjuge_telefone?: string;
+  // Empresa
+  empresa_nome?: string;
+  empresa_nipc?: string;
+  empresa_sede?: string;
+  empresa_capital_social?: string;
+  empresa_conservatoria?: string;
+  empresa_matricula?: string;
+  empresa_cargo?: string;
+  empresa_poderes?: string;
+  // Morada
   morada?: string;
+  numero_porta?: string;
+  andar?: string;
   codigo_postal?: string;
   localidade?: string;
+  concelho?: string;
+  distrito?: string;
   pais?: string;
+  // Outros
   notas?: string;
+  tags?: string[];
+  preferencias?: Record<string, unknown>;
+  ultima_interacao?: string;
+  proxima_acao?: string;
+  proxima_acao_data?: string;
   created_at?: string;
   updated_at?: string;
   agent_id?: number;
   agency_id?: number;
+  is_active?: boolean;
+  is_verified?: boolean;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
@@ -225,13 +261,33 @@ export default function ClientDetailPage() {
                 </div>
               </div>
             )}
-            {(client.morada || client.localidade) && (
+            {client.telefone_alt && (
+              <div className="flex items-center gap-3">
+                <PhoneIcon className="h-5 w-5 text-[#555]" />
+                <div>
+                  <p className="text-xs text-[#666]">Telefone Alternativo</p>
+                  <a href={`tel:${client.telefone_alt}`} className="text-sm text-white hover:text-[#E10600]">
+                    {client.telefone_alt}
+                  </a>
+                </div>
+              </div>
+            )}
+            {(client.morada || client.localidade || client.codigo_postal) && (
               <div className="flex items-center gap-3">
                 <MapPinIcon className="h-5 w-5 text-[#555]" />
                 <div>
                   <p className="text-xs text-[#666]">Morada</p>
                   <p className="text-sm text-white">
-                    {[client.morada, client.codigo_postal, client.localidade, client.pais].filter(Boolean).join(', ')}
+                    {[
+                      client.morada,
+                      client.numero_porta && `nº ${client.numero_porta}`,
+                      client.andar,
+                      client.codigo_postal,
+                      client.localidade,
+                      client.concelho,
+                      client.distrito,
+                      client.pais
+                    ].filter(Boolean).join(', ')}
                   </p>
                 </div>
               </div>
@@ -255,8 +311,16 @@ export default function ClientDetailPage() {
               <p className="text-sm text-white">{client.cc || '—'}</p>
             </div>
             <div>
+              <p className="text-xs text-[#666]">Validade CC</p>
+              <p className="text-sm text-white">{formatDate(client.cc_validade)}</p>
+            </div>
+            <div>
               <p className="text-xs text-[#666]">Data de Nascimento</p>
               <p className="text-sm text-white">{formatDate(client.data_nascimento)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#666]">Naturalidade</p>
+              <p className="text-sm text-white">{client.naturalidade || '—'}</p>
             </div>
             <div>
               <p className="text-xs text-[#666]">Nacionalidade</p>
@@ -267,23 +331,119 @@ export default function ClientDetailPage() {
               <p className="text-sm text-white">{client.estado_civil || '—'}</p>
             </div>
             <div>
+              <p className="text-xs text-[#666]">Regime Casamento</p>
+              <p className="text-sm text-white">{client.regime_casamento || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#666]">Data Casamento</p>
+              <p className="text-sm text-white">{formatDate(client.data_casamento)}</p>
+            </div>
+            <div>
               <p className="text-xs text-[#666]">Profissão</p>
               <p className="text-sm text-white">{client.profissao || '—'}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-xs text-[#666]">Entidade Empregadora</p>
+              <p className="text-sm text-white">{client.entidade_empregadora || '—'}</p>
             </div>
           </div>
         </div>
 
-        {/* Informações Profissionais */}
-        {client.entidade_empregadora && (
+        {/* Dados do Cônjuge */}
+        {(client.conjuge_nome || client.estado_civil === 'casado') && (
+          <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-white">
+              <UserIcon className="h-5 w-5 text-[#E10600]" />
+              Dados do Cônjuge
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <p className="text-xs text-[#666]">Nome</p>
+                <p className="text-sm text-white">{client.conjuge_nome || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">NIF</p>
+                <p className="text-sm text-white">{client.conjuge_nif || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">CC</p>
+                <p className="text-sm text-white">{client.conjuge_cc || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Naturalidade</p>
+                <p className="text-sm text-white">{client.conjuge_naturalidade || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Nacionalidade</p>
+                <p className="text-sm text-white">{client.conjuge_nacionalidade || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Profissão</p>
+                <p className="text-sm text-white">{client.conjuge_profissao || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Email</p>
+                <p className="text-sm text-white">
+                  {client.conjuge_email ? (
+                    <a href={`mailto:${client.conjuge_email}`} className="hover:text-[#E10600]">
+                      {client.conjuge_email}
+                    </a>
+                  ) : '—'}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-xs text-[#666]">Telefone</p>
+                <p className="text-sm text-white">
+                  {client.conjuge_telefone ? (
+                    <a href={`tel:${client.conjuge_telefone}`} className="hover:text-[#E10600]">
+                      {client.conjuge_telefone}
+                    </a>
+                  ) : '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dados da Empresa */}
+        {client.is_empresa && (
           <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-6">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-white">
               <BuildingOfficeIcon className="h-5 w-5 text-[#E10600]" />
-              Informações Profissionais
+              Dados da Empresa
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <p className="text-xs text-[#666]">Nome da Empresa</p>
+                <p className="text-sm text-white">{client.empresa_nome || '—'}</p>
+              </div>
               <div>
-                <p className="text-xs text-[#666]">Entidade Empregadora</p>
-                <p className="text-sm text-white">{client.entidade_empregadora}</p>
+                <p className="text-xs text-[#666]">NIPC</p>
+                <p className="text-sm text-white">{client.empresa_nipc || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Capital Social</p>
+                <p className="text-sm text-white">{client.empresa_capital_social || '—'}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-xs text-[#666]">Sede</p>
+                <p className="text-sm text-white">{client.empresa_sede || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Conservatória</p>
+                <p className="text-sm text-white">{client.empresa_conservatoria || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Matrícula</p>
+                <p className="text-sm text-white">{client.empresa_matricula || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Cargo</p>
+                <p className="text-sm text-white">{client.empresa_cargo || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[#666]">Poderes</p>
+                <p className="text-sm text-white">{client.empresa_poderes || '—'}</p>
               </div>
             </div>
           </div>
@@ -294,6 +454,30 @@ export default function ClientDetailPage() {
           <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-6">
             <h2 className="mb-4 text-lg font-medium text-white">Notas</h2>
             <p className="whitespace-pre-wrap text-sm text-[#999]">{client.notas}</p>
+          </div>
+        )}
+
+        {/* Próximas Ações */}
+        {(client.proxima_acao || client.ultima_interacao) && (
+          <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-6">
+            <h2 className="mb-4 text-lg font-medium text-white">Atividade</h2>
+            <div className="space-y-3">
+              {client.ultima_interacao && (
+                <div>
+                  <p className="text-xs text-[#666]">Última Interação</p>
+                  <p className="text-sm text-white">{formatDate(client.ultima_interacao)}</p>
+                </div>
+              )}
+              {client.proxima_acao && (
+                <div>
+                  <p className="text-xs text-[#666]">Próxima Ação</p>
+                  <p className="text-sm text-white">{client.proxima_acao}</p>
+                  {client.proxima_acao_data && (
+                    <p className="text-xs text-[#999]">Data: {formatDate(client.proxima_acao_data)}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
