@@ -114,6 +114,7 @@ function PropertiesStackNavigator() {
       <PropertiesStack.Screen name="FirstImpressionList" component={FirstImpressionListScreen} options={{ headerShown: false }} />
       <PropertiesStack.Screen name="FirstImpressionForm" component={FirstImpressionFormScreen} options={{ title: '1ª Impressão' }} />
       <PropertiesStack.Screen name="FirstImpressionSignature" component={FirstImpressionSignatureScreen} options={{ title: 'Assinatura' }} />
+      <PropertiesStack.Screen name="CMIForm" component={CMIFormScreen} options={{ title: 'Contrato de Mediação (CMI)' }} />
     </PropertiesStack.Navigator>
   );
 }
