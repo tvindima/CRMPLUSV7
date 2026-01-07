@@ -196,26 +196,73 @@ class ClientResponse(BaseModel):
     client_type: str
     origin: str
     is_empresa: bool
+    
+    # Dados pessoais
     nome: str
     nif: Optional[str]
     cc: Optional[str]
     cc_validade: Optional[date]
     data_nascimento: Optional[date]
+    naturalidade: Optional[str]
     nacionalidade: Optional[str]
-    estado_civil: Optional[str]
     profissao: Optional[str]
+    entidade_empregadora: Optional[str]
+    
+    # Estado civil
+    estado_civil: Optional[str]
+    regime_casamento: Optional[str]
+    data_casamento: Optional[date]
+    
+    # Dados cônjuge
+    conjuge_nome: Optional[str]
+    conjuge_nif: Optional[str]
+    conjuge_cc: Optional[str]
+    conjuge_cc_validade: Optional[date]
+    conjuge_data_nascimento: Optional[date]
+    conjuge_naturalidade: Optional[str]
+    conjuge_nacionalidade: Optional[str]
+    conjuge_profissao: Optional[str]
+    conjuge_email: Optional[str]
+    conjuge_telefone: Optional[str]
+    
+    # Dados empresa
+    empresa_nome: Optional[str]
+    empresa_nipc: Optional[str]
+    empresa_sede: Optional[str]
+    empresa_capital_social: Optional[Decimal]
+    empresa_conservatoria: Optional[str]
+    empresa_matricula: Optional[str]
+    empresa_cargo: Optional[str]
+    empresa_poderes: Optional[str]
+    
+    # Contactos
     email: Optional[str]
     telefone: Optional[str]
     telefone_alt: Optional[str]
+    
+    # Morada completa
     morada: Optional[str]
+    numero_porta: Optional[str]
+    andar: Optional[str]
     codigo_postal: Optional[str]
     localidade: Optional[str]
+    concelho: Optional[str]
     distrito: Optional[str]
+    pais: Optional[str]
+    
+    # CRM
     notas: Optional[str]
     tags: List[str]
+    documentos: Optional[List[DocumentoSchema]]
+    preferencias: Optional[Dict[str, Any]]
+    is_verified: bool
+    
+    # Atividade
     ultima_interacao: Optional[datetime]
     proxima_acao: Optional[str]
     proxima_acao_data: Optional[datetime]
+    
+    # Relações
     angariacao_id: Optional[int]
     property_id: Optional[int]
     lead_id: Optional[int]
@@ -595,22 +642,67 @@ def create_client(
         nome=data.nome,
         client_type=data.client_type,
         origin=data.origin,
+        is_empresa=data.is_empresa,
+        
+        # Dados pessoais
         nif=data.nif,
         cc=data.cc,
         cc_validade=data.cc_validade,
         data_nascimento=data.data_nascimento,
+        naturalidade=data.naturalidade,
         nacionalidade=data.nacionalidade,
-        estado_civil=data.estado_civil,
         profissao=data.profissao,
+        entidade_empregadora=data.entidade_empregadora,
+        
+        # Estado civil
+        estado_civil=data.estado_civil,
+        regime_casamento=data.regime_casamento,
+        data_casamento=data.data_casamento,
+        
+        # Dados cônjuge
+        conjuge_nome=data.conjuge_nome,
+        conjuge_nif=data.conjuge_nif,
+        conjuge_cc=data.conjuge_cc,
+        conjuge_cc_validade=data.conjuge_cc_validade,
+        conjuge_data_nascimento=data.conjuge_data_nascimento,
+        conjuge_naturalidade=data.conjuge_naturalidade,
+        conjuge_nacionalidade=data.conjuge_nacionalidade,
+        conjuge_profissao=data.conjuge_profissao,
+        conjuge_email=data.conjuge_email,
+        conjuge_telefone=data.conjuge_telefone,
+        
+        # Dados empresa
+        empresa_nome=data.empresa_nome,
+        empresa_nipc=data.empresa_nipc,
+        empresa_sede=data.empresa_sede,
+        empresa_capital_social=data.empresa_capital_social,
+        empresa_conservatoria=data.empresa_conservatoria,
+        empresa_matricula=data.empresa_matricula,
+        empresa_cargo=data.empresa_cargo,
+        empresa_poderes=data.empresa_poderes,
+        
+        # Contactos
         email=data.email,
         telefone=data.telefone,
         telefone_alt=data.telefone_alt,
+        
+        # Morada
         morada=data.morada,
+        numero_porta=data.numero_porta,
+        andar=data.andar,
         codigo_postal=data.codigo_postal,
         localidade=data.localidade,
+        concelho=data.concelho,
         distrito=data.distrito,
+        pais=data.pais,
+        
+        # CRM
         notas=data.notas,
         tags=data.tags or [],
+        preferencias=data.preferencias or {},
+        documentos=data.documentos or [],
+        
+        # Relações
         angariacao_id=data.angariacao_id,
         property_id=data.property_id,
         lead_id=data.lead_id,
