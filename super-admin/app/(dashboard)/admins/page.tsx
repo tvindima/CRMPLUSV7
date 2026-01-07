@@ -311,7 +311,7 @@ export default function AdminsPage() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1">
-                    {admin.permissions?.all === true || permissionsToArray(admin.permissions).includes('super_admin') ? (
+                    {(admin.permissions && !Array.isArray(admin.permissions) && (admin.permissions as Record<string, boolean>).all === true) || permissionsToArray(admin.permissions).includes('super_admin') ? (
                       <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-semibold">
                         Super Admin (Todas)
                       </span>
