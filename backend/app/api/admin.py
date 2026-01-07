@@ -797,7 +797,7 @@ def update_branding_settings(
     
     Requer autenticação de staff.
     """
-    print(f"[BRANDING PUT] User: {current_user.get('email', 'unknown')}")
+    print(f"[BRANDING PUT] User: {getattr(current_user, 'email', 'unknown')}")
     
     # Defaults para resposta
     defaults = {
@@ -814,33 +814,41 @@ def update_branding_settings(
     }
     
     try:
-        # Primeiro, garantir que as colunas de tema existem
-        theme_columns = [
-            ("secondary_color", "#C5C5C5"),
-            ("background_color", "#0B0B0D"),
-            ("background_secondary", "#1A1A1F"),
-            ("text_color", "#FFFFFF"),
-            ("text_muted", "#9CA3AF"),
-            ("border_color", "#2A2A2E"),
-            ("accent_color", "#E10600")
-        ]
-        
-        for col_name, default_val in theme_columns:
-            try:
-                check_col = db.execute(text(f"""
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'crm_settings' AND column_name = '{col_name}'
-                """)).fetchone()
-                
-                if not check_col:
-                    print(f"[BRANDING PUT] Adding missing column: {col_name}")
-                    db.execute(text(f"""
-                        ALTER TABLE crm_settings 
-                        ADD COLUMN IF NOT EXISTS {col_name} VARCHAR DEFAULT '{default_val}'
-                    """))
-                    db.commit()
-            except Exception as col_err:
-                print(f"[BRANDING PUT] Column check error for {col_name}: {col_err}")
+        # Primeiro, garantir que as colunas de tema existem usando ALTER TABLE direto
+        print("[BRANDING PUT] Ensuring theme columns exist...")
+        theme_columns_sql = """
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='secondary_color') THEN
+                ALTER TABLE crm_settings ADD COLUMN secondary_color VARCHAR DEFAULT '#C5C5C5';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='background_color') THEN
+                ALTER TABLE crm_settings ADD COLUMN background_color VARCHAR DEFAULT '#0B0B0D';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='background_secondary') THEN
+                ALTER TABLE crm_settings ADD COLUMN background_secondary VARCHAR DEFAULT '#1A1A1F';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='text_color') THEN
+                ALTER TABLE crm_settings ADD COLUMN text_color VARCHAR DEFAULT '#FFFFFF';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='text_muted') THEN
+                ALTER TABLE crm_settings ADD COLUMN text_muted VARCHAR DEFAULT '#9CA3AF';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='border_color') THEN
+                ALTER TABLE crm_settings ADD COLUMN border_color VARCHAR DEFAULT '#2A2A2E';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='crm_settings' AND column_name='accent_color') THEN
+                ALTER TABLE crm_settings ADD COLUMN accent_color VARCHAR DEFAULT '#E10600';
+            END IF;
+        END $$;
+        """
+        try:
+            db.execute(text(theme_columns_sql))
+            db.commit()
+            print("[BRANDING PUT] Theme columns ensured")
+        except Exception as col_err:
+            print(f"[BRANDING PUT] Column creation error (may be OK): {col_err}")
+            db.rollback()
         
         # Verificar se existe registo
         result = db.execute(text("SELECT id FROM crm_settings LIMIT 1")).fetchone()
