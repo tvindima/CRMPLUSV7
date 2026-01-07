@@ -184,7 +184,10 @@ if os.environ.get("RAILWAY_ENVIRONMENT"):
     ALLOW_CREDENTIALS = True
     ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
     
-    print(f"[CORS] Allowed origins: {ALLOWED_ORIGINS}")
+    print(f"[CORS] 🔒 Railway detected - Production mode")
+    print(f"[CORS] ✅ Allowed origins: {ALLOWED_ORIGINS}")
+    print(f"[CORS] ✅ Regex pattern: {ALLOW_ORIGIN_REGEX}")
+    print(f"[CORS] ✅ Credentials: {ALLOW_CREDENTIALS}")
 elif CORS_ORIGINS_ENV == "*":
     ALLOWED_ORIGINS = ["*"]
     ALLOW_CREDENTIALS = False
