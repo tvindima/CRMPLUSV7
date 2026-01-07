@@ -7,12 +7,14 @@ import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 
 type Client = {
   id: number;
-  name: string;
+  nome: string;
   email?: string;
-  phone?: string;
-  type: 'buyer' | 'seller' | 'both';
-  createdAt: string;
+  telefone?: string;
+  tipo_cliente?: string;
+  created_at: string;
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -20,8 +22,21 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch clients from API
-    setLoading(false);
+    const fetchClients = async () => {
+      try {
+        const response = await fetch(`${API_URL}/clients/?limit=100`);
+        if (response.ok) {
+          const data = await response.json();
+          setClients(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchClients();
   }, []);
 
   return (
@@ -62,10 +77,10 @@ export default function ClientsPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-white">{client.name}</h3>
-                  <p className="text-sm text-[#999]">{client.email || client.phone}</p>
+                  <h3 className="font-medium text-white">{client.nome}</h3>
+                  <p className="text-sm text-[#999]">{client.email || client.telefone}</p>
                 </div>
-                <span className="text-xs text-[#666]">{client.type}</span>
+                <span className="text-xs text-[#666]">{client.tipo_cliente || 'lead'}</span>
               </div>
             </div>
           ))}
