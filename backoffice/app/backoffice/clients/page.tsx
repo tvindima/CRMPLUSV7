@@ -74,14 +74,17 @@ export default function ClientsPage() {
           {clients.map((client) => (
             <div
               key={client.id}
-              className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-4 transition-all hover:border-[#E10600]/30"
+              onClick={() => router.push(`/backoffice/clients/${client.id}`)}
+              className="cursor-pointer rounded-xl border border-[#23232B] bg-[#0F0F12] p-4 transition-all hover:border-[#E10600]/30 hover:bg-[#151518]"
             >
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium text-white">{client.nome}</h3>
                   <p className="text-sm text-[#999]">{client.email || client.telefone}</p>
                 </div>
-                <span className="text-xs text-[#666]">{client.tipo_cliente || 'lead'}</span>
+                <span className="rounded-full bg-[#E10600]/20 px-2 py-0.5 text-xs font-medium text-[#E10600]">
+                  {client.tipo_cliente || 'lead'}
+                </span>
               </div>
             </div>
           ))}
