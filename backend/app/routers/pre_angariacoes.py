@@ -241,12 +241,8 @@ def criar_de_first_impression(
             detail=f"Já existe pré-angariação ({existing.referencia_interna}) para esta 1ª Impressão"
         )
     
-    # Validar cliente_name (obrigatório para proprietario_nome)
-    if not fi.client_name or not fi.client_name.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="A 1ª Impressão não tem nome do cliente preenchido. Preencha o nome antes de criar a pré-angariação."
-        )
+    # Nome do proprietário - usar 'A Identificar' se não preenchido
+    proprietario_nome = fi.client_name.strip() if fi.client_name else "A Identificar"
     
     # Gerar referência
     ano = datetime.now().year
@@ -270,7 +266,7 @@ def criar_de_first_impression(
         referencia_interna=referencia,
         
         # Dados do proprietário
-        proprietario_nome=fi.client_name,
+        proprietario_nome=proprietario_nome,  # Usar a variável que tem "A Identificar" como fallback
         proprietario_nif=fi.client_nif,
         proprietario_telefone=fi.client_phone,
         proprietario_email=fi.client_email,

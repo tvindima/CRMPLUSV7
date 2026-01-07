@@ -1817,10 +1817,10 @@ async def create_lead_mobile(
             name=lead_data.name,
             email=lead_data.email,  # Pode ser None
             phone=lead_data.phone,
-            source=lead_data.source or LeadSource.MANUAL,
+            source=lead_data.source or "manual",  # String, não Enum
             origin=lead_data.origin or lead_data.notes,  # Guardar notes em origin se não tiver origin
             assigned_agent_id=current_user.agent_id,  # ← Auto-atribuição
-            status=LeadStatus.NEW  # ← Status inicial sempre NEW
+            status="new"  # String, não Enum - BD usa String
         )
         
         db.add(new_lead)

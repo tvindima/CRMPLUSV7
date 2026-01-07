@@ -675,12 +675,8 @@ def criar_de_first_impression(
             detail=f"Já existe CMI ({existing.numero_contrato}) para esta 1ª Impressão"
         )
     
-    # Validar cliente_nome (obrigatório)
-    if not fi.client_name or not fi.client_name.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="A 1ª Impressão não tem nome do cliente preenchido. Preencha o nome antes de criar o CMI."
-        )
+    # Nome do cliente - usar 'A Identificar' se não preenchido
+    cliente_nome = fi.client_name.strip() if fi.client_name else "A Identificar"
     
     # Gerar número
     ano = datetime.now().year
@@ -704,7 +700,7 @@ def criar_de_first_impression(
         numero_contrato=numero,
         
         # Cliente (da 1ª Impressão)
-        cliente_nome=fi.client_name,
+        cliente_nome=cliente_nome,  # Usar a variável que tem "A Identificar" como fallback
         cliente_nif=fi.client_nif,
         cliente_telefone=fi.client_phone,
         cliente_email=fi.client_email,
