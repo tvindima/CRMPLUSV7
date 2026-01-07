@@ -17,7 +17,7 @@ import jwt
 import bcrypt
 import os
 
-from app.database import get_db
+from app.database import get_db, create_tenant_schema, copy_tables_to_schema
 from app.platform.models import Tenant, SuperAdmin, PlatformSettings
 from app.platform import schemas
 
@@ -400,6 +400,13 @@ async def create_tenant(
     Criar novo tenant.
     
     PROTEGIDO - Requer autenticação de super admin.
+    
+    Este endpoint:
+    1. Valida que o slug não está em uso
+    2. Valida que os domínios não estão em uso
+    3. Cria o registo do tenant na tabela principal
+    4. Cria um schema PostgreSQL isolado para o tenant
+    5. Copia a estrutura das tabelas para o novo schema
     """
     # Verificar se slug já existe
     existing = db.query(Tenant).filter(Tenant.slug == tenant_data.slug).first()
@@ -424,6 +431,25 @@ async def create_tenant(
     db.add(tenant)
     db.commit()
     db.refresh(tenant)
+    
+    # ===========================================
+    # CRIAR SCHEMA ISOLADO PARA O TENANT
+    # ===========================================
+    try:
+        schema_name = f"tenant_{tenant.slug}"
+        
+        # Criar schema
+        create_tenant_schema(db, schema_name)
+        
+        # Copiar estrutura das tabelas principais para o novo schema
+        copy_tables_to_schema(db, schema_name)
+        
+        print(f"[PLATFORM] Schema '{schema_name}' criado com sucesso para tenant {tenant.slug}")
+        
+    except Exception as e:
+        # Se falhar a criação do schema, log mas não falha o endpoint
+        # O tenant foi criado, o schema pode ser criado manualmente depois
+        print(f"[PLATFORM] AVISO: Erro ao criar schema para tenant {tenant.slug}: {e}")
     
     return tenant
 
@@ -487,6 +513,47 @@ async def activate_tenant(
     db.commit()
     
     return {"message": f"Tenant '{tenant.slug}' activado"}
+
+
+@router.post("/tenants/{tenant_id}/provision-schema")
+async def provision_tenant_schema(
+    tenant_id: int, 
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Provisionar schema para tenant existente - PROTEGIDO.
+    
+    Útil para:
+    - Tenants criados antes do multi-tenancy
+    - Recriação de schema após problemas
+    - Migração manual de dados
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    schema_name = f"tenant_{tenant.slug}"
+    
+    try:
+        # Criar schema
+        create_tenant_schema(db, schema_name)
+        
+        # Copiar estrutura das tabelas
+        result = copy_tables_to_schema(db, schema_name)
+        
+        return {
+            "message": f"Schema '{schema_name}' provisionado com sucesso",
+            "tenant_slug": tenant.slug,
+            "schema_name": schema_name,
+            "tables_created": result.get("created", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao provisionar schema: {str(e)}"
+        )
 
 
 # ===========================================

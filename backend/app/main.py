@@ -41,6 +41,8 @@ from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
 from app.platform.routes import router as platform_router  # Platform / Super Admin
 
+# Multi-tenant middleware
+from app.middleware.tenant import TenantMiddleware
 
 # Debug endpoint to check database connection
 from fastapi import APIRouter, Depends
@@ -212,6 +214,13 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# =====================================================
+# TENANT MIDDLEWARE (MULTI-TENANCY COM SCHEMA ISOLATION)
+# =====================================================
+# Resolve o tenant a partir do header X-Tenant-Slug ou domínio
+# e configura o schema do PostgreSQL para a requisição
+app.add_middleware(TenantMiddleware)
 
 
 # =====================================================
