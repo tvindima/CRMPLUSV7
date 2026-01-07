@@ -22,10 +22,27 @@ interface SuperAdmin {
   email: string;
   name: string | null;
   is_active: boolean;
-  permissions: string[];
+  permissions: Record<string, boolean> | string[] | null;
   created_at: string;
   last_login: string | null;
 }
+
+// Helper para converter permissões para array
+const permissionsToArray = (permissions: Record<string, boolean> | string[] | null): string[] => {
+  if (!permissions) return [];
+  if (Array.isArray(permissions)) return permissions;
+  // Se for objeto, retorna as chaves que têm valor true
+  return Object.entries(permissions)
+    .filter(([_, value]) => value === true)
+    .map(([key]) => key);
+};
+
+// Helper para converter array para objeto
+const permissionsToObject = (permissions: string[]): Record<string, boolean> => {
+  const obj: Record<string, boolean> = {};
+  permissions.forEach(p => obj[p] = true);
+  return obj;
+};
 
 const ALL_PERMISSIONS = [
   'manage_tenants',
@@ -99,7 +116,7 @@ export default function AdminsPage() {
       email: admin.email,
       name: admin.name || '',
       password: '',
-      permissions: admin.permissions || [],
+      permissions: permissionsToArray(admin.permissions),
     });
     setShowModal(true);
   };
@@ -116,7 +133,7 @@ export default function AdminsPage() {
       const body: any = {
         email: form.email,
         name: form.name,
-        permissions: form.permissions,
+        permissions: permissionsToObject(form.permissions),
       };
 
       // Only include password if creating new or updating with new password
@@ -268,7 +285,7 @@ export default function AdminsPage() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1">
-                    {admin.permissions?.slice(0, 3).map((perm) => (
+                    {permissionsToArray(admin.permissions).slice(0, 3).map((perm) => (
                       <span
                         key={perm}
                         className="px-2 py-1 bg-primary/20 text-primary rounded text-xs"
@@ -276,9 +293,9 @@ export default function AdminsPage() {
                         {PERMISSION_LABELS[perm] || perm}
                       </span>
                     ))}
-                    {admin.permissions?.length > 3 && (
+                    {permissionsToArray(admin.permissions).length > 3 && (
                       <span className="px-2 py-1 bg-text-muted/20 text-text-muted rounded text-xs">
-                        +{admin.permissions.length - 3}
+                        +{permissionsToArray(admin.permissions).length - 3}
                       </span>
                     )}
                   </div>
