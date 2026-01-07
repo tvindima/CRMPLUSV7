@@ -71,18 +71,37 @@ export default function MobileMenu({ links }: MobileMenuProps) {
 
       {/* Mobile Menu Panel */}
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-[280px] transform border-l border-[#2A2A2E] bg-[#0B0B0D] transition-transform duration-300 md:hidden ${
+        className={`fixed right-0 top-0 z-50 h-full w-[280px] transform transition-transform duration-300 md:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{
+          backgroundColor: 'var(--color-background)',
+          borderLeftColor: 'var(--color-border)',
+          borderLeftWidth: '1px',
+        }}
       >
         {/* Close Button */}
-        <div className="flex items-center justify-between border-b border-[#2A2A2E] px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#E10600]">
+        <div 
+          className="flex items-center justify-between px-4 py-3"
+          style={{
+            borderBottomColor: 'var(--color-border)',
+            borderBottomWidth: '1px',
+          }}
+        >
+          <span 
+            className="text-xs font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--color-primary)' }}
+          >
             Menu
           </span>
           <button
             onClick={() => setIsOpen(false)}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#2A2A2E]"
+            className="flex h-9 w-9 items-center justify-center rounded-full transition"
+            style={{ 
+              '--hover-bg': 'var(--color-background-secondary)',
+            } as React.CSSProperties}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             aria-label="Fechar menu"
           >
             <svg
@@ -112,11 +131,23 @@ export default function MobileMenu({ links }: MobileMenuProps) {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-[#E10600] text-white'
-                      : 'text-[#C5C5C5] hover:bg-[#2A2A2E] hover:text-white'
-                  }`}
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                  style={{
+                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                    color: isActive ? 'white' : 'var(--color-text-muted)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)';
+                      e.currentTarget.style.color = 'var(--color-text)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-muted)';
+                    }
+                  }}
                 >
                   {link.label}
                 </Link>
@@ -126,8 +157,17 @@ export default function MobileMenu({ links }: MobileMenuProps) {
 
           {/* Ferramentas Section - Visível para utilizadores logados */}
           {isLoggedIn && (
-            <div className="border-t border-[#2A2A2E] p-3">
-              <span className="mb-2 block px-3 text-xs font-semibold uppercase tracking-wider text-[#7A7A7A]">
+            <div 
+              className="p-3"
+              style={{
+                borderTopColor: 'var(--color-border)',
+                borderTopWidth: '1px',
+              }}
+            >
+              <span 
+                className="mb-2 block px-3 text-xs font-semibold uppercase tracking-wider"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
                 Ferramentas
               </span>
               <button
@@ -135,9 +175,24 @@ export default function MobileMenu({ links }: MobileMenuProps) {
                   setIsOpen(false);
                   setShowMortgageSimulator(true);
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                style={{ color: 'var(--color-text-muted)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)';
+                  e.currentTarget.style.color = 'var(--color-text)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--color-text-muted)';
+                }}
               >
-                <svg className="h-5 w-5 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{ color: 'var(--color-primary)' }}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
                 Simulador de Prestação
@@ -147,9 +202,24 @@ export default function MobileMenu({ links }: MobileMenuProps) {
                   setIsOpen(false);
                   setShowTaxCalculator(true);
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#C5C5C5] transition hover:bg-[#2A2A2E] hover:text-white"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                style={{ color: 'var(--color-text-muted)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-background-secondary)';
+                  e.currentTarget.style.color = 'var(--color-text)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--color-text-muted)';
+                }}
               >
-                <svg className="h-5 w-5 text-[#E10600]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{ color: 'var(--color-primary)' }}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Calculadora de IMT
@@ -159,14 +229,26 @@ export default function MobileMenu({ links }: MobileMenuProps) {
         </div>
 
         {/* Login Button - Fixed at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-[#2A2A2E] bg-[#0B0B0D] p-3">
+        <div 
+          className="absolute bottom-0 left-0 right-0 p-3"
+          style={{
+            backgroundColor: 'var(--color-background)',
+            borderTopColor: 'var(--color-border)',
+            borderTopWidth: '1px',
+          }}
+        >
           <button
             onClick={() => {
               setIsOpen(false);
               // Dispara evento para abrir modal de autenticação
               window.dispatchEvent(new Event('openAuthModal'));
             }}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E10600] bg-[#E10600] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#E10600]/90"
+            className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              borderColor: 'var(--color-primary)',
+              borderWidth: '1px',
+            }}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

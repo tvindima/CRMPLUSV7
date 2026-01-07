@@ -17,14 +17,23 @@ export function DynamicBrandLogo() {
         className="h-7 w-7 md:h-8 md:w-8" 
       />
       <div className="hidden sm:block">
-        <p className="text-xs uppercase tracking-wide text-[#E10600] md:text-sm">
+        <p 
+          className="text-xs uppercase tracking-wide md:text-sm"
+          style={{ color: 'var(--color-primary)' }}
+        >
           {loading ? '...' : branding.agency_name}
         </p>
-        <p className="hidden text-xs text-[#C5C5C5] md:block">
+        <p 
+          className="hidden text-xs md:block"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
           {loading ? '...' : branding.agency_slogan}
         </p>
       </div>
-      <p className="text-xs uppercase tracking-wide text-[#E10600] sm:hidden">
+      <p 
+        className="text-xs uppercase tracking-wide sm:hidden"
+        style={{ color: 'var(--color-primary)' }}
+      >
         {loading ? '...' : branding.agency_name}
       </p>
     </Link>
@@ -44,7 +53,10 @@ export function DynamicBrandFooterLogo() {
         className="h-6 md:h-8"
         style={{ width: 'auto', height: '1.5rem' }}
       />
-      <p className="text-xs text-[#C5C5C5] sm:text-sm">
+      <p 
+        className="text-xs sm:text-sm"
+        style={{ color: 'var(--color-text-muted)' }}
+      >
         {loading ? '...' : branding.agency_slogan}
       </p>
     </div>
