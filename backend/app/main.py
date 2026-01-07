@@ -35,6 +35,7 @@ from app.routers.website_auth import router as website_auth_router
 from app.routers.website_clients import router as website_clients_router
 from app.routers.clients import router as clients_router  # BD de clientes por agente
 from app.routers.escrituras import router as escrituras_router  # Agendamento de escrituras
+from app.routers.emergency_fix import router as emergency_fix_router  # Fix emergência
 from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
@@ -487,6 +488,7 @@ app.include_router(website_auth_router)  # Autenticação clientes do site
 app.include_router(website_clients_router)  # Gestão de clientes do site
 app.include_router(clients_router)  # BD de clientes por agente
 app.include_router(escrituras_router)  # Agendamento de escrituras
+app.include_router(emergency_fix_router)  # ENDPOINT DE EMERGÊNCIA PARA FIX
 app.include_router(admin_setup_router)
 app.include_router(migrate_agents_router)
 app.include_router(fix_properties_router)
