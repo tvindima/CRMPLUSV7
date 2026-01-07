@@ -1,5 +1,6 @@
 'use client';
 
+// Fix: API returns {total, items} structure
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
