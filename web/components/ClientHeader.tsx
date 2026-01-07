@@ -25,9 +25,9 @@ export function ClientHeader() {
           <BrandImage 
             src={branding.agency_logo_url || "/brand/agency-logo.svg"}
             alt={branding.agency_name}
-            width={32} 
-            height={32} 
-            className="h-7 w-7 md:h-8 md:w-8" 
+            width={120} 
+            height={40} 
+            className="h-10 w-auto object-contain md:h-12" 
           />
           <div className="hidden sm:block">
             <p className="text-xs uppercase tracking-wide text-[#E10600] md:text-sm">
