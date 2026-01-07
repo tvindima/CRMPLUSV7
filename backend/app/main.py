@@ -95,6 +95,22 @@ async def lifespan(app: FastAPI):
             Base.metadata.create_all(bind=engine, tables=[Escritura.__table__])
             print("✅ [LIFESPAN] Tabela 'escrituras' criada com sucesso!")
         
+        # Tornar client_name nullable em first_impressions (migração)
+        try:
+            result = db.execute(text("""
+                SELECT is_nullable 
+                FROM information_schema.columns 
+                WHERE table_name = 'first_impressions' AND column_name = 'client_name'
+            """))
+            is_nullable = result.scalar()
+            if is_nullable == 'NO':
+                print("📊 [LIFESPAN] Tornando client_name nullable em first_impressions...")
+                db.execute(text("ALTER TABLE first_impressions ALTER COLUMN client_name DROP NOT NULL"))
+                db.commit()
+                print("✅ [LIFESPAN] client_name agora é nullable!")
+        except Exception as e:
+            print(f"⚠️ [LIFESPAN] Erro ao alterar client_name: {e}")
+        
         db.close()
     except Exception as e:
         print(f"⚠️ [LIFESPAN] Erro ao verificar tabelas: {e}")
