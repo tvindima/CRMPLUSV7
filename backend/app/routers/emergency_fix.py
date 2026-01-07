@@ -79,3 +79,41 @@ def fix_clients_table(db: Session = Depends(get_db)):
         "total_columns": len(columns),
         "columns": columns
     }
+
+
+@router.post("/add-missing-columns")
+def add_missing_columns(db: Session = Depends(get_db)):
+    """
+    Adicionar colunas que faltaram: preferencias e is_verified
+    """
+    sql_statements = [
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS preferencias JSONB DEFAULT '{}'::jsonb;",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;",
+    ]
+    
+    results = []
+    for i, sql in enumerate(sql_statements, 1):
+        try:
+            db.execute(text(sql))
+            db.commit()
+            results.append(f"✅ {i}/{len(sql_statements)}: Coluna adicionada")
+        except Exception as e:
+            results.append(f"⚠️ {i}/{len(sql_statements)}: {str(e)}")
+    
+    # Verificar se as colunas existem agora
+    result = db.execute(text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'clients' 
+        AND column_name IN ('preferencias', 'is_verified')
+        ORDER BY column_name
+    """))
+    columns = [row[0] for row in result]
+    
+    return {
+        "status": "completed",
+        "total_commands": len(sql_statements),
+        "results": results,
+        "columns_added": columns,
+        "message": "Agora pode criar o cliente!"
+    }
