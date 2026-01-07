@@ -328,6 +328,64 @@ def bootstrap_super_admin(
     )
 
 
+@router.post("/auth/reset-super-admin", response_model=schemas.SuperAdminToken)
+def reset_super_admin(
+    admin_data: schemas.SuperAdminCreate,
+    x_bootstrap_key: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Resetar/atualizar o super admin principal.
+    
+    PERIGO: Este endpoint permite resetar as credenciais do super admin.
+    Requer a chave de bootstrap.
+    
+    Se já existe um super admin com o email fornecido, atualiza a password.
+    Se não existe, cria um novo (substituindo os existentes se houver apenas 1).
+    """
+    # Verificar chave de bootstrap
+    if x_bootstrap_key != BOOTSTRAP_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chave de bootstrap inválida"
+        )
+    
+    ensure_platform_tables(db)
+    
+    # Verificar se já existe com este email
+    existing = db.query(SuperAdmin).filter(SuperAdmin.email == admin_data.email).first()
+    
+    if existing:
+        # Atualizar password
+        existing.password_hash = hash_password(admin_data.password)
+        existing.name = admin_data.name
+        existing.is_active = True
+        db.commit()
+        db.refresh(existing)
+        super_admin = existing
+        print(f"[PLATFORM] ✅ Reset: Super admin '{admin_data.email}' atualizado!")
+    else:
+        # Criar novo
+        super_admin = SuperAdmin(
+            email=admin_data.email,
+            name=admin_data.name,
+            password_hash=hash_password(admin_data.password),
+            is_active=True,
+            permissions={"all": True}
+        )
+        db.add(super_admin)
+        db.commit()
+        db.refresh(super_admin)
+        print(f"[PLATFORM] ✅ Reset: Super admin '{admin_data.email}' criado!")
+    
+    token = create_platform_token(super_admin)
+    
+    return schemas.SuperAdminToken(
+        access_token=token,
+        super_admin=schemas.SuperAdminOut.model_validate(super_admin)
+    )
+
+
 @router.post("/auth/login", response_model=schemas.SuperAdminToken)
 def super_admin_login(
     credentials: schemas.SuperAdminLogin,
