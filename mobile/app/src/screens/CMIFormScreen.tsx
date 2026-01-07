@@ -43,17 +43,59 @@ interface Props {
   };
 }
 
-// Tipos de documentos para scan - 1º Proprietário
-const DOCUMENT_TYPES = [
-  { id: 'cc_frente', label: 'CC - Frente', icon: 'card', target: 1 },
-  { id: 'cc_verso', label: 'CC - Verso', icon: 'card-outline', target: 1 },
-  { id: 'cc2_frente', label: '2º CC - Frente (Cônjuge/Co-prop.)', icon: 'people', target: 2 },
-  { id: 'cc2_verso', label: '2º CC - Verso (Cônjuge/Co-prop.)', icon: 'people-outline', target: 2 },
-  { id: 'caderneta_predial', label: 'Caderneta Predial', icon: 'document-text', target: 0 },
-  { id: 'certidao_permanente', label: 'Certidão Permanente', icon: 'document', target: 0 },
-  { id: 'licenca_utilizacao', label: 'Licença de Utilização', icon: 'clipboard', target: 0 },
-  { id: 'certificado_energetico', label: 'Certificado Energético', icon: 'flash', target: 0 },
+// Tipos de documentos para scan - SIMPLIFICADO com suporte a múltiplos
+const DOCUMENT_CATEGORIES = [
+  { 
+    id: 'cc', 
+    label: 'Cartão de Cidadão', 
+    icon: 'card',
+    hint: 'Adicione todos os CCs necessários (proprietários, herdeiros, cônjuges)',
+    ocrType: 'cc_frente', // Tipo para OCR
+  },
+  { 
+    id: 'caderneta_predial', 
+    label: 'Caderneta Predial', 
+    icon: 'document-text',
+    hint: 'Uma caderneta por cada imóvel/artigo matricial',
+    ocrType: 'caderneta_predial',
+  },
+  { 
+    id: 'certidao_permanente', 
+    label: 'Certidão Permanente', 
+    icon: 'document',
+    hint: 'Certidão de registo de cada imóvel',
+    ocrType: 'certidao_permanente',
+  },
+  { 
+    id: 'certificado_energetico', 
+    label: 'Certificado Energético', 
+    icon: 'flash',
+    hint: 'Certificado de cada imóvel',
+    ocrType: 'certificado_energetico',
+  },
+  { 
+    id: 'licenca_utilizacao', 
+    label: 'Licença de Utilização', 
+    icon: 'clipboard',
+    hint: 'Licença de habitação/utilização',
+    ocrType: 'licenca_utilizacao',
+  },
+  { 
+    id: 'outros', 
+    label: 'Outros Documentos', 
+    icon: 'folder-open',
+    hint: 'Procurações, habilitações de herdeiros, etc.',
+    ocrType: 'outro',
+  },
 ];
+
+// Manter compatibilidade com código antigo
+const DOCUMENT_TYPES = DOCUMENT_CATEGORIES.map(c => ({ 
+  id: c.id, 
+  label: c.label, 
+  icon: c.icon, 
+  target: 0 
+}));
 
 // Estados civis
 const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União de Facto'];
@@ -138,8 +180,18 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   const [cliente2Telefone, setCliente2Telefone] = useState('');
   const [cliente2Email, setCliente2Email] = useState('');
 
-  // Qual cliente está a ser preenchido pelo OCR (1 ou 2)
-  const [ocrTargetCliente, setOcrTargetCliente] = useState<1 | 2>(1);
+  // === PROPRIETÁRIOS ADICIONAIS (herdeiros, co-proprietários) ===
+  interface ProprietarioExtra {
+    nome: string;
+    nif: string;
+    cc: string;
+    ccValidade: string;
+    morada: string;
+  }
+  const [proprietariosExtras, setProprietariosExtras] = useState<ProprietarioExtra[]>([]);
+
+  // Qual cliente está a ser preenchido pelo OCR (1 = principal, 2 = segundo, 3+ = extras)
+  const [ocrTargetCliente, setOcrTargetCliente] = useState<number>(1);
 
   // === SECÇÃO 2: IMÓVEL ===
   const [imovelTipo, setImovelTipo] = useState('');
@@ -648,23 +700,15 @@ export default function CMIFormScreen({ navigation, route }: Props) {
   };
 
   // === CÂMARA / OCR ===
-  const openDocumentScanner = (docType: string, targetCliente: 1 | 2 = 1) => {
-    // Para documentos do 2º proprietário, definir target automaticamente
-    let actualTarget = targetCliente;
-    let actualDocType = docType;
+  const openDocumentScanner = (categoryId: string) => {
+    // Encontrar categoria para determinar tipo de OCR
+    const category = DOCUMENT_CATEGORIES.find(c => c.id === categoryId);
+    const ocrType = category?.ocrType || 'outros';
     
-    if (docType === 'cc2_frente') {
-      actualTarget = 2;
-      actualDocType = 'cc_frente';  // Backend processa como CC normal
-      setShowCliente2(true);  // Mostrar secção do 2º outorgante
-    } else if (docType === 'cc2_verso') {
-      actualTarget = 2;
-      actualDocType = 'cc_verso';
-      setShowCliente2(true);
-    }
-    
-    setCurrentDocType(actualDocType);
-    setOcrTargetCliente(actualTarget);
+    setCurrentDocType(ocrType);
+    // O target cliente será determinado automaticamente pelo OCR
+    // baseado no NIF/nome detectado vs dados existentes
+    setOcrTargetCliente(0); // 0 = auto-detect
     setShowCameraModal(true);
   };
 
@@ -732,48 +776,68 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         const dados = ocrResult.dados_extraidos;
         let camposPreenchidos = 0;
         
-        // IMPORTANTE: Usar o tipo detectado pelo backend, não o tipo enviado pelo utilizador
-        // O backend faz classificação automática e pode corrigir o tipo
+        // IMPORTANTE: Usar o tipo detectado pelo backend
         const tipoDocumento = ocrResult.tipo || currentDocType;
         console.log('[OCR] Tipo detectado pelo backend:', tipoDocumento);
         
-        // Preencher campos automaticamente baseado no tipo de documento DETECTADO
-        if (tipoDocumento === 'cc_frente' || tipoDocumento === 'cc_verso') {
-          // Decidir qual cliente preencher baseado em ocrTargetCliente
-          if (ocrTargetCliente === 2) {
-            // SEGUNDO OUTORGANTE
-            if (dados.nome) {
-              setCliente2Nome(dados.nome);
-              camposPreenchidos++;
-            }
-            if (dados.nif) {
-              setCliente2Nif(dados.nif);
-              camposPreenchidos++;
-            }
-            if (dados.numero_documento) {
-              setCliente2Cc(dados.numero_documento);
-              camposPreenchidos++;
-            }
-            if (dados.validade) {
-              setCliente2CcValidade(dados.validade);
-              camposPreenchidos++;
-            }
+        // CARTÃO DE CIDADÃO - Auto-detectar próximo slot disponível
+        if (tipoDocumento === 'cc_frente' || tipoDocumento === 'cc_verso' || tipoDocumento === 'cc') {
+          // Verificar se é um CC novo ou actualização de existente
+          const nifDetectado = dados.nif;
+          const nomeDetectado = dados.nome;
+          
+          // Verificar se já temos este NIF/pessoa registado
+          const isCliente1 = clienteNif === nifDetectado || (nomeDetectado && clienteNome === nomeDetectado);
+          const isCliente2 = cliente2Nif === nifDetectado || (nomeDetectado && cliente2Nome === nomeDetectado);
+          const extraIdx = proprietariosExtras.findIndex(p => p.nif === nifDetectado || p.nome === nomeDetectado);
+          
+          if (isCliente1) {
+            // Actualizar cliente 1
+            if (dados.nome && !clienteNome) { setClienteNome(dados.nome); camposPreenchidos++; }
+            if (dados.nif && !clienteNif) { setClienteNif(dados.nif); camposPreenchidos++; }
+            if (dados.numero_documento) { setClienteCc(dados.numero_documento); camposPreenchidos++; }
+            if (dados.validade) { setClienteCcValidade(dados.validade); camposPreenchidos++; }
+          } else if (isCliente2) {
+            // Actualizar cliente 2
+            if (dados.nome && !cliente2Nome) { setCliente2Nome(dados.nome); camposPreenchidos++; }
+            if (dados.nif && !cliente2Nif) { setCliente2Nif(dados.nif); camposPreenchidos++; }
+            if (dados.numero_documento) { setCliente2Cc(dados.numero_documento); camposPreenchidos++; }
+            if (dados.validade) { setCliente2CcValidade(dados.validade); camposPreenchidos++; }
+          } else if (extraIdx >= 0) {
+            // Actualizar proprietário extra existente
+            setProprietariosExtras(prev => {
+              const updated = [...prev];
+              if (dados.nome) updated[extraIdx].nome = dados.nome;
+              if (dados.nif) updated[extraIdx].nif = dados.nif;
+              if (dados.numero_documento) updated[extraIdx].cc = dados.numero_documento;
+              if (dados.validade) updated[extraIdx].ccValidade = dados.validade;
+              return updated;
+            });
+            camposPreenchidos++;
           } else {
-            // PRIMEIRO OUTORGANTE (default)
-            if (dados.nome) {
-              setClienteNome(dados.nome);
-              camposPreenchidos++;
-            }
-            if (dados.nif) {
-              setClienteNif(dados.nif);
-              camposPreenchidos++;
-            }
-            if (dados.numero_documento) {
-              setClienteCc(dados.numero_documento);
-              camposPreenchidos++;
-            }
-            if (dados.validade) {
-              setClienteCcValidade(dados.validade);
+            // NOVO PROPRIETÁRIO - encontrar próximo slot disponível
+            if (!clienteNome && !clienteNif) {
+              // Slot 1 vazio
+              if (dados.nome) { setClienteNome(dados.nome); camposPreenchidos++; }
+              if (dados.nif) { setClienteNif(dados.nif); camposPreenchidos++; }
+              if (dados.numero_documento) { setClienteCc(dados.numero_documento); camposPreenchidos++; }
+              if (dados.validade) { setClienteCcValidade(dados.validade); camposPreenchidos++; }
+            } else if (!cliente2Nome && !cliente2Nif) {
+              // Slot 2 vazio
+              setShowCliente2(true);
+              if (dados.nome) { setCliente2Nome(dados.nome); camposPreenchidos++; }
+              if (dados.nif) { setCliente2Nif(dados.nif); camposPreenchidos++; }
+              if (dados.numero_documento) { setCliente2Cc(dados.numero_documento); camposPreenchidos++; }
+              if (dados.validade) { setCliente2CcValidade(dados.validade); camposPreenchidos++; }
+            } else {
+              // Adicionar aos extras (herdeiros, co-proprietários)
+              setProprietariosExtras(prev => [...prev, {
+                nome: dados.nome || '',
+                nif: dados.nif || '',
+                cc: dados.numero_documento || '',
+                ccValidade: dados.validade || '',
+                morada: dados.morada || clienteMorada || '',
+              }]);
               camposPreenchidos++;
             }
           }
@@ -959,7 +1023,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
     }
   };
 
-  const pickDocumentFromLibrary = async (docType: string) => {
+  const pickDocumentFromLibrary = async (categoryId: string) => {
     // Permite carregar documentos mesmo sem CMI - OCR standalone
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -968,44 +1032,41 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         return;
       }
 
-      // Configurar target correto para documentos do 2º proprietário
-      let actualDocType = docType;
-      let targetCliente: 1 | 2 = 1;
+      // Encontrar categoria para determinar tipo de OCR
+      const category = DOCUMENT_CATEGORIES.find(c => c.id === categoryId);
+      const ocrType = category?.ocrType || 'outros';
       
-      if (docType === 'cc2_frente') {
-        targetCliente = 2;
-        actualDocType = 'cc_frente';
-        setShowCliente2(true);
-      } else if (docType === 'cc2_verso') {
-        targetCliente = 2;
-        actualDocType = 'cc_verso';
-        setShowCliente2(true);
-      }
-      
-      setCurrentDocType(actualDocType);
-      setOcrTargetCliente(targetCliente);
+      setCurrentDocType(ocrType);
+      setOcrTargetCliente(0); // Auto-detect
       
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false,
+        allowsMultipleSelection: true, // Permitir múltiplos documentos
         quality: 0.8,
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        setPendingDocs((prev) => [
-          ...prev,
-          {
-            docType: actualDocType,
-            uri: result.assets[0].uri,
-            mime: result.assets[0].mimeType || 'image/jpeg',
-            name: result.assets[0].fileName || `${actualDocType}-${Date.now()}.jpg`,
-            base64: result.assets[0].base64,
-          },
-        ]);
-        if (result.assets[0].base64) {
-          await processOcrFromBase64(result.assets[0].base64);
+      if (!result.canceled && result.assets.length > 0) {
+        // Processar todos os documentos selecionados
+        for (const asset of result.assets) {
+          setPendingDocs((prev) => [
+            ...prev,
+            {
+              docType: ocrType,
+              uri: asset.uri,
+              mime: asset.mimeType || 'image/jpeg',
+              name: asset.fileName || `${categoryId}-${Date.now()}.jpg`,
+              base64: asset.base64,
+            },
+          ]);
+          
+          // Processar OCR para CCs
+          if (ocrType === 'cc' && asset.base64) {
+            await processOcrFromBase64(asset.base64);
+          }
         }
+        
+        Alert.alert('Sucesso', `${result.assets.length} documento(s) adicionado(s)`);
       }
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao anexar documento da galeria');
@@ -1115,72 +1176,126 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* SCAN DOCUMENTOS */}
+        {/* SCAN DOCUMENTOS - INTERFACE SIMPLIFICADA */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📷 Digitalizar Documentos</Text>
             {savedDocs.length > 0 && (
               <TouchableOpacity onPress={() => setShowDocsModal(true)}>
-                <Text style={styles.manageDocsLink}>Gerir ({savedDocs.length})</Text>
+                <Text style={styles.manageDocsLink}>Ver todos ({savedDocs.length})</Text>
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.hint}>Fotografe ou anexe da galeria/ficheiros para preencher automaticamente</Text>
+          <Text style={styles.hint}>
+            Adicione múltiplos documentos de cada tipo. O OCR extrairá automaticamente os dados de todos.
+          </Text>
           
-          <View style={styles.docList}>
-            {DOCUMENT_TYPES.map((doc) => (
-              <View key={doc.id} style={styles.docCard}>
-                <View style={styles.docInfo}>
-                  <Ionicons name={doc.icon as any} size={24} color="#00d9ff" />
-                  <Text style={styles.docLabel}>{doc.label}</Text>
-                </View>
-                <View style={styles.docStatusRow}>
-                  {savedDocsMap[docTypeToPreKey(doc.id)] ? (
-                    <Text style={styles.docBadgeSaved}>
-                      ✓ {savedDocsMap[docTypeToPreKey(doc.id)]} carregado(s)
-                    </Text>
-                  ) : (
-                    <Text style={styles.docBadgeEmpty}>Nenhum carregado</Text>
-                  )}
-                  {pendingDocs.filter((d) => d.docType === doc.id).length > 0 && (
-                    <Text style={styles.docBadgePending}>
-                      {pendingDocs.filter((d) => d.docType === doc.id).length} por guardar
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.docActions}>
-                  <TouchableOpacity
-                    style={styles.docButton}
-                    onPress={() => openDocumentScanner(doc.id)}
-                  >
-                    <Ionicons name="camera" size={16} color="#fff" />
-                    <Text style={styles.docButtonText}>Fotografar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.docButton, styles.docButtonAlt]}
-                    onPress={() => pickDocumentFromLibrary(doc.id)}
-                  >
-                    <Ionicons name="images" size={16} color="#fff" />
-                    <Text style={styles.docButtonText}>Anexar</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Mostrar documentos pendentes para este tipo */}
-                {pendingDocs.filter((d) => d.docType === doc.id).map((pendingDoc, idx) => {
-                  const globalIdx = pendingDocs.findIndex((d) => d === pendingDoc);
-                  return (
-                    <View key={idx} style={styles.pendingDocItem}>
-                      <Ionicons name="time-outline" size={14} color="#fbbf24" />
-                      <Text style={styles.pendingDocName} numberOfLines={1}>{pendingDoc.name}</Text>
-                      <TouchableOpacity onPress={() => handleRemovePendingDoc(globalIdx)}>
-                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                      </TouchableOpacity>
+          {/* CATEGORIAS DE DOCUMENTOS */}
+          <View style={styles.docCategories}>
+            {DOCUMENT_CATEGORIES.map((cat) => {
+              const savedCount = savedDocsMap[cat.id] || 0;
+              const pendingCount = pendingDocs.filter(d => d.docType === cat.ocrType).length;
+              const totalCount = savedCount + pendingCount;
+              
+              return (
+                <View key={cat.id} style={styles.docCategory}>
+                  <View style={styles.docCategoryHeader}>
+                    <View style={styles.docCategoryInfo}>
+                      <View style={[styles.docCategoryIcon, totalCount > 0 && styles.docCategoryIconActive]}>
+                        <Ionicons name={cat.icon as any} size={24} color={totalCount > 0 ? '#fff' : '#00d9ff'} />
+                      </View>
+                      <View style={styles.docCategoryText}>
+                        <Text style={styles.docCategoryLabel}>{cat.label}</Text>
+                        <Text style={styles.docCategoryHint}>{cat.hint}</Text>
+                      </View>
                     </View>
-                  );
-                })}
-              </View>
-            ))}
+                    {totalCount > 0 && (
+                      <View style={styles.docCountBadge}>
+                        <Text style={styles.docCountText}>{totalCount}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Lista de documentos desta categoria */}
+                  {totalCount > 0 && (
+                    <View style={styles.docCategoryList}>
+                      {/* Documentos guardados */}
+                      {savedDocs.filter(d => d.type === cat.id).map((doc, idx) => (
+                        <View key={`saved-${idx}`} style={styles.docCategoryItem}>
+                          <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                          <Text style={styles.docCategoryItemText} numberOfLines={1}>
+                            {doc.name || `${cat.label} ${idx + 1}`}
+                          </Text>
+                          <Text style={styles.docCategoryItemStatus}>Guardado</Text>
+                        </View>
+                      ))}
+                      {/* Documentos pendentes */}
+                      {pendingDocs.filter(d => d.docType === cat.ocrType).map((doc, idx) => (
+                        <View key={`pending-${idx}`} style={styles.docCategoryItem}>
+                          <Ionicons name="time-outline" size={16} color="#fbbf24" />
+                          <Text style={styles.docCategoryItemText} numberOfLines={1}>
+                            {doc.name}
+                          </Text>
+                          <TouchableOpacity 
+                            onPress={() => handleRemovePendingDoc(pendingDocs.indexOf(doc))}
+                            style={styles.docCategoryItemRemove}
+                          >
+                            <Ionicons name="close-circle" size={18} color="#FF3B30" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {/* Botões de ação */}
+                  <View style={styles.docCategoryActions}>
+                    <TouchableOpacity
+                      style={styles.docCategoryBtn}
+                      onPress={() => openDocumentScanner(cat.id)}
+                    >
+                      <Ionicons name="camera" size={18} color="#00d9ff" />
+                      <Text style={styles.docCategoryBtnText}>Fotografar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.docCategoryBtn}
+                      onPress={() => pickDocumentFromLibrary(cat.id)}
+                    >
+                      <Ionicons name="images" size={18} color="#00d9ff" />
+                      <Text style={styles.docCategoryBtnText}>Galeria</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
           </View>
+          
+          {/* Resumo de proprietários detectados */}
+          {(clienteNome || cliente2Nome || proprietariosExtras.length > 0) && (
+            <View style={styles.detectedOwners}>
+              <Text style={styles.detectedOwnersTitle}>👥 Proprietários Detectados</Text>
+              {clienteNome && (
+                <View style={styles.detectedOwnerItem}>
+                  <Ionicons name="person" size={16} color="#00d9ff" />
+                  <Text style={styles.detectedOwnerName}>{clienteNome}</Text>
+                  <Text style={styles.detectedOwnerRole}>Principal</Text>
+                </View>
+              )}
+              {cliente2Nome && (
+                <View style={styles.detectedOwnerItem}>
+                  <Ionicons name="person" size={16} color="#8b5cf6" />
+                  <Text style={styles.detectedOwnerName}>{cliente2Nome}</Text>
+                  <Text style={styles.detectedOwnerRole}>2º Outorgante</Text>
+                </View>
+              )}
+              {proprietariosExtras.map((prop, idx) => (
+                <View key={idx} style={styles.detectedOwnerItem}>
+                  <Ionicons name="person-add" size={16} color="#10b981" />
+                  <Text style={styles.detectedOwnerName}>{prop.nome}</Text>
+                  <Text style={styles.detectedOwnerRole}>Adicional {idx + 1}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* SECÇÃO 1: DADOS DO CLIENTE */}
@@ -1326,14 +1441,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               </TouchableOpacity>
             </View>
             
-            {/* Botão para scan CC do 2º outorgante */}
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={() => openDocumentScanner('cc_frente', 2)}
-            >
-              <Ionicons name="camera" size={20} color="#FFF" />
-              <Text style={styles.scanButtonText}>Scan CC do 2º Outorgante</Text>
-            </TouchableOpacity>
+            {/* Info: CCs são adicionados na secção de Documentos */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={20} color="#007AFF" />
+              <Text style={styles.infoText}>
+                Adicione CCs na secção "Documentos" acima. O sistema detecta automaticamente a que outorgante pertence.
+              </Text>
+            </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Nome Completo</Text>
@@ -1398,6 +1512,96 @@ export default function CMIFormScreen({ navigation, route }: Props) {
                 />
               </View>
             </View>
+          </View>
+        )}
+
+        {/* PROPRIETÁRIOS EXTRAS (herdeiros, co-proprietários adicionais) */}
+        {proprietariosExtras.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>👥 OUTORGANTES ADICIONAIS ({proprietariosExtras.length})</Text>
+              <TouchableOpacity 
+                onPress={() => setProprietariosExtras(prev => [...prev, { nome: '', nif: '', cc: '', ccValidade: '', morada: '' }])}
+              >
+                <Ionicons name="add-circle" size={24} color="#00d9ff" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.hint}>Herdeiros, co-proprietários ou outros outorgantes detectados via OCR</Text>
+            
+            {proprietariosExtras.map((prop, idx) => (
+              <View key={idx} style={styles.extraOwnerCard}>
+                <View style={styles.extraOwnerHeader}>
+                  <Text style={styles.extraOwnerTitle}>Outorgante {idx + 3}</Text>
+                  <TouchableOpacity onPress={() => setProprietariosExtras(prev => prev.filter((_, i) => i !== idx))}>
+                    <Ionicons name="trash" size={20} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.row}>
+                  <View style={[styles.inputContainer, { flex: 2 }]}>
+                    <Text style={styles.label}>Nome</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={prop.nome}
+                      onChangeText={(v) => setProprietariosExtras(prev => {
+                        const updated = [...prev];
+                        updated[idx].nome = v;
+                        return updated;
+                      })}
+                      placeholder="Nome completo"
+                      placeholderTextColor="#666"
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, { flex: 1, marginLeft: 10 }]}>
+                    <Text style={styles.label}>NIF</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={prop.nif}
+                      onChangeText={(v) => setProprietariosExtras(prev => {
+                        const updated = [...prev];
+                        updated[idx].nif = v;
+                        return updated;
+                      })}
+                      placeholder="123456789"
+                      placeholderTextColor="#666"
+                      keyboardType="number-pad"
+                      maxLength={9}
+                    />
+                  </View>
+                </View>
+                
+                <View style={styles.row}>
+                  <View style={[styles.inputContainer, styles.halfWidth]}>
+                    <Text style={styles.label}>CC</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={prop.cc}
+                      onChangeText={(v) => setProprietariosExtras(prev => {
+                        const updated = [...prev];
+                        updated[idx].cc = v;
+                        return updated;
+                      })}
+                      placeholder="12345678"
+                      placeholderTextColor="#666"
+                    />
+                  </View>
+                  <View style={[styles.inputContainer, styles.halfWidth]}>
+                    <Text style={styles.label}>Validade CC</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={prop.ccValidade}
+                      onChangeText={(v) => setProprietariosExtras(prev => {
+                        const updated = [...prev];
+                        updated[idx].ccValidade = v;
+                        return updated;
+                      })}
+                      placeholder="DD/MM/AAAA"
+                      placeholderTextColor="#666"
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
@@ -1982,6 +2186,161 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+  // === ESTILOS PARA CATEGORIAS DE DOCUMENTOS ===
+  docCategories: {
+    gap: 12,
+  },
+  docCategory: {
+    backgroundColor: '#0a0e1a',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  docCategoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  docCategoryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  docCategoryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#1a1f2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  docCategoryIconActive: {
+    backgroundColor: '#00d9ff',
+  },
+  docCategoryText: {
+    flex: 1,
+  },
+  docCategoryLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  docCategoryHint: {
+    color: '#666',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  docCountBadge: {
+    backgroundColor: '#00d9ff',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  docCountText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  docCategoryList: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+    gap: 6,
+  },
+  docCategoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  docCategoryItemText: {
+    flex: 1,
+    color: '#ccc',
+    fontSize: 12,
+  },
+  docCategoryItemStatus: {
+    color: '#34C759',
+    fontSize: 11,
+  },
+  docCategoryItemRemove: {
+    padding: 4,
+  },
+  docCategoryActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  docCategoryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#00d9ff',
+  },
+  docCategoryBtnText: {
+    color: '#00d9ff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  // === PROPRIETÁRIOS DETECTADOS ===
+  detectedOwners: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#0d1117',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#238636',
+  },
+  detectedOwnersTitle: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  detectedOwnerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  detectedOwnerName: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+  },
+  detectedOwnerRole: {
+    color: '#888',
+    fontSize: 11,
+  },
+  // === PROPRIETÁRIOS EXTRAS ===
+  extraOwnerCard: {
+    backgroundColor: '#0a0e1a',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  extraOwnerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  extraOwnerTitle: {
+    color: '#00d9ff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   statusText: {
     color: '#fff',
     fontSize: 12,
@@ -2020,6 +2379,20 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     fontWeight: '500',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1a1f2e',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  infoText: {
+    color: '#888',
+    fontSize: 13,
+    flex: 1,
   },
   scanButton: {
     flexDirection: 'row',
