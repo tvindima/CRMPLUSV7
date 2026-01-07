@@ -133,28 +133,45 @@ app.add_middleware(
 @app.get("/public/branding")
 def get_public_branding(db: Session = Depends(get_db)):
     """
-    Obter configurações de branding da agência.
+    Obter configurações de branding e tema da agência.
     
     PÚBLICO - Não requer autenticação.
-    Usado pelos frontends (web, backoffice) para exibir logo e nome corretos.
+    Usado pelos frontends (web, backoffice) para exibir logo, nome e cores do tema.
     """
     from app.models.crm_settings import CRMSettings
     
     settings = db.query(CRMSettings).first()
     
+    # Defaults do tema escuro
+    defaults = {
+        "agency_name": "CRM Plus",
+        "agency_slogan": "Sistema Imobiliário",
+        "agency_logo_url": None,
+        "primary_color": "#E10600",
+        "secondary_color": "#C5C5C5",
+        "background_color": "#0B0B0D",
+        "background_secondary": "#1A1A1F",
+        "text_color": "#FFFFFF",
+        "text_muted": "#9CA3AF",
+        "border_color": "#2A2A2E",
+        "accent_color": "#E10600"
+    }
+    
     if not settings:
-        return {
-            "agency_name": "CRM Plus",
-            "agency_slogan": "Sistema Imobiliário",
-            "agency_logo_url": None,
-            "primary_color": "#E10600"
-        }
+        return defaults
     
     return {
-        "agency_name": settings.agency_name or "CRM Plus",
-        "agency_slogan": settings.agency_slogan or "Sistema Imobiliário",
+        "agency_name": settings.agency_name or defaults["agency_name"],
+        "agency_slogan": settings.agency_slogan or defaults["agency_slogan"],
         "agency_logo_url": settings.agency_logo_url,
-        "primary_color": settings.primary_color or "#E10600"
+        "primary_color": getattr(settings, 'primary_color', None) or defaults["primary_color"],
+        "secondary_color": getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
+        "background_color": getattr(settings, 'background_color', None) or defaults["background_color"],
+        "background_secondary": getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
+        "text_color": getattr(settings, 'text_color', None) or defaults["text_color"],
+        "text_muted": getattr(settings, 'text_muted', None) or defaults["text_muted"],
+        "border_color": getattr(settings, 'border_color', None) or defaults["border_color"],
+        "accent_color": getattr(settings, 'accent_color', None) or defaults["accent_color"]
     }
 
 

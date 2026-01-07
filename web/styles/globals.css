@@ -4,10 +4,26 @@
 
 :root {
   font-family: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  
+  /* Cores do Tema - Serão sobrescritas pelo BrandingContext */
+  --color-primary: #E10600;
+  --color-secondary: #C5C5C5;
+  --color-background: #0B0B0D;
+  --color-background-secondary: #1A1A1F;
+  --color-text: #FFFFFF;
+  --color-text-muted: #9CA3AF;
+  --color-border: #2A2A2E;
+  --color-accent: #E10600;
+}
+
+/* Aplicar cores do tema */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .bg-grid {
-  background-color: #0b0b0d;
+  background-color: var(--color-background);
   background-image: linear-gradient(90deg, rgba(42, 42, 46, 0.2) 1px, transparent 1px),
     linear-gradient(180deg, rgba(42, 42, 46, 0.2) 1px, transparent 1px);
   background-size: 32px 32px;

@@ -26,12 +26,21 @@ class CRMSettings(Base):
     watermark_position = Column(String, default="bottom-right")  # bottom-right, bottom-left, top-right, top-left, center
     
     # ==========================================
-    # BRANDING (futuro)
+    # BRANDING & TEMA
     # ==========================================
     agency_name = Column(String, default="CRM Plus")
     agency_logo_url = Column(String, nullable=True)
     agency_slogan = Column(String, default="Powered by CRM Plus")
-    primary_color = Column(String, default="#E10600")  # Vermelho CRM Plus
+    
+    # Cores do Tema
+    primary_color = Column(String, default="#E10600")  # Cor principal (botões, links)
+    secondary_color = Column(String, default="#C5C5C5")  # Cor secundária (texto)
+    background_color = Column(String, default="#0B0B0D")  # Fundo principal
+    background_secondary = Column(String, default="#1A1A1F")  # Fundo cards/secções
+    text_color = Column(String, default="#FFFFFF")  # Texto principal
+    text_muted = Column(String, default="#9CA3AF")  # Texto secundário
+    border_color = Column(String, default="#2A2A2E")  # Bordas
+    accent_color = Column(String, default="#E10600")  # Destaques/hover
     
     # ==========================================
     # LIMITES DE UPLOAD

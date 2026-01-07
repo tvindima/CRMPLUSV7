@@ -612,6 +612,13 @@ class BrandingSettingsUpdate(BaseModel):
     agency_slogan: Optional[str] = None
     agency_logo_url: Optional[str] = None
     primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    background_color: Optional[str] = None
+    background_secondary: Optional[str] = None
+    text_color: Optional[str] = None
+    text_muted: Optional[str] = None
+    border_color: Optional[str] = None
+    accent_color: Optional[str] = None
 
 
 class BrandingSettingsOut(BaseModel):
@@ -620,6 +627,13 @@ class BrandingSettingsOut(BaseModel):
     agency_slogan: str
     agency_logo_url: Optional[str]
     primary_color: str
+    secondary_color: str
+    background_color: str
+    background_secondary: str
+    text_color: str
+    text_muted: str
+    border_color: str
+    accent_color: str
     
     class Config:
         from_attributes = True
@@ -634,30 +648,43 @@ def get_branding_settings(
     
     PÚBLICO - Não requer autenticação para que o frontend possa consultar.
     
-    Retorna:
-    - agency_name: Nome da agência
-    - agency_slogan: Slogan da agência
-    - agency_logo_url: URL do logo
-    - primary_color: Cor principal
+    Retorna configurações de branding e tema do site.
     """
     settings = db.query(CRMSettings).first()
     
+    # Defaults
+    defaults = {
+        "agency_name": "CRM Plus",
+        "agency_slogan": "Sistema Imobiliário",
+        "primary_color": "#E10600",
+        "secondary_color": "#C5C5C5",
+        "background_color": "#0B0B0D",
+        "background_secondary": "#1A1A1F",
+        "text_color": "#FFFFFF",
+        "text_muted": "#9CA3AF",
+        "border_color": "#2A2A2E",
+        "accent_color": "#E10600"
+    }
+    
     if not settings:
         # Criar settings padrão se não existir
-        settings = CRMSettings(
-            agency_name="Luis Carlos Gaspar",
-            agency_slogan="By: ZOME",
-            primary_color="#E10600"
-        )
+        settings = CRMSettings(**defaults)
         db.add(settings)
         db.commit()
         db.refresh(settings)
     
     return BrandingSettingsOut(
-        agency_name=settings.agency_name or "Luis Carlos Gaspar",
-        agency_slogan=settings.agency_slogan or "By: ZOME",
+        agency_name=settings.agency_name or defaults["agency_name"],
+        agency_slogan=settings.agency_slogan or defaults["agency_slogan"],
         agency_logo_url=settings.agency_logo_url,
-        primary_color=settings.primary_color or "#E10600"
+        primary_color=getattr(settings, 'primary_color', None) or defaults["primary_color"],
+        secondary_color=getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
+        background_color=getattr(settings, 'background_color', None) or defaults["background_color"],
+        background_secondary=getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
+        text_color=getattr(settings, 'text_color', None) or defaults["text_color"],
+        text_muted=getattr(settings, 'text_muted', None) or defaults["text_muted"],
+        border_color=getattr(settings, 'border_color', None) or defaults["border_color"],
+        accent_color=getattr(settings, 'accent_color', None) or defaults["accent_color"]
     )
 
 
@@ -668,15 +695,9 @@ def update_branding_settings(
     current_user: dict = Depends(require_staff)
 ):
     """
-    Atualizar configurações de branding do site.
+    Atualizar configurações de branding e tema do site.
     
     Requer autenticação de staff.
-    
-    Parâmetros:
-    - agency_name: Nome da agência
-    - agency_slogan: Slogan da agência  
-    - agency_logo_url: URL do logo
-    - primary_color: Cor principal (hex)
     """
     settings = db.query(CRMSettings).first()
     
@@ -696,15 +717,55 @@ def update_branding_settings(
     
     if update.primary_color is not None:
         settings.primary_color = update.primary_color
+        
+    if update.secondary_color is not None:
+        settings.secondary_color = update.secondary_color
+        
+    if update.background_color is not None:
+        settings.background_color = update.background_color
+        
+    if update.background_secondary is not None:
+        settings.background_secondary = update.background_secondary
+        
+    if update.text_color is not None:
+        settings.text_color = update.text_color
+        
+    if update.text_muted is not None:
+        settings.text_muted = update.text_muted
+        
+    if update.border_color is not None:
+        settings.border_color = update.border_color
+        
+    if update.accent_color is not None:
+        settings.accent_color = update.accent_color
     
     db.commit()
     db.refresh(settings)
     
+    # Defaults para resposta
+    defaults = {
+        "primary_color": "#E10600",
+        "secondary_color": "#C5C5C5",
+        "background_color": "#0B0B0D",
+        "background_secondary": "#1A1A1F",
+        "text_color": "#FFFFFF",
+        "text_muted": "#9CA3AF",
+        "border_color": "#2A2A2E",
+        "accent_color": "#E10600"
+    }
+    
     return BrandingSettingsOut(
-        agency_name=settings.agency_name or "Luis Carlos Gaspar",
-        agency_slogan=settings.agency_slogan or "By: ZOME",
+        agency_name=settings.agency_name or "CRM Plus",
+        agency_slogan=settings.agency_slogan or "Sistema Imobiliário",
         agency_logo_url=settings.agency_logo_url,
-        primary_color=settings.primary_color or "#E10600"
+        primary_color=getattr(settings, 'primary_color', None) or defaults["primary_color"],
+        secondary_color=getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
+        background_color=getattr(settings, 'background_color', None) or defaults["background_color"],
+        background_secondary=getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
+        text_color=getattr(settings, 'text_color', None) or defaults["text_color"],
+        text_muted=getattr(settings, 'text_muted', None) or defaults["text_muted"],
+        border_color=getattr(settings, 'border_color', None) or defaults["border_color"],
+        accent_color=getattr(settings, 'accent_color', None) or defaults["accent_color"]
     )
 
 

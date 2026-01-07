@@ -3,25 +3,111 @@
 import { useState, useEffect, useRef } from 'react';
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
-import { Upload, Save, Image as ImageIcon, Palette, Type } from 'lucide-react';
+import { Upload, Save, Image as ImageIcon, Palette, Type, Eye } from 'lucide-react';
 
 interface BrandingSettings {
   agency_name: string;
   agency_slogan: string;
   agency_logo_url: string | null;
   primary_color: string;
+  secondary_color: string;
+  background_color: string;
+  background_secondary: string;
+  text_color: string;
+  text_muted: string;
+  border_color: string;
+  accent_color: string;
 }
 
+const defaultSettings: BrandingSettings = {
+  agency_name: '',
+  agency_slogan: '',
+  agency_logo_url: null,
+  primary_color: '#E10600',
+  secondary_color: '#C5C5C5',
+  background_color: '#0B0B0D',
+  background_secondary: '#1A1A1F',
+  text_color: '#FFFFFF',
+  text_muted: '#9CA3AF',
+  border_color: '#2A2A2E',
+  accent_color: '#E10600'
+};
+
+// Presets de temas
+const themePresets = [
+  {
+    name: 'Escuro Vermelho',
+    colors: {
+      primary_color: '#E10600',
+      secondary_color: '#C5C5C5',
+      background_color: '#0B0B0D',
+      background_secondary: '#1A1A1F',
+      text_color: '#FFFFFF',
+      text_muted: '#9CA3AF',
+      border_color: '#2A2A2E',
+      accent_color: '#E10600'
+    }
+  },
+  {
+    name: 'Escuro Dourado',
+    colors: {
+      primary_color: '#D4AF37',
+      secondary_color: '#C5C5C5',
+      background_color: '#0D0D0D',
+      background_secondary: '#1A1A1A',
+      text_color: '#FFFFFF',
+      text_muted: '#9CA3AF',
+      border_color: '#2A2A2A',
+      accent_color: '#D4AF37'
+    }
+  },
+  {
+    name: 'Escuro Azul',
+    colors: {
+      primary_color: '#3B82F6',
+      secondary_color: '#CBD5E1',
+      background_color: '#0F172A',
+      background_secondary: '#1E293B',
+      text_color: '#F1F5F9',
+      text_muted: '#94A3B8',
+      border_color: '#334155',
+      accent_color: '#3B82F6'
+    }
+  },
+  {
+    name: 'Claro Elegante',
+    colors: {
+      primary_color: '#1E40AF',
+      secondary_color: '#475569',
+      background_color: '#FFFFFF',
+      background_secondary: '#F8FAFC',
+      text_color: '#0F172A',
+      text_muted: '#64748B',
+      border_color: '#E2E8F0',
+      accent_color: '#1E40AF'
+    }
+  },
+  {
+    name: 'Claro Quente',
+    colors: {
+      primary_color: '#B45309',
+      secondary_color: '#78716C',
+      background_color: '#FFFBEB',
+      background_secondary: '#FEF3C7',
+      text_color: '#1C1917',
+      text_muted: '#78716C',
+      border_color: '#FDE68A',
+      accent_color: '#B45309'
+    }
+  }
+];
+
 function BrandingForm() {
-  const [settings, setSettings] = useState<BrandingSettings>({
-    agency_name: '',
-    agency_slogan: '',
-    agency_logo_url: null,
-    primary_color: '#E10600'
-  });
+  const [settings, setSettings] = useState<BrandingSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   
@@ -56,12 +142,7 @@ function BrandingForm() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          agency_name: settings.agency_name,
-          agency_slogan: settings.agency_slogan,
-          agency_logo_url: settings.agency_logo_url,
-          primary_color: settings.primary_color
-        })
+        body: JSON.stringify(settings)
       });
 
       if (response.ok) {
@@ -76,6 +157,11 @@ function BrandingForm() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const applyPreset = (preset: typeof themePresets[0]) => {
+    setSettings(prev => ({ ...prev, ...preset.colors }));
+    toast.push(`Tema "${preset.name}" aplicado. Clique em Guardar para confirmar.`, 'success');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,35 +314,258 @@ function BrandingForm() {
       <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6 text-white">
         <div className="flex items-center gap-2 mb-4">
           <Palette className="w-5 h-5 text-[#E10600]" />
-          <h2 className="text-lg font-semibold">Cor Principal</h2>
+          <h2 className="text-lg font-semibold">Temas Pré-definidos</h2>
         </div>
         
-        <div className="flex items-center gap-4">
-          <input
-            type="color"
-            value={settings.primary_color}
-            onChange={(e) => setSettings(prev => ({ ...prev, primary_color: e.target.value }))}
-            className="w-12 h-12 rounded-lg cursor-pointer border-0"
-          />
-          <div>
-            <input
-              type="text"
-              value={settings.primary_color}
-              onChange={(e) => setSettings(prev => ({ ...prev, primary_color: e.target.value }))}
-              className="px-4 py-2 bg-[#1A1A1D] border border-[#2A2A2D] rounded-lg text-white focus:outline-none focus:border-[#E10600] w-32"
-              placeholder="#E10600"
-            />
-            <p className="text-xs text-[#666] mt-1">Código hexadecimal</p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {themePresets.map((preset) => (
+            <button
+              key={preset.name}
+              onClick={() => applyPreset(preset)}
+              className="p-3 rounded-lg border border-[#2A2A2D] hover:border-[#E10600] transition-colors text-left"
+              style={{ backgroundColor: preset.colors.background_color }}
+            >
+              <div className="flex gap-1 mb-2">
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: preset.colors.primary_color }} />
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: preset.colors.background_secondary }} />
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: preset.colors.text_color }} />
+              </div>
+              <span className="text-xs" style={{ color: preset.colors.text_color }}>{preset.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Cores do Tema */}
+      <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-[#E10600]" />
+            <h2 className="text-lg font-semibold">Cores Personalizadas</h2>
           </div>
-          
-          {/* Preview */}
-          <div 
-            className="ml-auto px-4 py-2 rounded-lg text-white font-medium"
-            style={{ backgroundColor: settings.primary_color }}
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1D] hover:bg-[#252528] border border-[#2A2A2D] rounded-lg text-sm"
           >
-            Preview
+            <Eye className="w-4 h-4" />
+            {showPreview ? 'Esconder Preview' : 'Ver Preview'}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Cor Principal */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Cor Principal</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.primary_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, primary_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.primary_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, primary_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Cor Secundária */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Cor Secundária</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.secondary_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, secondary_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.secondary_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, secondary_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Fundo Principal */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Fundo Principal</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.background_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, background_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.background_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, background_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Fundo Secundário */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Fundo Cards</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.background_secondary}
+                onChange={(e) => setSettings(prev => ({ ...prev, background_secondary: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.background_secondary}
+                onChange={(e) => setSettings(prev => ({ ...prev, background_secondary: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Texto Principal */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Texto Principal</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.text_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, text_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.text_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, text_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Texto Secundário */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Texto Secundário</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.text_muted}
+                onChange={(e) => setSettings(prev => ({ ...prev, text_muted: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.text_muted}
+                onChange={(e) => setSettings(prev => ({ ...prev, text_muted: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Bordas */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Bordas</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.border_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, border_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.border_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, border_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Destaque */}
+          <div>
+            <label className="block text-sm text-[#C5C5C5] mb-2">Destaque/Hover</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={settings.accent_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, accent_color: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.accent_color}
+                onChange={(e) => setSettings(prev => ({ ...prev, accent_color: e.target.value }))}
+                className="flex-1 px-2 py-1 bg-[#1A1A1D] border border-[#2A2A2D] rounded text-sm"
+              />
+            </div>
           </div>
         </div>
+
+        {/* Preview */}
+        {showPreview && (
+          <div 
+            className="mt-6 p-6 rounded-xl border"
+            style={{ 
+              backgroundColor: settings.background_color,
+              borderColor: settings.border_color
+            }}
+          >
+            <h3 className="text-sm font-semibold mb-4" style={{ color: settings.text_color }}>
+              Preview do Tema
+            </h3>
+            
+            {/* Header mockup */}
+            <div 
+              className="p-4 rounded-lg mb-4 border"
+              style={{ 
+                backgroundColor: settings.background_secondary,
+                borderColor: settings.border_color
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {settings.agency_logo_url ? (
+                    <img src={settings.agency_logo_url} alt="" className="h-8 w-auto" />
+                  ) : (
+                    <div className="w-8 h-8 rounded" style={{ backgroundColor: settings.primary_color }} />
+                  )}
+                  <div>
+                    <p style={{ color: settings.primary_color }} className="text-sm font-medium">
+                      {settings.agency_name || 'Nome da Agência'}
+                    </p>
+                    <p style={{ color: settings.text_muted }} className="text-xs">
+                      {settings.agency_slogan || 'Slogan'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <span style={{ color: settings.secondary_color }} className="text-sm">Imóveis</span>
+                  <span style={{ color: settings.secondary_color }} className="text-sm">Equipa</span>
+                  <span style={{ color: settings.secondary_color }} className="text-sm">Contactos</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card mockup */}
+            <div 
+              className="p-4 rounded-lg border"
+              style={{ 
+                backgroundColor: settings.background_secondary,
+                borderColor: settings.border_color
+              }}
+            >
+              <div className="h-24 rounded-lg mb-3" style={{ backgroundColor: settings.border_color }} />
+              <p style={{ color: settings.text_color }} className="font-medium">Moradia T3 em Lisboa</p>
+              <p style={{ color: settings.text_muted }} className="text-sm">Lisboa, Portugal</p>
+              <p style={{ color: settings.primary_color }} className="font-semibold mt-2">350.000 €</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Botão Guardar */}
