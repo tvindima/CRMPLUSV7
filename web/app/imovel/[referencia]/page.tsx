@@ -213,8 +213,8 @@ export default async function ImovelDetail({ params }: Props) {
           </span>
         </nav>
 
-      {/* Main Grid */}
-      <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+      {/* Main Grid - Stack em mobile, side-by-side em desktop */}
+      <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_380px]">
         {/* Left Column - Property Details */}
         <div className="space-y-8">
           {/* Gallery */}
@@ -242,13 +242,13 @@ export default async function ImovelDetail({ params }: Props) {
                 <p className="text-sm uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>
                   {property.business_type || "Venda"}
                 </p>
-                <h1 className="text-2xl font-semibold text-white md:text-4xl">
+                <h1 className="text-xl font-semibold text-white sm:text-2xl md:text-4xl">
                   {property.property_type || "Imóvel"} {property.typology}
                 </h1>
                 <p className="mt-2 text-lg" style={{ color: 'var(--color-text-muted)' }}>{fullLocation}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-white md:text-3xl">{price}</p>
+                <p className="text-xl font-bold text-white sm:text-2xl md:text-3xl">{price}</p>
                 {property.usable_area && property.price && (
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {Math.round(property.price / property.usable_area).toLocaleString("pt-PT")} €/m²

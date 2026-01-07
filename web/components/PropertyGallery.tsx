@@ -36,14 +36,14 @@ export function PropertyGallery({ images, title }: Props) {
         </div>
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails - Responsivos */}
       {galleryImages.length > 1 && (
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+        <div className="mt-3 sm:mt-4 flex gap-2 overflow-x-auto pb-2 snap-x">
           {galleryImages.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setSelectedIndex(idx)}
-              className={`relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg transition ${
+              className={`relative h-16 w-20 sm:h-20 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg transition snap-center ${
                 idx === selectedIndex ? 'ring-2' : 'opacity-60 hover:opacity-100'
               }`}
               style={idx === selectedIndex ? { '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties : undefined}

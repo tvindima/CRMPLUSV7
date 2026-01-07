@@ -359,6 +359,72 @@ def get_upcoming_birthdays(
     }
 
 
+@router.get("/birthdays/calendar")
+def get_birthdays_as_calendar_events(
+    agent_id: Optional[int] = Query(None),
+    agency_id: Optional[int] = Query(None),
+    mes: int = Query(None, description="Mês (1-12)"),
+    ano: int = Query(None, description="Ano"),
+    db: Session = Depends(get_db)
+):
+    """
+    Obter aniversários formatados como eventos de calendário.
+    Para integração com a agenda do agente.
+    
+    Retorna eventos no formato compatível com CalendarEvent.
+    """
+    ano = ano or date.today().year
+    mes = mes or date.today().month
+    
+    query = db.query(Client).filter(
+        Client.is_active == True,
+        Client.data_nascimento.isnot(None)
+    )
+    
+    if agent_id:
+        query = query.filter(Client.agent_id == agent_id)
+    if agency_id:
+        query = query.filter(Client.agency_id == agency_id)
+    
+    clients = query.all()
+    
+    events = []
+    for client in clients:
+        if client.data_nascimento:
+            # Verificar se o aniversário é no mês solicitado
+            if client.data_nascimento.month == mes:
+                # Criar data do aniversário este ano
+                birthday_date = date(ano, mes, client.data_nascimento.day)
+                age = ano - client.data_nascimento.year
+                
+                events.append({
+                    "id": f"birthday_{client.id}",
+                    "type": "birthday",
+                    "title": f"🎂 Aniversário: {client.nome}",
+                    "description": f"{client.nome} faz {age} anos",
+                    "date": birthday_date.isoformat(),
+                    "start_time": "09:00",  # Lembrete de manhã
+                    "all_day": True,
+                    "color": "#f59e0b",  # Amarelo/dourado
+                    "client_id": client.id,
+                    "client_name": client.nome,
+                    "client_phone": client.telefone,
+                    "client_email": client.email,
+                    "age": age,
+                    "agent_id": client.agent_id,
+                })
+    
+    # Ordenar por dia do mês
+    events.sort(key=lambda x: x["date"])
+    
+    return {
+        "total": len(events),
+        "mes": mes,
+        "ano": ano,
+        "events": events
+    }
+
+
 @router.get("/stats")
 def get_client_stats(
     agent_id: Optional[int] = Query(None),

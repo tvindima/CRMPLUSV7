@@ -31,6 +31,7 @@ def init_db():
     from app.models.crm_settings import CRMSettings
     from app.models.website_client import WebsiteClient, LeadDistributionCounter
     from app.models.client import Client  # Novo modelo de clientes
+    from app.models.escritura import Escritura  # Agendamento de escrituras
     
     # Organization models
     from app.teams.models import Team
