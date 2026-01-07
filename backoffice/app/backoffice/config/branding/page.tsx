@@ -49,7 +49,7 @@ function BrandingForm() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/admin/settings/branding`, {
         method: 'PUT',
         headers: {
@@ -96,7 +96,7 @@ function BrandingForm() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const formData = new FormData();
       formData.append('file', file);
 
