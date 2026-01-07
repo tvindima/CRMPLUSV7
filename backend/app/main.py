@@ -36,6 +36,7 @@ from app.routers.website_clients import router as website_clients_router
 from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
+from app.platform.routes import router as platform_router  # Platform / Super Admin
 
 
 # Debug endpoint to check database connection
@@ -412,6 +413,7 @@ app.include_router(website_clients_router)  # Gestão de clientes do site
 app.include_router(admin_setup_router)
 app.include_router(migrate_agents_router)
 app.include_router(fix_properties_router)
+app.include_router(platform_router)  # Platform / Super Admin / Tenant Management
 
 os.makedirs("media", exist_ok=True)
 app.mount("/media", StaticFiles(directory="media"), name="media")
