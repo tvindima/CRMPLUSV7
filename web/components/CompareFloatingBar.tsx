@@ -21,18 +21,17 @@ export function CompareFloatingBar() {
 
   return (
     <>
-          <Link href="/comparar" legacyBehavior>
-            <a
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-              Comparar
-            </a>
-          </Link>
-          <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+    <div
+      className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-full px-6 py-3 shadow-2xl backdrop-blur-md"
+      style={{
+        backgroundColor: 'rgba(10, 10, 12, 0.95)',
+        borderColor: 'var(--color-border)',
+        borderWidth: '1px',
+        minWidth: 'min(90vw, 600px)',
+        maxWidth: 'min(90vw, 900px)',
+      }}
+    >
+      <div className="flex flex-1 items-center gap-2 overflow-x-auto">
             {compareList.map((property) => (
               <div
                 key={property.id}
