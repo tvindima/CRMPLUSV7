@@ -151,10 +151,6 @@ def get_public_branding(db: Session = Depends(get_db)):
     PÚBLICO - Não requer autenticação.
     Usado pelos frontends (web, backoffice) para exibir logo, nome e cores do tema.
     """
-    from app.models.crm_settings import CRMSettings
-    
-    settings = db.query(CRMSettings).first()
-    
     # Defaults do tema escuro
     defaults = {
         "agency_name": "CRM Plus",
@@ -170,22 +166,37 @@ def get_public_branding(db: Session = Depends(get_db)):
         "accent_color": "#E10600"
     }
     
-    if not settings:
+    try:
+        from app.models.crm_settings import CRMSettings
+        settings = db.query(CRMSettings).first()
+        
+        if not settings:
+            return defaults
+        
+        # Usar getattr com try/except para colunas que podem não existir
+        def safe_get(obj, attr, default):
+            try:
+                val = getattr(obj, attr, None)
+                return val if val is not None else default
+            except:
+                return default
+        
+        return {
+            "agency_name": safe_get(settings, 'agency_name', defaults["agency_name"]),
+            "agency_slogan": safe_get(settings, 'agency_slogan', defaults["agency_slogan"]),
+            "agency_logo_url": safe_get(settings, 'agency_logo_url', None),
+            "primary_color": safe_get(settings, 'primary_color', defaults["primary_color"]),
+            "secondary_color": safe_get(settings, 'secondary_color', defaults["secondary_color"]),
+            "background_color": safe_get(settings, 'background_color', defaults["background_color"]),
+            "background_secondary": safe_get(settings, 'background_secondary', defaults["background_secondary"]),
+            "text_color": safe_get(settings, 'text_color', defaults["text_color"]),
+            "text_muted": safe_get(settings, 'text_muted', defaults["text_muted"]),
+            "border_color": safe_get(settings, 'border_color', defaults["border_color"]),
+            "accent_color": safe_get(settings, 'accent_color', defaults["accent_color"])
+        }
+    except Exception as e:
+        print(f"[BRANDING] Error fetching settings: {e}")
         return defaults
-    
-    return {
-        "agency_name": settings.agency_name or defaults["agency_name"],
-        "agency_slogan": settings.agency_slogan or defaults["agency_slogan"],
-        "agency_logo_url": settings.agency_logo_url,
-        "primary_color": getattr(settings, 'primary_color', None) or defaults["primary_color"],
-        "secondary_color": getattr(settings, 'secondary_color', None) or defaults["secondary_color"],
-        "background_color": getattr(settings, 'background_color', None) or defaults["background_color"],
-        "background_secondary": getattr(settings, 'background_secondary', None) or defaults["background_secondary"],
-        "text_color": getattr(settings, 'text_color', None) or defaults["text_color"],
-        "text_muted": getattr(settings, 'text_muted', None) or defaults["text_muted"],
-        "border_color": getattr(settings, 'border_color', None) or defaults["border_color"],
-        "accent_color": getattr(settings, 'accent_color', None) or defaults["accent_color"]
-    }
 
 
 app.include_router(leads_router)
