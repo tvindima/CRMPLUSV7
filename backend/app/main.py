@@ -74,13 +74,21 @@ app = FastAPI(
 # CORS CONFIGURATION
 # ========================================
 
-# Domínios base permitidos em produção (Imóveis Mais)
+# Domínios base permitidos em produção (todos os tenants conhecidos)
 BASE_PRODUCTION_ORIGINS = [
+    # Imóveis Mais
     "https://backoffice.imoveismais.com",
     "https://www.imoveismais.com",
     "https://imoveismais.com",
     "https://montra.imoveismais.com",
+    "https://app.imoveismais.com",
     "https://crmplusv7-production.up.railway.app",
+    # Luis Carlos Gaspar
+    "https://backoffice.luiscarlosgaspar.com",
+    "https://www.luiscarlosgaspar.com",
+    "https://luiscarlosgaspar.com",
+    "https://app.luiscarlosgaspar.com",
+    "https://luisgasparteam-backend-production.up.railway.app",
 ]
 
 # Em produção, usar domínios específicos + regex para Vercel previews
