@@ -6,8 +6,16 @@ import { ClientHeader } from "../components/ClientHeader";
 import { ClientFooter } from "../components/ClientFooter";
 import { DynamicTitle } from "../components/DynamicTitle";
 import { getSiteUrl } from "../src/lib/siteUrl";
+import type { Viewport } from "next";
 
 const siteUrl = getSiteUrl();
+
+// Viewport export separado (Next.js 14+)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 // Metadata base - será sobrescrito dinamicamente pelo DynamicTitle
 export const metadata = {
@@ -15,11 +23,6 @@ export const metadata = {
   title: {
     default: "Imobiliária",
     template: "%s"
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
   },
   description: "Encontre a casa perfeita ou o investimento ideal em Portugal.",
   keywords: ["imóveis", "casas", "apartamentos", "moradias", "venda", "arrendamento", "Portugal", "investimento imobiliário"],

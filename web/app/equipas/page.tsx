@@ -1,3 +1,6 @@
+// Forçar renderização dinâmica (evita timeout na geração estática)
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link";
 import { SectionHeader } from "../../components/SectionHeader";
 
