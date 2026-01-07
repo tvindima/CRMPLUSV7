@@ -636,6 +636,12 @@ def create_client(
     """
     Criar novo cliente manualmente
     """
+    try:
+        print(f"[CREATE CLIENT] Recebendo request para agent_id={agent_id}, agency_id={agency_id}")
+        print(f"[CREATE CLIENT] Dados recebidos: {data.model_dump()}")
+    except Exception as log_err:
+        print(f"[CREATE CLIENT] Erro ao fazer log: {log_err}")
+    
     client = Client(
         agent_id=agent_id,
         agency_id=agency_id,
@@ -708,11 +714,17 @@ def create_client(
         lead_id=data.lead_id,
     )
     
-    db.add(client)
-    db.commit()
-    db.refresh(client)
-    
-    return client
+    try:
+        db.add(client)
+        db.commit()
+        db.refresh(client)
+        print(f"[CREATE CLIENT] Cliente criado com sucesso: ID={client.id}, Nome={client.nome}")
+        return client
+    except Exception as db_err:
+        db.rollback()
+        print(f"[CREATE CLIENT] Erro ao salvar no banco: {db_err}")
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar cliente: {str(db_err)}")
+
 
 
 @router.put("/{client_id}")
