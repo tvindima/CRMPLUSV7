@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
-import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
 
@@ -36,7 +35,7 @@ const REGIMES_CASAMENTO = [
 
 export default function NewClientPage() {
   const router = useRouter();
-  const { token, user } = useAuth();
+  // TODO: Integrar autenticação se necessário (token, user)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pessoal' | 'conjuge' | 'empresa' | 'morada'>('pessoal');

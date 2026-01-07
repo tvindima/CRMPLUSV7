@@ -49,17 +49,18 @@ export function RailSection({
           </h3>
         </div>
         {totalItems > maxItemsPerRail && (
-          <Link
-            href={`/imoveis${filterQuery}`}
-            className="flex items-center gap-2 text-sm font-semibold transition"
-            style={{ color: 'var(--color-primary)' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
-          >
-            Ver Todos
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <Link href={`/imoveis${filterQuery}`} legacyBehavior>
+            <a
+              className="flex items-center gap-2 text-sm font-semibold transition"
+              style={{ color: 'var(--color-primary)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+            >
+              Ver Todos
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
           </Link>
         )}
       </div>
