@@ -29,6 +29,104 @@ PLATFORM_TOKEN_EXPIRE_HOURS = 24
 
 
 # ===========================================
+# ENSURE TABLES EXIST
+# ===========================================
+
+def ensure_platform_tables(db: Session):
+    """Criar tabelas da plataforma se não existirem"""
+    try:
+        # Verificar se tabela tenants existe
+        result = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'tenants'
+            )
+        """)).scalar()
+        
+        if not result:
+            print("[PLATFORM] Creating platform tables...")
+            
+            # Criar tabela tenants
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS tenants (
+                    id SERIAL PRIMARY KEY,
+                    slug VARCHAR(50) UNIQUE NOT NULL,
+                    name VARCHAR(200) NOT NULL,
+                    email VARCHAR(200),
+                    phone VARCHAR(50),
+                    primary_domain VARCHAR(200),
+                    backoffice_domain VARCHAR(200),
+                    api_subdomain VARCHAR(200),
+                    database_url TEXT,
+                    plan VARCHAR(50) DEFAULT 'basic',
+                    features JSONB DEFAULT '{}',
+                    max_agents INTEGER DEFAULT 10,
+                    max_properties INTEGER DEFAULT 100,
+                    is_active BOOLEAN DEFAULT true,
+                    is_trial BOOLEAN DEFAULT false,
+                    trial_ends_at TIMESTAMP WITH TIME ZONE,
+                    logo_url VARCHAR(500),
+                    primary_color VARCHAR(20),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE
+                )
+            """))
+            
+            # Criar tabela super_admins
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS super_admins (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR(200) UNIQUE NOT NULL,
+                    password_hash VARCHAR(200) NOT NULL,
+                    name VARCHAR(200) NOT NULL,
+                    is_active BOOLEAN DEFAULT true,
+                    permissions JSONB DEFAULT '{}',
+                    last_login_at TIMESTAMP WITH TIME ZONE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE
+                )
+            """))
+            
+            # Criar tabela platform_settings
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS platform_settings (
+                    id SERIAL PRIMARY KEY,
+                    platform_name VARCHAR(100) DEFAULT 'CRM Plus',
+                    platform_logo_url VARCHAR(500),
+                    support_email VARCHAR(200) DEFAULT 'suporte@crmplus.pt',
+                    default_plan VARCHAR(50) DEFAULT 'basic',
+                    trial_days INTEGER DEFAULT 14,
+                    maintenance_mode BOOLEAN DEFAULT false,
+                    registration_enabled BOOLEAN DEFAULT true,
+                    updated_at TIMESTAMP WITH TIME ZONE
+                )
+            """))
+            
+            db.commit()
+            
+            # Inserir tenant default
+            db.execute(text("""
+                INSERT INTO tenants (slug, name, email, primary_domain, backoffice_domain, plan, max_agents, max_properties)
+                VALUES ('imoveismais', 'Imóveis Mais', 'geral@imoveismais.com', 'imoveismais.com', 'backoffice.imoveismais.com', 'enterprise', 50, 1000)
+                ON CONFLICT (slug) DO NOTHING
+            """))
+            
+            # Inserir settings default
+            db.execute(text("""
+                INSERT INTO platform_settings (platform_name, support_email)
+                VALUES ('CRM Plus', 'suporte@crmplus.pt')
+                ON CONFLICT DO NOTHING
+            """))
+            
+            db.commit()
+            print("[PLATFORM] Tables created successfully!")
+            
+    except Exception as e:
+        print(f"[PLATFORM] Error ensuring tables: {e}")
+        db.rollback()
+
+
+# ===========================================
 # HELPERS
 # ===========================================
 
@@ -203,6 +301,8 @@ def list_tenants(
     - is_active: filtrar por estado
     - plan: filtrar por plano
     """
+    ensure_platform_tables(db)
+    
     query = db.query(Tenant)
     
     if is_active is not None:
@@ -355,6 +455,8 @@ def get_platform_dashboard(db: Session = Depends(get_db)):
     
     Mostra métricas agregadas de todos os tenants.
     """
+    ensure_platform_tables(db)
+    
     # Contar tenants
     total_tenants = db.query(Tenant).count()
     active_tenants = db.query(Tenant).filter(Tenant.is_active == True).count()
