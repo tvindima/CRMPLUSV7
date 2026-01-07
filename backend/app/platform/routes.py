@@ -8,7 +8,7 @@ Endpoints para:
 - Configurações da plataforma
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from typing import List
