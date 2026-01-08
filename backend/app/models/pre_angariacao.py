@@ -63,6 +63,7 @@ class PreAngariacao(Base):
     
     # Características
     tipologia = Column(String(50), nullable=True)  # T0, T1, T2...
+    tipo_imovel = Column(String(100), nullable=True)  # Apartamento, Moradia, Terreno, etc.
     area_bruta = Column(DECIMAL(10, 2), nullable=True)
     area_util = Column(DECIMAL(10, 2), nullable=True)
     ano_construcao = Column(Integer, nullable=True)

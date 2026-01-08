@@ -70,6 +70,7 @@ class PreAngariacaoBase(BaseModel):
     
     # Características
     tipologia: Optional[str] = None
+    tipo_imovel: Optional[str] = None  # Apartamento, Moradia, Terreno, etc.
     area_bruta: Optional[Decimal] = None
     area_util: Optional[Decimal] = None
     ano_construcao: Optional[int] = None
@@ -113,6 +114,7 @@ class PreAngariacaoUpdate(BaseModel):
     longitude: Optional[Decimal] = None
     
     tipologia: Optional[str] = None
+    tipo_imovel: Optional[str] = None  # Apartamento, Moradia, Terreno, etc.
     area_bruta: Optional[Decimal] = None
     area_util: Optional[Decimal] = None
     ano_construcao: Optional[int] = None
@@ -169,6 +171,7 @@ class PreAngariacaoListItem(BaseModel):
     proprietario_nome: str
     morada: Optional[str] = None
     tipologia: Optional[str] = None
+    tipo_imovel: Optional[str] = None  # Apartamento, Moradia, Terreno, etc.
     valor_pretendido: Optional[Decimal] = None
     status: str
     progresso: int

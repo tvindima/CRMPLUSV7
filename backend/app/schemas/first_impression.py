@@ -19,6 +19,7 @@ class FirstImpressionBase(BaseModel):
     area_bruta: Optional[Decimal] = Field(None, ge=0, description="Área bruta em m²")
     area_util: Optional[Decimal] = Field(None, ge=0, description="Área útil em m²")
     tipologia: Optional[str] = Field(None, max_length=50, description="Ex: T3, T2, T4")
+    tipo_imovel: Optional[str] = Field(None, max_length=100, description="Apartamento, Moradia, Terreno, etc.")
     ano_construcao: Optional[int] = Field(None, ge=1500, le=2100)
     valor_patrimonial: Optional[Decimal] = Field(None, ge=0, description="Valor patrimonial em €")
     
@@ -94,6 +95,7 @@ class FirstImpressionUpdate(BaseModel):
     area_bruta: Optional[Decimal] = None
     area_util: Optional[Decimal] = None
     tipologia: Optional[str] = None
+    tipo_imovel: Optional[str] = None  # Apartamento, Moradia, Terreno, etc.
     ano_construcao: Optional[int] = None
     valor_patrimonial: Optional[Decimal] = None
     
@@ -179,6 +181,7 @@ class FirstImpressionResponse(FirstImpressionBase):
     concelho: Optional[str] = None
     distrito: Optional[str] = None
     tipologia: Optional[str] = None
+    tipo_imovel: Optional[str] = None  # Apartamento, Moradia, Terreno, etc.
     area_bruta: Optional[Decimal] = None
     area_util: Optional[Decimal] = None
     ano_construcao: Optional[int] = None

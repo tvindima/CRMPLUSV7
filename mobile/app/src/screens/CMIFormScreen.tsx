@@ -304,6 +304,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       imovel_artigo_matricial: imovelArtigoMatricial || undefined,
       valor_pretendido: valorPretendido ? parseFloat(valorPretendido) : undefined,
       valor_minimo: valorMinimo ? parseFloat(valorMinimo) : undefined,
+      // Dados do agente angariador
+      agente_nome: agenteNome || undefined,
+      agente_carteira_profissional: agenteNif || undefined, // agenteNif contém license_ami
     });
     
     hasUnsavedChanges.current = false;
@@ -397,12 +400,13 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   const loadAgentData = async () => {
     try {
-      // Carregar dados do agente logado
-      const statsResponse: any = await apiService.get('/mobile/dashboard/stats');
-      if (statsResponse?.agent) {
-        const agent = statsResponse.agent;
+      // Carregar dados do agente logado do endpoint /mobile/profile
+      const profileResponse: any = await apiService.get('/mobile/profile');
+      if (profileResponse?.agent) {
+        const agent = profileResponse.agent;
         setAgenteNome(agent.name || '');
-        setAgenteNif(agent.nif || '');
+        // license_ami é a carteira profissional do agente
+        setAgenteNif(agent.license_ami || '');
       }
     } catch (error) {
       console.log('Não foi possível carregar dados do agente:', error);
@@ -597,7 +601,9 @@ export default function CMIFormScreen({ navigation, route }: Props) {
         comissao_valor_fixo: tipoComissao === 'valor_fixo' && comissaoValorFixo ? parseFloat(comissaoValorFixo) : undefined,
         opcao_pagamento: formaPagamento,
         prazo_meses: prazoMeses ? parseInt(prazoMeses) : undefined,
+        // Dados do agente angariador
         agente_nome: agenteNome || undefined,
+        agente_carteira_profissional: agenteNif || undefined, // agenteNif contém license_ami
       });
 
       // Sincronizar dados principais para a Pré-Angariação (visível no backoffice)
@@ -611,6 +617,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           freguesia: imovelFreguesia || undefined,
           concelho: imovelConcelho || undefined,
           tipologia: imovelTipologia || undefined,
+          tipo_imovel: imovelTipo || undefined, // Apartamento, Moradia, etc.
           area_bruta: imovelAreaBruta ? parseFloat(imovelAreaBruta) : undefined,
           area_util: imovelAreaUtil ? parseFloat(imovelAreaUtil) : undefined,
           estado_conservacao: imovelEstadoConservacao || undefined,
@@ -635,6 +642,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             client_nif: clienteNif || undefined,
             client_phone: clienteTelefone || undefined,
             client_email: clienteEmail || undefined,
+            tipo_imovel: imovelTipo || undefined, // Apartamento, Moradia, etc.
+            tipologia: imovelTipologia || undefined, // T0, T1, T2, etc.
             // SYNC: Sincronizar documentos como attachments
             attachments: attachmentsToSync.length > 0 ? attachmentsToSync : undefined,
           });

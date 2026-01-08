@@ -86,6 +86,7 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
     Se a Agency não tiver dados configurados, usa os defaults.
     
     NOTA: Só retorna campos que existem no modelo ContratoMediacaoImobiliaria!
+    Inclui também dados do agente angariador.
     """
     from app.agencies.models import Agency
     
@@ -95,6 +96,12 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
     # Obter Agency do agente
     if agent and agent.agency_id:
         agency = db.query(Agency).filter(Agency.id == agent.agency_id).first()
+    
+    # Dados do agente angariador
+    agente_dados = {
+        "agente_nome": agent.name if agent else None,
+        "agente_carteira_profissional": agent.license_ami if agent else None,
+    }
     
     # Campos que EXISTEM no modelo ContratoMediacaoImobiliaria
     # (mediador_nome, mediador_licenca_ami, mediador_nif, mediador_morada, 
@@ -108,6 +115,7 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
             "mediador_codigo_postal": agency.mediador_codigo_postal or MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
             "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
             "mediador_email": agency.email or MEDIADORA_DADOS_DEFAULT["mediador_email"],
+            **agente_dados,  # Incluir dados do agente
         }
     else:
         dados = {
@@ -118,6 +126,7 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
             "mediador_codigo_postal": MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
             "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
             "mediador_email": MEDIADORA_DADOS_DEFAULT["mediador_email"],
+            **agente_dados,  # Incluir dados do agente
         }
     
     return dados
@@ -837,6 +846,7 @@ def criar_de_first_impression(
         imovel_freguesia=fi.freguesia,
         imovel_concelho=fi.concelho,
         imovel_distrito=fi.distrito,
+        imovel_tipo=getattr(fi, 'tipo_imovel', None),  # Apartamento, Moradia, etc.
         imovel_tipologia=fi.tipologia,
         imovel_artigo_matricial=fi.artigo_matricial,
         imovel_area_bruta=fi.area_bruta,

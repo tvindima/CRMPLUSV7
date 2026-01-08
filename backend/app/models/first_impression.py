@@ -35,6 +35,7 @@ class FirstImpression(Base):
     area_bruta = Column(DECIMAL(10, 2), nullable=True)  # m²
     area_util = Column(DECIMAL(10, 2), nullable=True)  # m²
     tipologia = Column(String(50), nullable=True)  # Ex: T3, T2, T4
+    tipo_imovel = Column(String(100), nullable=True)  # Apartamento, Moradia, Terreno, etc.
     ano_construcao = Column(Integer, nullable=True)
     valor_patrimonial = Column(DECIMAL(15, 2), nullable=True)  # €
     

@@ -321,6 +321,7 @@ def criar_de_first_impression(
         
         # Características
         tipologia=fi.tipologia,
+        tipo_imovel=getattr(fi, 'tipo_imovel', None),  # Apartamento, Moradia, Terreno, etc.
         area_bruta=fi.area_bruta,
         area_util=fi.area_util,
         ano_construcao=fi.ano_construcao,
