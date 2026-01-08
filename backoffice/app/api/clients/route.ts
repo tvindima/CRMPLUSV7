@@ -63,7 +63,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const url = `${API_BASE_URL}/clients/`;
+    
+    // Extrair agent_id do token JWT
+    const jwt = await import("jsonwebtoken");
+    const decoded = jwt.decode(token.value) as { agent_id?: number } | null;
+    const agentId = decoded?.agent_id;
+    
+    if (!agentId) {
+      return NextResponse.json({ error: "Agent ID não encontrado no token" }, { status: 400 });
+    }
+    
+    // Backend requer agent_id como query parameter
+    const url = `${API_BASE_URL}/clients/?agent_id=${agentId}`;
 
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token.value}`,
