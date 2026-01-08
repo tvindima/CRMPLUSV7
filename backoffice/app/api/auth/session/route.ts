@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE } from "@/lib/api";
 
 // Força Node.js runtime e desativa cache estático
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const COOKIE_NAME = "crmplus_staff_session";
-
 export async function GET() {
   try {
     const cookieStore = cookies();
-    const token = cookieStore.get(COOKIE_NAME);
+    const token = cookieStore.get(SESSION_COOKIE);
 
     if (!token?.value) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
