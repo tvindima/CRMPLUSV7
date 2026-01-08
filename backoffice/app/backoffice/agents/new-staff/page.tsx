@@ -93,21 +93,19 @@ function NewStaffForm() {
     setLoading(true);
     
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/admin/setup/create-user`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email.toLowerCase(),
-            full_name: formData.full_name,
-            phone: formData.phone || null,
-            password: formData.password,
-            role: formData.role,
-            works_for_agent_id: parseInt(formData.works_for_agent_id)
-          })
-        }
-      );
+      // Usar API route local que adiciona autenticação
+      const response = await fetch('/api/staff/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase(),
+          full_name: formData.full_name,
+          phone: formData.phone || null,
+          password: formData.password,
+          role: formData.role,
+          works_for_agent_id: parseInt(formData.works_for_agent_id)
+        })
+      });
       
       const result = await response.json();
       
