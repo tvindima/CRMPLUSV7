@@ -887,43 +887,24 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           }
         } else if (tipoDocumento === 'caderneta_predial') {
           // === PROPRIETÁRIO DA CADERNETA (NIF/Nome do titular registado na matriz) ===
-          // Se não temos CC do proprietário, usar dados da caderneta como fallback
+          // ATENÇÃO: A caderneta pode estar DESATUALIZADA!
+          // Ex: Imóvel comprado recentemente mas matriz ainda não actualizada
+          // Ex: Herança - caderneta ainda tem o falecido
+          // Por isso, NÃO auto-preencher cliente a partir da caderneta!
+          // Os dados do cliente devem vir APENAS do CC (quem assina o CMI)
           const proprietarioNif = dados.proprietario_nif || dados.nif_titular;
           const proprietarioNome = dados.proprietario_nome || dados.nome_titular;
           
           if (proprietarioNif || proprietarioNome) {
-            // Verificar se já temos este proprietário
-            const isCliente1 = clienteNif === proprietarioNif || (proprietarioNome && clienteNome === proprietarioNome);
-            const isCliente2 = cliente2Nif === proprietarioNif || (proprietarioNome && cliente2Nome === proprietarioNome);
-            const extraIdx = proprietariosExtras.findIndex(p => p.nif === proprietarioNif || p.nome === proprietarioNome);
-            
-            if (!isCliente1 && !isCliente2 && extraIdx < 0) {
-              // NOVO PROPRIETÁRIO DA CADERNETA - preencher próximo slot vazio
-              if (!clienteNome && !clienteNif) {
-                if (proprietarioNome) { setClienteNome(proprietarioNome); camposPreenchidos++; }
-                if (proprietarioNif) { setClienteNif(proprietarioNif); camposPreenchidos++; }
-                console.log('[OCR Caderneta] ✅ Proprietário usado como Cliente 1');
-              } else if (!cliente2Nome && !cliente2Nif) {
-                setShowCliente2(true);
-                if (proprietarioNome) { setCliente2Nome(proprietarioNome); camposPreenchidos++; }
-                if (proprietarioNif) { setCliente2Nif(proprietarioNif); camposPreenchidos++; }
-                console.log('[OCR Caderneta] ✅ Proprietário usado como Cliente 2');
-              } else {
-                // Adicionar aos extras
-                setProprietariosExtras(prev => [...prev, {
-                  nome: proprietarioNome || '',
-                  nif: proprietarioNif || '',
-                  cc: '',
-                  ccValidade: '',
-                  morada: clienteMorada || '',
-                }]);
-                camposPreenchidos++;
-                console.log('[OCR Caderneta] ✅ Proprietário adicionado aos extras');
-              }
-            }
+            // Apenas LOG informativo - NÃO preencher automaticamente
+            console.log('[OCR Caderneta] ℹ️ Titular registado na matriz:');
+            console.log('[OCR Caderneta]    Nome:', proprietarioNome || '(não extraído)');
+            console.log('[OCR Caderneta]    NIF:', proprietarioNif || '(não extraído)');
+            console.log('[OCR Caderneta] ⚠️ NOTA: Caderneta pode estar desatualizada!');
+            console.log('[OCR Caderneta]    Use o CC para identificar quem assina o CMI.');
           }
           
-          // === DADOS DO IMÓVEL ===
+          // === DADOS DO IMÓVEL (estes sim, preencher automaticamente) ===
           if (dados.artigo_matricial) {
             // ACUMULAR artigos matriciais para múltiplos prédios vendidos em conjunto
             const novoArtigo = String(dados.artigo_matricial || '').trim();
@@ -1053,44 +1034,15 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             camposPreenchidos++;
           }
           // Proprietários da certidão permanente (array)
+          // ATENÇÃO: A certidão pode não estar actualizada (registo ainda não feito)
+          // Apenas LOG informativo - os dados do cliente vêm do CC
           if (dados.proprietarios && Array.isArray(dados.proprietarios)) {
-            console.log('[OCR Certidão] Proprietários encontrados:', dados.proprietarios.length);
+            console.log('[OCR Certidão] ℹ️ Proprietários registados (SUJEITOS ATIVOS):');
             dados.proprietarios.forEach((prop: { nome?: string; nif?: string }, index: number) => {
-              const propNome = prop.nome;
-              const propNif = prop.nif;
-              if (!propNome && !propNif) return;
-              
-              // Verificar se já temos este proprietário
-              const isCliente1 = clienteNif === propNif || (propNome && clienteNome === propNome);
-              const isCliente2 = cliente2Nif === propNif || (propNome && cliente2Nome === propNome);
-              const extraIdx = proprietariosExtras.findIndex(p => p.nif === propNif || p.nome === propNome);
-              
-              if (!isCliente1 && !isCliente2 && extraIdx < 0) {
-                // NOVO PROPRIETÁRIO
-                if (!clienteNome && !clienteNif) {
-                  if (propNome) setClienteNome(propNome);
-                  if (propNif) setClienteNif(propNif);
-                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Cliente 1');
-                  camposPreenchidos++;
-                } else if (!cliente2Nome && !cliente2Nif) {
-                  setShowCliente2(true);
-                  if (propNome) setCliente2Nome(propNome);
-                  if (propNif) setCliente2Nif(propNif);
-                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Cliente 2');
-                  camposPreenchidos++;
-                } else {
-                  setProprietariosExtras(prev => [...prev, {
-                    nome: propNome || '',
-                    nif: propNif || '',
-                    cc: '',
-                    ccValidade: '',
-                    morada: clienteMorada || '',
-                  }]);
-                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Extra');
-                  camposPreenchidos++;
-                }
-              }
+              console.log(`[OCR Certidão]    ${index + 1}. ${prop.nome || '?'} - NIF: ${prop.nif || '?'}`);
             });
+            console.log('[OCR Certidão] ⚠️ NOTA: Registo pode estar desatualizado!');
+            console.log('[OCR Certidão]    Use o CC para identificar quem assina o CMI.');
           }
         } else if (tipoDocumento === 'certificado_energetico') {
           if (dados.classe_energetica) {
