@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'
 
 export async function GET() {
