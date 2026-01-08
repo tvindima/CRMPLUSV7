@@ -82,8 +82,10 @@ MEDIADORA_DADOS = MEDIADORA_DADOS_DEFAULT
 
 def get_dados_mediador(agent_id: int, db: Session) -> dict:
     """
-    Obter dados do mediador da Agency (tenant).
+    Obter dados do mediador da Agency (tenant) para preencher no CMI.
     Se a Agency não tiver dados configurados, usa os defaults.
+    
+    NOTA: Só retorna campos que existem no modelo ContratoMediacaoImobiliaria!
     """
     from app.agencies.models import Agency
     
@@ -94,7 +96,46 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
     if agent and agent.agency_id:
         agency = db.query(Agency).filter(Agency.id == agent.agency_id).first()
     
-    # Usar dados da Agency se disponíveis, senão usar defaults
+    # Campos que EXISTEM no modelo ContratoMediacaoImobiliaria
+    # (mediador_nome, mediador_licenca_ami, mediador_nif, mediador_morada, 
+    #  mediador_codigo_postal, mediador_telefone, mediador_email)
+    if agency:
+        dados = {
+            "mediador_nome": agency.mediador_nome or MEDIADORA_DADOS_DEFAULT["mediador_nome"],
+            "mediador_licenca_ami": agency.mediador_licenca_ami or MEDIADORA_DADOS_DEFAULT["mediador_licenca_ami"],
+            "mediador_nif": agency.mediador_nif or MEDIADORA_DADOS_DEFAULT["mediador_nif"],
+            "mediador_morada": agency.mediador_morada or MEDIADORA_DADOS_DEFAULT["mediador_morada"],
+            "mediador_codigo_postal": agency.mediador_codigo_postal or MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
+            "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
+            "mediador_email": agency.email or MEDIADORA_DADOS_DEFAULT["mediador_email"],
+        }
+    else:
+        dados = {
+            "mediador_nome": MEDIADORA_DADOS_DEFAULT["mediador_nome"],
+            "mediador_licenca_ami": MEDIADORA_DADOS_DEFAULT["mediador_licenca_ami"],
+            "mediador_nif": MEDIADORA_DADOS_DEFAULT["mediador_nif"],
+            "mediador_morada": MEDIADORA_DADOS_DEFAULT["mediador_morada"],
+            "mediador_codigo_postal": MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
+            "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
+            "mediador_email": MEDIADORA_DADOS_DEFAULT["mediador_email"],
+        }
+    
+    return dados
+
+
+def get_dados_mediador_completos(agent_id: int, db: Session) -> dict:
+    """
+    Obter dados COMPLETOS do mediador (para geração de PDF).
+    Inclui campos adicionais como capital_social, conservatoria, comissões.
+    """
+    from app.agencies.models import Agency
+    
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    agency = None
+    
+    if agent and agent.agency_id:
+        agency = db.query(Agency).filter(Agency.id == agent.agency_id).first()
+    
     if agency:
         dados = {
             "mediador_nome": agency.mediador_nome or MEDIADORA_DADOS_DEFAULT["mediador_nome"],
@@ -106,7 +147,6 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
             "mediador_conservatoria": agency.mediador_conservatoria or MEDIADORA_DADOS_DEFAULT["mediador_conservatoria"],
             "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
             "mediador_email": agency.email or MEDIADORA_DADOS_DEFAULT["mediador_email"],
-            # Comissões da Agency
             "comissao_venda": agency.comissao_venda_percentagem or "5%",
             "comissao_arrendamento": agency.comissao_arrendamento_percentagem or "100%",
         }
@@ -125,7 +165,7 @@ def get_dados_mediador(agent_id: int, db: Session) -> dict:
             "comissao_arrendamento": "100%",
         }
     
-    # Adicionar dados do agente (responsável pela angariação)
+    # Adicionar dados do agente
     if agent:
         dados["agente_nome"] = agent.name
         dados["agente_carteira_profissional"] = agent.license_ami or ""
@@ -321,8 +361,8 @@ def gerar_pdf(
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
     
-    # Obter dados do mediador da Agency (ou defaults)
-    dados_mediador = get_dados_mediador(effective_agent_id, db)
+    # Obter dados COMPLETOS do mediador da Agency (para PDF)
+    dados_mediador = get_dados_mediador_completos(effective_agent_id, db)
     
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
