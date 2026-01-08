@@ -297,6 +297,33 @@ def create_user_no_auth(
     }
 
 
+class ResetPasswordRequest(BaseModel):
+    user_id: int
+    new_password: str
+
+
+@setup_router.post("/reset-password")
+def reset_user_password(
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Reset password de um user - PROTEGIDO com X-Admin-Key"""
+    user = db.query(User).filter(User.id == data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User ID {data.user_id} não existe")
+    
+    user.hashed_password = hash_password(data.new_password)
+    db.commit()
+    
+    return {
+        "success": True,
+        "user_id": user.id,
+        "email": user.email,
+        "message": "Password atualizada com sucesso"
+    }
+
+
 @setup_router.get("/list-users")
 def list_all_users(
     db: Session = Depends(get_db),
