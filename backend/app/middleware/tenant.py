@@ -125,21 +125,21 @@ class TenantMiddleware(BaseHTTPMiddleware):
             # Por agora, usar schema public para backwards compatibility
             tenant_slug = None
         
-        # Definir schema
+        # Definir tenant (seleciona BD correta)
         if tenant_slug:
-            # Schema do tenant usa o slug como nome
-            # Ex: tenant 'imoveismais' -> schema 'imoveismais'
-            schema_name = tenant_slug.lower().replace("-", "_")
-            set_tenant_schema(schema_name)
+            # MULTI-DATABASE: passa o slug diretamente, database.py resolve a BD
+            set_tenant_schema(tenant_slug)
             
             # Adicionar tenant ao request state para uso nos endpoints
             request.state.tenant_slug = tenant_slug
-            request.state.tenant_schema = schema_name
+            request.state.tenant_schema = tenant_slug  # Mantido para compatibilidade
+            print(f"[TENANT] Request para tenant: {tenant_slug}")
         else:
-            # Sem tenant, usar schema public
+            # Sem tenant, usar BD default
             set_tenant_schema(DEFAULT_SCHEMA)
             request.state.tenant_slug = None
             request.state.tenant_schema = DEFAULT_SCHEMA
+            print(f"[TENANT] Request sem tenant, usando BD default")
         
         response = await call_next(request)
         return response
