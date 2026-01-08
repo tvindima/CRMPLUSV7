@@ -116,14 +116,34 @@ def listar_cmis(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Listar todos os CMIs do agente"""
-    effective_agent_id = get_effective_agent_id(request, db)
-    if not effective_agent_id:
-        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    """
+    Listar CMIs.
+    - Agentes vêem apenas os seus (ou da equipa)
+    - Admin/Coordenador vêem todos
+    """
+    from app.agents.models import Agent
     
-    query = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
-    )
+    # Perfis com permissão total
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    
+    if not is_admin:
+        effective_agent_id = get_effective_agent_id(request, db)
+        if not effective_agent_id:
+            raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    query = db.query(ContratoMediacaoImobiliaria)
+    
+    if not is_admin:
+        # Agente vê apenas os seus (ou da equipa)
+        agent = db.query(Agent).filter(Agent.id == effective_agent_id).first()
+        
+        if agent and agent.team_id:
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+            query = query.filter(ContratoMediacaoImobiliaria.agent_id.in_(team_agent_ids))
+        else:
+            query = query.filter(ContratoMediacaoImobiliaria.agent_id == effective_agent_id)
     
     if status:
         query = query.filter(ContratoMediacaoImobiliaria.status == status)
@@ -138,14 +158,34 @@ def obter_estatisticas(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obter estatísticas dos CMIs"""
-    effective_agent_id = get_effective_agent_id(request, db)
-    if not effective_agent_id:
-        raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    """
+    Obter estatísticas dos CMIs.
+    - Agentes vêem apenas os seus (ou da equipa)
+    - Admin/Coordenador vêem todos
+    """
+    from app.agents.models import Agent
     
-    base = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == effective_agent_id
-    )
+    # Perfis com permissão total
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    
+    if not is_admin:
+        effective_agent_id = get_effective_agent_id(request, db)
+        if not effective_agent_id:
+            raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
+    
+    base = db.query(ContratoMediacaoImobiliaria)
+    
+    if not is_admin:
+        # Agente vê apenas os seus (ou da equipa)
+        agent = db.query(Agent).filter(Agent.id == effective_agent_id).first()
+        
+        if agent and agent.team_id:
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+            base = base.filter(ContratoMediacaoImobiliaria.agent_id.in_(team_agent_ids))
+        else:
+            base = base.filter(ContratoMediacaoImobiliaria.agent_id == effective_agent_id)
     
     return schemas.CMIStats(
         total=base.count(),

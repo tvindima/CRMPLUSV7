@@ -103,14 +103,31 @@ def obter_estatisticas(
     db: Session = Depends(get_db)
 ):
     """
-    Obter estatísticas das pré-angariações do agente
+    Obter estatísticas das pré-angariações.
+    - Agentes vêem apenas as suas
+    - Admin/Coordenador vêem todas
     """
-    if not current_user.agent_id:
+    from app.agents.models import Agent
+    
+    # Perfis com permissão total
+    privileged_roles = {UserRole.ADMIN.value, "staff", "leader", UserRole.COORDINATOR.value}
+    is_admin = current_user.role in privileged_roles
+    
+    if not is_admin and not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    base_query = db.query(PreAngariacao).filter(
-        PreAngariacao.agent_id == current_user.agent_id
-    )
+    base_query = db.query(PreAngariacao)
+    
+    if not is_admin:
+        # Agente vê apenas as suas (ou da equipa)
+        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+        
+        if agent and agent.team_id:
+            team_agents = db.query(Agent).filter(Agent.team_id == agent.team_id).all()
+            team_agent_ids = [a.id for a in team_agents]
+            base_query = base_query.filter(PreAngariacao.agent_id.in_(team_agent_ids))
+        else:
+            base_query = base_query.filter(PreAngariacao.agent_id == current_user.agent_id)
     
     total = base_query.count()
     em_progresso = base_query.filter(
