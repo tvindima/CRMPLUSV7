@@ -886,6 +886,44 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             }
           }
         } else if (tipoDocumento === 'caderneta_predial') {
+          // === PROPRIETÁRIO DA CADERNETA (NIF/Nome do titular registado na matriz) ===
+          // Se não temos CC do proprietário, usar dados da caderneta como fallback
+          const proprietarioNif = dados.proprietario_nif || dados.nif_titular;
+          const proprietarioNome = dados.proprietario_nome || dados.nome_titular;
+          
+          if (proprietarioNif || proprietarioNome) {
+            // Verificar se já temos este proprietário
+            const isCliente1 = clienteNif === proprietarioNif || (proprietarioNome && clienteNome === proprietarioNome);
+            const isCliente2 = cliente2Nif === proprietarioNif || (proprietarioNome && cliente2Nome === proprietarioNome);
+            const extraIdx = proprietariosExtras.findIndex(p => p.nif === proprietarioNif || p.nome === proprietarioNome);
+            
+            if (!isCliente1 && !isCliente2 && extraIdx < 0) {
+              // NOVO PROPRIETÁRIO DA CADERNETA - preencher próximo slot vazio
+              if (!clienteNome && !clienteNif) {
+                if (proprietarioNome) { setClienteNome(proprietarioNome); camposPreenchidos++; }
+                if (proprietarioNif) { setClienteNif(proprietarioNif); camposPreenchidos++; }
+                console.log('[OCR Caderneta] ✅ Proprietário usado como Cliente 1');
+              } else if (!cliente2Nome && !cliente2Nif) {
+                setShowCliente2(true);
+                if (proprietarioNome) { setCliente2Nome(proprietarioNome); camposPreenchidos++; }
+                if (proprietarioNif) { setCliente2Nif(proprietarioNif); camposPreenchidos++; }
+                console.log('[OCR Caderneta] ✅ Proprietário usado como Cliente 2');
+              } else {
+                // Adicionar aos extras
+                setProprietariosExtras(prev => [...prev, {
+                  nome: proprietarioNome || '',
+                  nif: proprietarioNif || '',
+                  cc: '',
+                  ccValidade: '',
+                  morada: clienteMorada || '',
+                }]);
+                camposPreenchidos++;
+                console.log('[OCR Caderneta] ✅ Proprietário adicionado aos extras');
+              }
+            }
+          }
+          
+          // === DADOS DO IMÓVEL ===
           if (dados.artigo_matricial) {
             // ACUMULAR artigos matriciais para múltiplos prédios vendidos em conjunto
             const novoArtigo = String(dados.artigo_matricial || '').trim();
@@ -970,6 +1008,11 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             setImovelConcelho(dados.concelho);
             camposPreenchidos++;
           }
+          // Valor patrimonial - usar como referência para valor pretendido se não houver
+          if (dados.valor_patrimonial && !valorPretendido) {
+            console.log('[OCR Caderneta] ℹ️ Valor patrimonial disponível:', dados.valor_patrimonial);
+            // Não definir automaticamente - é só referência
+          }
         } else if (tipoDocumento === 'certidao_permanente') {
           if (dados.artigo_matricial) {
             // ACUMULAR artigos matriciais para múltiplos prédios
@@ -1008,6 +1051,46 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           if (dados.tipo_imovel) {
             setImovelTipo(dados.tipo_imovel);
             camposPreenchidos++;
+          }
+          // Proprietários da certidão permanente (array)
+          if (dados.proprietarios && Array.isArray(dados.proprietarios)) {
+            console.log('[OCR Certidão] Proprietários encontrados:', dados.proprietarios.length);
+            dados.proprietarios.forEach((prop: { nome?: string; nif?: string }, index: number) => {
+              const propNome = prop.nome;
+              const propNif = prop.nif;
+              if (!propNome && !propNif) return;
+              
+              // Verificar se já temos este proprietário
+              const isCliente1 = clienteNif === propNif || (propNome && clienteNome === propNome);
+              const isCliente2 = cliente2Nif === propNif || (propNome && cliente2Nome === propNome);
+              const extraIdx = proprietariosExtras.findIndex(p => p.nif === propNif || p.nome === propNome);
+              
+              if (!isCliente1 && !isCliente2 && extraIdx < 0) {
+                // NOVO PROPRIETÁRIO
+                if (!clienteNome && !clienteNif) {
+                  if (propNome) setClienteNome(propNome);
+                  if (propNif) setClienteNif(propNif);
+                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Cliente 1');
+                  camposPreenchidos++;
+                } else if (!cliente2Nome && !cliente2Nif) {
+                  setShowCliente2(true);
+                  if (propNome) setCliente2Nome(propNome);
+                  if (propNif) setCliente2Nif(propNif);
+                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Cliente 2');
+                  camposPreenchidos++;
+                } else {
+                  setProprietariosExtras(prev => [...prev, {
+                    nome: propNome || '',
+                    nif: propNif || '',
+                    cc: '',
+                    ccValidade: '',
+                    morada: clienteMorada || '',
+                  }]);
+                  console.log('[OCR Certidão] ✅ Proprietário', index + 1, 'como Extra');
+                  camposPreenchidos++;
+                }
+              }
+            });
           }
         } else if (tipoDocumento === 'certificado_energetico') {
           if (dados.classe_energetica) {

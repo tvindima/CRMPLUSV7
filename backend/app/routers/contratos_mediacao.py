@@ -1800,23 +1800,30 @@ def extrair_dados_ocr_standalone(
             dados_para_mobile["codigo_postal"] = dados_extraidos["codigo_postal"]
         if dados_extraidos.get("localidade"):
             dados_para_mobile["localidade"] = dados_extraidos["localidade"]
-        # Área: preferir area_total_terreno, depois area_bruta_privativa
-        if dados_extraidos.get("area_total_terreno"):
-            dados_para_mobile["area_bruta"] = dados_extraidos["area_total_terreno"]
-        elif dados_extraidos.get("area_bruta_privativa"):
-            dados_para_mobile["area_bruta"] = dados_extraidos["area_bruta_privativa"]
+        # Área: mapear área bruta (construção ou terreno) e área útil (privativa)
+        if dados_extraidos.get("area_bruta_construcao"):
+            dados_para_mobile["area_bruta"] = str(dados_extraidos["area_bruta_construcao"])
+        elif dados_extraidos.get("area_total_terreno"):
+            dados_para_mobile["area_bruta"] = str(dados_extraidos["area_total_terreno"])
+        # Área útil = área bruta privativa (muito importante para o CMI!)
+        if dados_extraidos.get("area_bruta_privativa"):
+            dados_para_mobile["area_util"] = str(dados_extraidos["area_bruta_privativa"])
         if dados_extraidos.get("area_bruta_dependente"):
-            dados_para_mobile["area_dependente"] = dados_extraidos["area_bruta_dependente"]
+            dados_para_mobile["area_dependente"] = str(dados_extraidos["area_bruta_dependente"])
         if dados_extraidos.get("tipologia"):
             dados_para_mobile["tipologia"] = dados_extraidos["tipologia"]
         if dados_extraidos.get("tipo_imovel"):
             dados_para_mobile["tipo_imovel"] = dados_extraidos["tipo_imovel"]
         if dados_extraidos.get("natureza"):
             dados_para_mobile["natureza"] = dados_extraidos["natureza"]
+        # Proprietário/Titular da caderneta (NIF registado na matriz)
         if dados_extraidos.get("titular_nif"):
-            dados_para_mobile["nif_titular"] = dados_extraidos["titular_nif"]
+            dados_para_mobile["proprietario_nif"] = dados_extraidos["titular_nif"]
         if dados_extraidos.get("titular_nome"):
-            dados_para_mobile["nome_titular"] = dados_extraidos["titular_nome"]
+            dados_para_mobile["proprietario_nome"] = dados_extraidos["titular_nome"]
+        # Valor patrimonial (útil como referência)
+        if dados_extraidos.get("valor_patrimonial"):
+            dados_para_mobile["valor_patrimonial"] = str(dados_extraidos["valor_patrimonial"])
     elif doc_tipo == "certidao_permanente":
         # Certidão Permanente: dados do registo predial
         if dados_extraidos.get("conservatoria"):
@@ -1828,7 +1835,7 @@ def extrair_dados_ocr_standalone(
         if dados_extraidos.get("matriz_numero"):
             dados_para_mobile["artigo_matricial"] = dados_extraidos["matriz_numero"]
         if dados_extraidos.get("area_total"):
-            dados_para_mobile["area_bruta"] = dados_extraidos["area_total"]
+            dados_para_mobile["area_bruta"] = str(dados_extraidos["area_total"])
         if dados_extraidos.get("morada"):
             dados_para_mobile["morada"] = dados_extraidos["morada"]
         if dados_extraidos.get("natureza"):
@@ -1836,6 +1843,9 @@ def extrair_dados_ocr_standalone(
             # Se é RÚSTICO, tipo é Terreno
             if dados_extraidos["natureza"] == "RÚSTICO":
                 dados_para_mobile["tipo_imovel"] = "Terreno"
+        # Proprietários legais (SUJEITOS ATIVOS)
+        if dados_extraidos.get("proprietarios_legais"):
+            dados_para_mobile["proprietarios"] = dados_extraidos["proprietarios_legais"]
     else:
         # Outros tipos: passar dados como estão
         dados_para_mobile = dados_extraidos
