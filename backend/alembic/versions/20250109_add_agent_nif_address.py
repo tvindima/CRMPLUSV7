@@ -1,7 +1,7 @@
 """add nif and address to agents
 
 Revision ID: add_agent_nif_address
-Revises: 
+Revises: 20260108_cmi_template
 Create Date: 2025-01-09
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'add_agent_nif_address'
-down_revision = None
+down_revision = '20260108_cmi_template'
 branch_labels = None
 depends_on = None
 

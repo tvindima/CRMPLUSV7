@@ -1,7 +1,7 @@
 """add tipo_imovel to first_impressions and pre_angariacoes
 
 Revision ID: add_tipo_imovel
-Revises: 
+Revises: add_agent_nif_address
 Create Date: 2025-01-09
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'add_tipo_imovel'
-down_revision = None
+down_revision = 'add_agent_nif_address'
 branch_labels = None
 depends_on = None
 
