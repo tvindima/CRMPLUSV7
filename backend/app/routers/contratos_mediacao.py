@@ -678,13 +678,24 @@ def criar_de_first_impression(
     # Nome do cliente - usar 'A Identificar' se não preenchido
     cliente_nome = fi.client_name.strip() if fi.client_name else "A Identificar"
     
-    # Gerar número
+    # Gerar número único globalmente
     ano = datetime.now().year
     count = db.query(ContratoMediacaoImobiliaria).filter(
-        ContratoMediacaoImobiliaria.agent_id == effective_agent_id,
         func.extract('year', ContratoMediacaoImobiliaria.created_at) == ano
     ).count()
-    numero = f"CMI-{ano}-{count + 1:04d}"
+    
+    # Tentar gerar número único (com retry se já existir)
+    for attempt in range(10):
+        numero = f"CMI-{ano}-{count + 1 + attempt:04d}"
+        existing_num = db.query(ContratoMediacaoImobiliaria).filter(
+            ContratoMediacaoImobiliaria.numero_contrato == numero
+        ).first()
+        if not existing_num:
+            break
+    else:
+        # Se todas as tentativas falharem, usar timestamp
+        import time
+        numero = f"CMI-{ano}-{int(time.time()) % 100000:05d}"
     
     # Obter dados do mediador
     dados_mediador = get_dados_mediador(effective_agent_id, db)

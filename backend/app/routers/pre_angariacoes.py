@@ -168,13 +168,24 @@ def criar_pre_angariacao(
     if not current_user.agent_id:
         raise HTTPException(status_code=403, detail="Utilizador não tem agente associado")
     
-    # Gerar referência interna
+    # Gerar referência única globalmente
     ano = datetime.now().year
     count = db.query(PreAngariacao).filter(
-        PreAngariacao.agent_id == current_user.agent_id,
         func.extract('year', PreAngariacao.created_at) == ano
     ).count()
-    referencia = f"PA-{ano}-{count + 1:03d}"
+    
+    # Tentar gerar referência única (com retry se já existir)
+    for attempt in range(10):
+        referencia = f"PA-{ano}-{count + 1 + attempt:04d}"
+        existing_ref = db.query(PreAngariacao).filter(
+            PreAngariacao.referencia_interna == referencia
+        ).first()
+        if not existing_ref:
+            break
+    else:
+        # Se todas as tentativas falharem, usar timestamp
+        import time
+        referencia = f"PA-{ano}-{int(time.time()) % 100000:05d}"
     
     # Criar pré-angariação
     pre_ang = PreAngariacao(
@@ -244,13 +255,25 @@ def criar_de_first_impression(
     # Nome do proprietário - usar 'A Identificar' se não preenchido
     proprietario_nome = fi.client_name.strip() if fi.client_name else "A Identificar"
     
-    # Gerar referência
+    # Gerar referência única globalmente
     ano = datetime.now().year
+    # Contar TODAS as pré-angariações do ano (não só do agente) para evitar duplicados
     count = db.query(PreAngariacao).filter(
-        PreAngariacao.agent_id == current_user.agent_id,
         func.extract('year', PreAngariacao.created_at) == ano
     ).count()
-    referencia = f"PA-{ano}-{count + 1:03d}"
+    
+    # Tentar gerar referência única (com retry se já existir)
+    for attempt in range(10):
+        referencia = f"PA-{ano}-{count + 1 + attempt:04d}"
+        existing_ref = db.query(PreAngariacao).filter(
+            PreAngariacao.referencia_interna == referencia
+        ).first()
+        if not existing_ref:
+            break
+    else:
+        # Se todas as tentativas falharem, usar timestamp
+        import time
+        referencia = f"PA-{ano}-{int(time.time()) % 100000:05d}"
     
     # Criar checklist com 1ª Impressão já marcada
     checklist = PreAngariacao.checklist_padrao()
