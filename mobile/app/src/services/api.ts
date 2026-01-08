@@ -1,11 +1,15 @@
 /**
  * Serviço de API centralizado para comunicação com backend
  * Inclui interceptor para refresh automático de tokens
+ * CRITICAL: Inclui X-Tenant-Slug para isolamento multi-tenant
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG, STORAGE_KEYS } from '../constants/config';
 import type { ApiError } from '../types';
+
+// CRITICAL: Tenant slug para isolamento multi-tenant
+const TENANT_SLUG = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
 
 class ApiService {
   private baseURL: string;
@@ -42,9 +46,15 @@ class ApiService {
       throw new Error('No refresh token');
     }
 
+    // FIXED: Incluir X-Tenant-Slug no refresh
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (TENANT_SLUG) {
+      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    }
+
     const response = await fetch(`${this.baseURL}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
@@ -79,6 +89,11 @@ class ApiService {
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
+    if (TENANT_SLUG) {
+      headers['X-Tenant-Slug'] = TENANT_SLUG;
     }
 
     try {
@@ -265,6 +280,11 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
+    // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
+    if (TENANT_SLUG) {
+      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    }
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -304,6 +324,11 @@ class ApiService {
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
+    if (TENANT_SLUG) {
+      headers['X-Tenant-Slug'] = TENANT_SLUG;
     }
 
     const doFetch = async (isRetry: boolean = false): Promise<Blob> => {

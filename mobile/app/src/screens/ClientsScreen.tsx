@@ -31,6 +31,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
+// CRITICAL: Tenant slug para isolamento multi-tenant
+const TENANT_SLUG = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+
+// Helper para obter headers com tenant
+const getHeaders = (token?: string): Record<string, string> => {
+  const headers: Record<string, string> = { 'Accept': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (TENANT_SLUG) headers['X-Tenant-Slug'] = TENANT_SLUG;
+  return headers;
+};
 
 // Tipos de cliente
 const CLIENT_TYPES = [
@@ -134,8 +144,9 @@ const ClientsScreen: React.FC = () => {
       }
       
       // Usar endpoint que inclui leads do site
+      // FIXED: Usar headers com X-Tenant-Slug
       const response = await fetch(`${API_URL}/clients/with-leads?${params}`, {
-        headers: { 'Accept': 'application/json' },
+        headers: getHeaders(),
       });
       
       if (response.ok) {
@@ -152,9 +163,10 @@ const ClientsScreen: React.FC = () => {
     if (!user?.agent_id) return;
     
     try {
+      // FIXED: Usar headers com X-Tenant-Slug
       const response = await fetch(
         `${API_URL}/clients/birthdays?agent_id=${user.agent_id}&days_ahead=7`,
-        { headers: { 'Accept': 'application/json' } }
+        { headers: getHeaders() }
       );
       
       if (response.ok) {
@@ -171,9 +183,10 @@ const ClientsScreen: React.FC = () => {
     if (!user?.agent_id) return;
     
     try {
+      // FIXED: Usar headers com X-Tenant-Slug
       const response = await fetch(
         `${API_URL}/clients/stats?agent_id=${user.agent_id}`,
-        { headers: { 'Accept': 'application/json' } }
+        { headers: getHeaders() }
       );
       
       if (response.ok) {
@@ -240,10 +253,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/?agent_id=${user?.agent_id}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: getHeaders('application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -293,10 +303,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/?${params}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: getHeaders('application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -352,10 +359,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/${selectedClient.id}`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: getHeaders('application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -403,7 +407,7 @@ const ClientsScreen: React.FC = () => {
             try {
               const response = await fetch(
                 `${API_URL}/clients/${selectedClient.id}`,
-                { method: 'DELETE' }
+                { method: 'DELETE', headers: getHeaders() }
               );
               
               if (response.ok) {
