@@ -16,7 +16,16 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: data?.detail || "Falha na autenticação" }, { status: res.status });
+      // Handle detail that could be string or object
+      let errorMessage = "Falha na autenticação";
+      if (data?.detail) {
+        if (typeof data.detail === 'string') {
+          errorMessage = data.detail;
+        } else if (typeof data.detail === 'object' && data.detail.error) {
+          errorMessage = data.detail.error;
+        }
+      }
+      return NextResponse.json({ error: errorMessage }, { status: res.status });
     }
 
     const data = await res.json();
