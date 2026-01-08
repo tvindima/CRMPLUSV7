@@ -129,8 +129,14 @@ function StaffRow({ staff, onDelete }: { staff: StaffItem; onDelete: (id: number
       {/* Botões de ação */}
       <div className="flex gap-2 md:gap-3 justify-end">
         <button 
+          onClick={() => window.location.href = `/backoffice/agents/staff/${staff.id}/editar`}
+          className="rounded bg-[#0047AB] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#003d91] transition-colors"
+        >
+          Editar
+        </button>
+        <button 
           onClick={() => onDelete(staff.id)}
-          className="rounded border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-600/10 transition-colors"
+          className="rounded border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-600/10 transition-colors hidden md:block"
         >
           Remover
         </button>

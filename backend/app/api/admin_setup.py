@@ -324,6 +324,81 @@ def reset_user_password(
     }
 
 
+@setup_router.get("/get-user/{user_id}")
+def get_user_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Obter user por ID - PROTEGIDO com X-Admin-Key"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User ID {user_id} não existe")
+    
+    # Get agent name if works_for_agent_id is set
+    works_for_agent_name = None
+    if user.works_for_agent_id:
+        agent = db.query(Agent).filter(Agent.id == user.works_for_agent_id).first()
+        if agent:
+            works_for_agent_name = agent.name
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "role": user.role,
+        "agent_id": user.agent_id,
+        "works_for_agent_id": user.works_for_agent_id,
+        "works_for_agent_name": works_for_agent_name,
+        "is_active": user.is_active
+    }
+
+
+class UpdateUserRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    works_for_agent_id: Optional[int] = None
+
+
+@setup_router.put("/update-user/{user_id}")
+def update_user_by_id(
+    user_id: int,
+    data: UpdateUserRequest,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """Atualizar user por ID - PROTEGIDO com X-Admin-Key"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User ID {user_id} não existe")
+    
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.phone is not None:
+        user.phone = data.phone
+    if data.role is not None:
+        user.role = data.role
+    if data.works_for_agent_id is not None:
+        # Verify agent exists
+        if data.works_for_agent_id > 0:
+            agent = db.query(Agent).filter(Agent.id == data.works_for_agent_id).first()
+            if not agent:
+                raise HTTPException(status_code=400, detail=f"Agent ID {data.works_for_agent_id} não existe")
+        user.works_for_agent_id = data.works_for_agent_id if data.works_for_agent_id > 0 else None
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "success": True,
+        "user_id": user.id,
+        "email": user.email,
+        "message": "User atualizado com sucesso"
+    }
+
+
 @setup_router.get("/list-users")
 def list_all_users(
     db: Session = Depends(get_db),
