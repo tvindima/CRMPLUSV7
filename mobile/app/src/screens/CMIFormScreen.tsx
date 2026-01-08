@@ -311,9 +311,19 @@ export default function CMIFormScreen({ navigation, route }: Props) {
 
   const mapDocs = (docs?: any[]) => {
     const counts: Record<string, number> = {};
+    // Mapear tipos do backend para IDs das categorias na UI
+    const typeToCategory: Record<string, string> = {
+      'documentos_proprietario': 'cc',
+      'caderneta_predial': 'caderneta_predial',
+      'certidao_permanente': 'certidao_permanente',
+      'licenca_utilizacao': 'licenca_utilizacao',
+      'certificado_energetico': 'certificado_energetico',
+      'outro': 'outros',
+    };
     (docs || []).forEach((d) => {
-      const key = d?.type || 'outro';
-      counts[key] = (counts[key] || 0) + 1;
+      const backendType = d?.type || 'outro';
+      const categoryId = typeToCategory[backendType] || 'outros';
+      counts[categoryId] = (counts[categoryId] || 0) + 1;
     });
     setSavedDocsMap(counts);
     setSavedDocs(docs || []);
@@ -611,13 +621,24 @@ export default function CMIFormScreen({ navigation, route }: Props) {
       // Sincronizar nome do cliente para a 1ª Impressão (atualiza "A Identificar")
       if (firstImpressionId && clienteNome && clienteNome !== 'A Identificar') {
         try {
+          // Preparar attachments a partir dos documentos guardados na pré-angariação
+          const attachmentsToSync = savedDocs
+            .filter((d: any) => d && d.url)
+            .map((d: any) => ({
+              name: d.name || d.type || 'Documento',
+              url: d.url,
+              type: d.type || 'outro',
+            }));
+          
           await firstImpressionService.update(firstImpressionId, {
             client_name: clienteNome,
             client_nif: clienteNif || undefined,
             client_phone: clienteTelefone || undefined,
             client_email: clienteEmail || undefined,
+            // SYNC: Sincronizar documentos como attachments
+            attachments: attachmentsToSync.length > 0 ? attachmentsToSync : undefined,
           });
-          console.log('[CMI] ✅ FirstImpression atualizada com nome do cliente');
+          console.log('[CMI] ✅ FirstImpression atualizada com nome e documentos:', attachmentsToSync.length);
         } catch (e) {
           console.warn('[CMI] ⚠️ Não foi possível atualizar FirstImpression:', e);
         }
@@ -1083,8 +1104,8 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             },
           ]);
           
-          // Processar OCR para CCs
-          if (ocrType === 'cc' && asset.base64) {
+          // Processar OCR para TODOS os documentos (CC, caderneta, certidão, etc.)
+          if (asset.base64) {
             await processOcrFromBase64(asset.base64);
           }
         }

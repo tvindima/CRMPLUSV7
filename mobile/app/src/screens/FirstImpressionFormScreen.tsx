@@ -163,6 +163,38 @@ export default function FirstImpressionFormScreen({ navigation, route }) {
             console.log('[FirstImpressionForm] Setting preAngariacaoId:', preId);
             safeSetState(setPreAngariacaoId, preId);
           }
+          
+          // SYNC: Carregar fotos da pré-angariação (que podem ter sido adicionadas no CMI)
+          if (pre.fotos && Array.isArray(pre.fotos) && pre.fotos.length > 0) {
+            const prePhotos = pre.fotos
+              .map((f: any) => typeof f === 'string' ? f : f?.url)
+              .filter((url: any) => url && typeof url === 'string' && url.startsWith('http'));
+            console.log('[FirstImpressionForm] Pre-angariacao fotos:', prePhotos.length);
+            // Merge com fotos existentes (sem duplicados)
+            safeSetState(setPhotos, (prev: string[]) => {
+              const existing = new Set(prev || []);
+              prePhotos.forEach((p: string) => existing.add(p));
+              return Array.from(existing);
+            });
+          }
+          
+          // SYNC: Carregar documentos da pré-angariação como attachments
+          if (pre.documentos && Array.isArray(pre.documentos) && pre.documentos.length > 0) {
+            const preDocs = pre.documentos
+              .filter((d: any) => d && d.url)
+              .map((d: any) => ({
+                name: d.name || d.type || 'Documento',
+                url: d.url,
+                type: d.type || 'outro',
+              }));
+            console.log('[FirstImpressionForm] Pre-angariacao documentos:', preDocs.length);
+            // Merge com attachments existentes (sem duplicados por URL)
+            safeSetState(setAttachments, (prev: any[]) => {
+              const existingUrls = new Set((prev || []).map((a: any) => a.url));
+              const newDocs = preDocs.filter((d: any) => !existingUrls.has(d.url));
+              return [...(prev || []), ...newDocs];
+            });
+          }
         }
       } catch (e: any) {
         console.log('[FirstImpressionForm] No pre-angariacao found or error:', e?.message || String(e));
