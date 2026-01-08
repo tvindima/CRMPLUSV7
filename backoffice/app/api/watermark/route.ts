@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { API_BASE_URL, SESSION_COOKIE, getApiHeaders, TENANT_SLUG } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+/**
+ * GET /api/watermark - Get watermark settings
+ */
+export async function GET() {
   try {
     const cookieStore = cookies();
     const token = cookieStore.get(SESSION_COOKIE);
@@ -13,33 +16,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    // Forward query params
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/agents/${queryString ? `?${queryString}` : ''}`;
-
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE_URL}/admin/settings/watermark`, {
       headers: getApiHeaders(token.value),
     });
 
     if (!res.ok) {
-      const error = await res.text();
-      console.error("Railway API error:", error);
-      return NextResponse.json({ error: "Erro ao buscar agentes" }, { status: res.status });
+      return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: res.status });
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Agents error:", error);
+    console.error("[Watermark GET] Exception:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 
 /**
- * POST /api/agents - Create new agent
+ * PUT /api/watermark - Update watermark settings
  */
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
     const cookieStore = cookies();
     const token = cookieStore.get(SESSION_COOKIE);
@@ -50,21 +46,20 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const res = await fetch(`${API_BASE_URL}/agents/`, {
-      method: 'POST',
+    const res = await fetch(`${API_BASE_URL}/admin/settings/watermark`, {
+      method: 'PUT',
       headers: getApiHeaders(token.value),
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: error.detail || "Erro ao criar agente" }, { status: res.status });
+      return NextResponse.json({ error: "Erro ao guardar" }, { status: res.status });
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("[Agent POST] Exception:", error);
+    console.error("[Watermark PUT] Exception:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

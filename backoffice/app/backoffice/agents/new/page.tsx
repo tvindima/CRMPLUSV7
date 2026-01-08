@@ -86,13 +86,8 @@ function NewAgentInner() {
   useEffect(() => {
     async function loadAgents() {
       try {
-        const token = localStorage.getItem('accessToken');
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`,
-          { headers }
-        );
+        // FIXED: Usar proxy route com tenant isolation
+        const response = await fetch(`/api/agents?limit=100`);
         if (!response.ok) return;
         const data = await response.json();
         setAgents(data.filter((a: any) => a.name !== 'Imóveis Mais Leiria'));
@@ -119,13 +114,6 @@ function NewAgentInner() {
 
     try {
       setLoading(true);
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
-      const token = localStorage.getItem('accessToken');
-      
-      if (!token) {
-        toast?.push('Sessão expirada. Faça login novamente.', 'error');
-        return;
-      }
 
       let agentId: number | null = null;
 
@@ -145,11 +133,11 @@ function NewAgentInner() {
           agency_id: null,
         };
         
-        const agentResponse = await fetch(`${API_BASE}/agents/`, {
+        // FIXED: Usar proxy route com tenant isolation
+        const agentResponse = await fetch(`/api/agents`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(agentData),
         });
@@ -180,8 +168,8 @@ function NewAgentInner() {
         works_for_agent_id: formData.employee_type === 'staff' ? formData.team_leader_id : null,
       };
       
-      // Usar endpoint temporário sem autenticação
-      const userResponse = await fetch(`${API_BASE}/admin/setup/create-user`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const userResponse = await fetch(`/api/admin/setup/create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),

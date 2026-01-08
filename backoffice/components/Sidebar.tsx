@@ -40,7 +40,8 @@ export function Sidebar() {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
+      // FIXED: Usar proxy route com tenant isolation
+      await fetch(`/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

@@ -70,8 +70,7 @@ type Client = {
   is_verified?: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
-
+// FIXED: Usar proxy API route com tenant isolation
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -88,7 +87,8 @@ export default function ClientDetailPage() {
     const fetchClient = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_URL}/clients/${clientId}`);
+        // FIXED: Usar proxy route com tenant isolation
+        const response = await fetch(`/api/clients/${clientId}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError('Cliente não encontrado');
@@ -116,7 +116,8 @@ export default function ClientDetailPage() {
     
     setDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/clients/${client.id}`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/clients/${client.id}`, {
         method: 'DELETE',
       });
       if (response.ok) {

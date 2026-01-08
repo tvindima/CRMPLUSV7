@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+// FIXED: Usar proxy routes com tenant isolation
 
 export type SessionInfo = {
   email: string;
@@ -24,7 +24,8 @@ export async function getSession(): Promise<SessionInfo | null> {
 }
 
 export async function setAuthCookie(email: string, password: string): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  // FIXED: Usar proxy route com tenant isolation
+  const res = await fetch(`/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),

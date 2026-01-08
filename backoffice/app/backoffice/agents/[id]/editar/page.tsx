@@ -56,15 +56,9 @@ function EditAgentInner() {
     async function loadData() {
       try {
         setLoading(true);
-        const token = localStorage.getItem('accessToken');
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
         
-        // Carregar dados do agente
-        const agentResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`,
-          { headers }
-        );
+        // FIXED: Usar proxy route com tenant isolation
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
         
         if (!agentResponse.ok) {
           throw new Error('Agente não encontrado');
@@ -73,11 +67,8 @@ function EditAgentInner() {
         const agentData = await agentResponse.json();
         setFormData(agentData);
 
-        // Carregar lista de agentes para dropdown
-        const agentsResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/?limit=100`,
-          { headers }
-        );
+        // FIXED: Usar proxy route com tenant isolation
+        const agentsResponse = await fetch(`/api/agents?limit=100`);
         if (agentsResponse.ok) {
           const data = await agentsResponse.json();
           setAgents(data.filter((a: any) => a.name !== 'Imóveis Mais Leiria'));
@@ -105,14 +96,10 @@ function EditAgentInner() {
 
     try {
       setSaving(true);
-      const token = localStorage.getItem('accessToken');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/agents/${agentId}`,
-        {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/agents/${agentId}`, {
           method: 'PUT',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         }
       );

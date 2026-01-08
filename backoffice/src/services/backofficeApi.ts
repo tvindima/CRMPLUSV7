@@ -28,7 +28,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-prod
 // Para chamadas que precisam de autenticação por cookie, usa proxy local
 const API_PROXY = "/api";
 
-async function request<T>(path: string, init?: RequestInit, useProxy = false): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, useProxy = true): Promise<T> {
   const base = useProxy ? API_PROXY : API_BASE;
   const res = await fetch(`${base}${path}`, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -232,6 +232,7 @@ export async function uploadPropertyImages(
       method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
+        'X-Tenant-Slug': process.env.NEXT_PUBLIC_TENANT_SLUG || '',
       },
       body: formData,
     });
@@ -291,6 +292,7 @@ export async function uploadPropertyVideo(
       method: "POST",
       headers: {
         'Authorization': `Bearer ${token}`,
+        'X-Tenant-Slug': process.env.NEXT_PUBLIC_TENANT_SLUG || '',
       },
       body: formData,
     });

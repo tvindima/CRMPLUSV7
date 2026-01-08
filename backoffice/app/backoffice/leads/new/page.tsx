@@ -105,9 +105,8 @@ function NewLeadInner() {
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/leads/`,
-        {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/leads`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),

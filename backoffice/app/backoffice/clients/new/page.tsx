@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
+// FIXED: Usar proxy route com tenant isolation (remover API_URL hardcoded)
 
 // Opções de selects
 const TIPOS_CLIENTE = [
@@ -177,7 +177,8 @@ export default function NewClientPage() {
         payload.empresa_poderes = formData.empresa_poderes || null;
       }
 
-      const response = await fetch(`${API_URL}/clients/?agent_id=1`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/clients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

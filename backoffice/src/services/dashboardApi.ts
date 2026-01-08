@@ -167,7 +167,7 @@ export async function getRecentActivities(limit: number = 10): Promise<Activity[
 // ==================== AGENT-SPECIFIC FUNCTIONS ====================
 
 export async function getAgentKPIs(): Promise<DashboardKPIs> {
-  const res = await fetch(`${API_BASE}/api/dashboard/agent/kpis`, {
+  const res = await fetch(`/api/dashboard/agent/kpis`, {
     credentials: "include",
     cache: "no-store",
   });
@@ -176,7 +176,7 @@ export async function getAgentKPIs(): Promise<DashboardKPIs> {
 }
 
 export async function getAgentLeads(limit: number = 10): Promise<RecentLead[]> {
-  const res = await fetch(`${API_BASE}/api/dashboard/agent/leads?limit=${limit}`, {
+  const res = await fetch(`/api/dashboard/agent/leads?limit=${limit}`, {
     credentials: "include",
     cache: "no-store",
   });
@@ -185,7 +185,7 @@ export async function getAgentLeads(limit: number = 10): Promise<RecentLead[]> {
 }
 
 export async function getAgentTasks(): Promise<Task[]> {
-  const res = await fetch(`${API_BASE}/api/dashboard/agent/tasks`, {
+  const res = await fetch(`/api/dashboard/agent/tasks`, {
     credentials: "include",
     cache: "no-store",
   });
@@ -194,7 +194,7 @@ export async function getAgentTasks(): Promise<Task[]> {
 }
 
 export async function getAgentActivities(limit: number = 10): Promise<Activity[]> {
-  const res = await fetch(`${API_BASE}/api/dashboard/agent/activities?limit=${limit}`, {
+  const res = await fetch(`/api/dashboard/agent/activities?limit=${limit}`, {
     credentials: "include",
     cache: "no-store",
   });

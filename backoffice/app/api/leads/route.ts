@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * GET /api/leads - List leads
+ */
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = cookies();
@@ -16,28 +19,26 @@ export async function GET(request: NextRequest) {
     // Forward query params
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/agents/${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE_URL}/leads/${queryString ? `?${queryString}` : ''}`;
 
     const res = await fetch(url, {
       headers: getApiHeaders(token.value),
     });
 
     if (!res.ok) {
-      const error = await res.text();
-      console.error("Railway API error:", error);
-      return NextResponse.json({ error: "Erro ao buscar agentes" }, { status: res.status });
+      return NextResponse.json({ error: "Erro ao buscar leads" }, { status: res.status });
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Agents error:", error);
+    console.error("[Leads GET] Exception:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 
 /**
- * POST /api/agents - Create new agent
+ * POST /api/leads - Create new lead
  */
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const res = await fetch(`${API_BASE_URL}/agents/`, {
+    const res = await fetch(`${API_BASE_URL}/leads/`, {
       method: 'POST',
       headers: getApiHeaders(token.value),
       body: JSON.stringify(body),
@@ -58,13 +59,13 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: error.detail || "Erro ao criar agente" }, { status: res.status });
+      return NextResponse.json({ error: error.detail || "Erro ao criar lead" }, { status: res.status });
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("[Agent POST] Exception:", error);
+    console.error("[Leads POST] Exception:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

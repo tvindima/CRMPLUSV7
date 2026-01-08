@@ -1,4 +1,6 @@
+// FIXED: Usar proxy routes com tenant isolation
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+const TENANT_SLUG = process.env.NEXT_PUBLIC_TENANT_SLUG || "";
 import { mockProperties } from "../mocks/properties";
 import { mockAgents } from "../mocks/agents";
 
@@ -31,7 +33,18 @@ export type Agent = {
 };
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { next: { revalidate: 30 } });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  // CRITICAL: Adicionar tenant header para isolamento multi-tenant
+  if (TENANT_SLUG) {
+    headers['X-Tenant-Slug'] = TENANT_SLUG;
+  }
+  
+  const res = await fetch(`${API_BASE}${path}`, { 
+    headers,
+    next: { revalidate: 30 } 
+  });
   if (!res.ok) {
     throw new Error(`Erro ao chamar ${path}: ${res.status}`);
   }

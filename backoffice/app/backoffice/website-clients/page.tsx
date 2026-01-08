@@ -13,7 +13,7 @@ import {
   ArrowPathIcon
 } from "@heroicons/react/24/outline";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+// FIXED: Usar proxy routes com tenant isolation
 
 interface WebsiteClient {
   id: number;
@@ -53,7 +53,8 @@ export default function WebsiteClientsPage() {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      let url = `${API_BASE}/website/clients/?limit=100`;
+      // FIXED: Usar proxy route com tenant isolation
+      let url = `/api/website-clients?limit=100`;
       
       if (filterType !== 'all') {
         url += `&client_type=${filterType}`;
@@ -79,7 +80,8 @@ export default function WebsiteClientsPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE}/website/clients/stats`);
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/website-clients/stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);

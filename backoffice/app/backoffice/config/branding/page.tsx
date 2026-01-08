@@ -111,7 +111,7 @@ function BrandingForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+  // FIXED: Usar proxy routes com tenant isolation
 
   useEffect(() => {
     fetchBranding();
@@ -119,7 +119,8 @@ function BrandingForm() {
 
   const fetchBranding = async () => {
     try {
-      const response = await fetch(`${API_URL}/public/branding`);
+      // FIXED: Usar proxy route
+      const response = await fetch(`/api/branding`);
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -135,12 +136,11 @@ function BrandingForm() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/admin/settings/branding`, {
+      // FIXED: Usar proxy route
+      const response = await fetch(`/api/branding`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(settings)
       });
@@ -182,15 +182,12 @@ function BrandingForm() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('accessToken');
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL}/admin/settings/branding/upload-logo`, {
+      // FIXED: Usar proxy route
+      const response = await fetch(`/api/branding/upload-logo`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       });
 

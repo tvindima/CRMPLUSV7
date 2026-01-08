@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../../backoffice/components/ToastProvider";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
+// FIXED: Usar proxy routes com tenant isolation
 
 interface WatermarkSettings {
   watermark_enabled: boolean;
@@ -37,13 +37,9 @@ export default function WatermarkSettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`${API_BASE}/admin/settings/watermark`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/watermark`);
 
       if (!response.ok) {
         throw new Error('Erro ao carregar configurações');
@@ -67,12 +63,11 @@ export default function WatermarkSettingsPage() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      const token = localStorage.getItem('accessToken');
 
-      const response = await fetch(`${API_BASE}/admin/settings/watermark`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/watermark`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -117,16 +112,13 @@ export default function WatermarkSettingsPage() {
       setUploading(true);
       setError(null);
       setSuccess(null);
-      const token = localStorage.getItem('accessToken');
 
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE}/admin/settings/watermark/upload`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/watermark/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
       });
 
@@ -154,13 +146,10 @@ export default function WatermarkSettingsPage() {
     try {
       setError(null);
       setSuccess(null);
-      const token = localStorage.getItem('accessToken');
 
-      const response = await fetch(`${API_BASE}/admin/settings/watermark/image`, {
+      // FIXED: Usar proxy route com tenant isolation
+      const response = await fetch(`/api/watermark/upload`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
