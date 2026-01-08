@@ -7,6 +7,7 @@ from app.database import get_db
 from app.properties.models import Property
 from app.leads.models import Lead
 from app.agents.models import Agent
+from app.models.escritura import Escritura
 from app.api.v1.auth import get_current_user_email
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -72,11 +73,39 @@ def get_dashboard_kpis(
         # Agentes ativos (todos os agentes cadastrados)
         agentes_ativos = db.query(Agent).count()
         
+        # === ESCRITURAS ===
+        try:
+            # Total de escrituras agendadas (próximos 60 dias)
+            hoje = datetime.now()
+            escrituras_agendadas = db.query(Escritura).filter(
+                Escritura.data_escritura >= hoje,
+                Escritura.status.in_(['agendada', 'confirmada'])
+            ).count()
+            
+            # Escrituras com documentação pronta
+            escrituras_docs_ok = db.query(Escritura).filter(
+                Escritura.data_escritura >= hoje,
+                Escritura.status.in_(['agendada', 'confirmada']),
+                Escritura.documentacao_pronta == True
+            ).count()
+            
+            # Escrituras com documentação pendente
+            escrituras_docs_pendentes = escrituras_agendadas - escrituras_docs_ok
+        except Exception:
+            # Se tabela não existir ainda
+            escrituras_agendadas = 0
+            escrituras_docs_ok = 0
+            escrituras_docs_pendentes = 0
+        
         return {
             "propriedades_ativas": propriedades_ativas,
             "novas_leads_7d": novas_leads_7d,
             "propostas_abertas": propostas_abertas,
             "agentes_ativos": agentes_ativos,
+            # Escrituras
+            "escrituras_agendadas": escrituras_agendadas,
+            "escrituras_docs_ok": escrituras_docs_ok,
+            "escrituras_docs_pendentes": escrituras_docs_pendentes,
             "trends": {
                 "propriedades": f"+{prop_trend:.0f}%" if prop_trend > 0 else f"{prop_trend:.0f}%",
                 "propriedades_up": prop_trend > 0,

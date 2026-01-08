@@ -147,6 +147,13 @@ export default function DashboardPage() {
   const [pieChartData, setPieChartData] = useState(emptyPieData);
   const [statusChartData, setStatusChartData] = useState(emptyStatusData);
   const [completedTasks, setCompletedTasks] = useState<number[]>([]);
+  
+  // Estado para escrituras
+  const [escriturasStats, setEscriturasStats] = useState({
+    agendadas: 0,
+    docs_ok: 0,
+    docs_pendentes: 0,
+  });
 
   // Calcular progresso das tarefas
   const tasksProgress = tasks.length > 0 
@@ -212,6 +219,13 @@ export default function DashboardPage() {
             bgGradient: "from-green-500/20 to-emerald-500/20"
           },
         ]);
+        
+        // Atualizar estatísticas de escrituras
+        setEscriturasStats({
+          agendadas: kpisData.escrituras_agendadas || 0,
+          docs_ok: kpisData.escrituras_docs_ok || 0,
+          docs_pendentes: kpisData.escrituras_docs_pendentes || 0,
+        });
       } catch (error) {
         console.error("Erro ao carregar KPIs:", error);
       }
@@ -490,6 +504,71 @@ export default function DashboardPage() {
               </GlowCard>
             );
           })}
+        </motion.div>
+
+        {/* Cartões de Escrituras */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"
+        >
+          {/* Total Escrituras Agendadas */}
+          <GlowCard 
+            onClick={() => router.push('/backoffice/escrituras')}
+            tooltip="Ver todas as escrituras agendadas"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex-shrink-0">
+                <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-neutral-400">📜 Escrituras Agendadas</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-400">
+                  {escriturasStats.agendadas}
+                </p>
+              </div>
+            </div>
+          </GlowCard>
+
+          {/* Dossiers Prontos */}
+          <GlowCard 
+            onClick={() => router.push('/backoffice/escrituras?status=documentacao_ok')}
+            tooltip="Escrituras com documentação completa"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex-shrink-0">
+                <CheckCircleIcon className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-neutral-400">✅ Dossier Pronto</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-400">
+                  {escriturasStats.docs_ok}
+                </p>
+              </div>
+            </div>
+          </GlowCard>
+
+          {/* Dossiers Pendentes */}
+          <GlowCard 
+            onClick={() => router.push('/backoffice/escrituras?pendentes_documentacao=true')}
+            tooltip="Escrituras que precisam de documentação - ATENÇÃO"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex-shrink-0">
+                <ClockIcon className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-neutral-400">⚠️ Falta Preparar Dossier</p>
+                <p className="text-2xl sm:text-3xl font-bold text-red-400">
+                  {escriturasStats.docs_pendentes}
+                </p>
+                {escriturasStats.docs_pendentes > 0 && (
+                  <p className="text-xs text-red-400/70 mt-1">Requer atenção!</p>
+                )}
+              </div>
+            </div>
+          </GlowCard>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
