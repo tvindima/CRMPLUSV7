@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../../../backoffice/components/ToastProvider";
+import { useRole } from "../../../../../../backoffice/context/roleContext";
 
 type Agent = {
   id: number;
@@ -30,6 +31,8 @@ export default function EditStaffPage({ params }: { params: Promise<{ id: string
 
 function EditStaffInner({ staffId }: { staffId: string }) {
   const toast = useToast();
+  const { role: currentUserRole } = useRole();
+  const isAdmin = currentUserRole === 'admin';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -236,17 +239,32 @@ function EditStaffInner({ staffId }: { staffId: string }) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#C5C5C5] mb-1">Cargo *</label>
+                <label className="block text-sm text-[#C5C5C5] mb-1">
+                  Cargo/Permissões *
+                  {!isAdmin && <span className="text-xs text-[#666] ml-2">(apenas admin pode alterar)</span>}
+                </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-white outline-none focus:border-[#0047AB]"
+                  disabled={!isAdmin}
+                  className={`w-full rounded border border-[#2A2A2E] px-3 py-2 outline-none ${
+                    isAdmin 
+                      ? 'bg-[#151518] text-white focus:border-[#0047AB]' 
+                      : 'bg-[#0B0B0D] text-[#666] cursor-not-allowed'
+                  }`}
                 >
                   <option value="assistant">Assistente</option>
                   <option value="coordinator">Coordenador</option>
                   <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
+                  <option value="leader">Líder de Equipa</option>
+                  <option value="agent">Agente</option>
+                  <option value="admin">Administrador</option>
                 </select>
+                {isAdmin && (
+                  <p className="text-xs text-[#666] mt-1">
+                    Define as permissões de acesso do utilizador
+                  </p>
+                )}
               </div>
               
               <div>
