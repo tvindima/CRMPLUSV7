@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from . import services, schemas
 from app.database import get_db
+from app.auth.dependencies import get_current_user
+from app.auth.models import User
 
 router = APIRouter(prefix="/agencies", tags=["agencies"])
 
@@ -26,6 +28,42 @@ def create_agency(agency: schemas.AgencyCreate, db: Session = Depends(get_db)):
 
 @router.put("/{agency_id}", response_model=schemas.AgencyOut)
 def update_agency(agency_id: int, agency_update: schemas.AgencyUpdate, db: Session = Depends(get_db)):
+    agency = services.update_agency(db, agency_id, agency_update)
+    if not agency:
+        raise HTTPException(status_code=404, detail="Agency not found")
+    return agency
+
+
+@router.put("/{agency_id}/cmi-settings", response_model=schemas.AgencyOut)
+def update_agency_cmi_settings(
+    agency_id: int, 
+    agency_update: schemas.AgencyUpdate, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualizar configurações de CMI da agência.
+    APENAS admin ou coordenador podem editar.
+    """
+    # Verificar role do utilizador
+    allowed_roles = ["admin", "coordenador", "super_admin"]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas admin ou coordenador podem editar configurações de CMI"
+        )
+    
+    # Verificar se utilizador pertence a esta agência (se não for super_admin)
+    if current_user.role != "super_admin":
+        # Obter agent_id do utilizador
+        from app.agents.models import Agent
+        agent = db.query(Agent).filter(Agent.id == current_user.agent_id).first()
+        if not agent or agent.agency_id != agency_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Não tem permissão para editar esta agência"
+            )
+    
     agency = services.update_agency(db, agency_id, agency_update)
     if not agency:
         raise HTTPException(status_code=404, detail="Agency not found")

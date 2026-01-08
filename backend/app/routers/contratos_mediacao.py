@@ -56,11 +56,11 @@ def format_money(value) -> str:
 
 
 # =====================================================
-# Dados do Mediador - AO LADO DO SUCESSO, LDA (FIXOS)
+# Dados do Mediador - DEFAULTS (usados se Agency não tiver dados)
 # =====================================================
 
-# Dados oficiais da empresa mediadora (do modelo de contrato)
-MEDIADORA_DADOS = {
+# Dados DEFAULT da empresa mediadora (usados se agency não tiver configuração)
+MEDIADORA_DADOS_DEFAULT = {
     "mediador_nome": "AO LADO DO SUCESSO, LDA",
     "mediador_licenca_ami": "17195",
     "mediador_nif": "515 680 796",
@@ -77,20 +77,53 @@ MEDIADORA_DADOS = {
     "seguro_companhia": "ZURICH",
 }
 
+# Manter compatibilidade com código existente
+MEDIADORA_DADOS = MEDIADORA_DADOS_DEFAULT
+
 def get_dados_mediador(agent_id: int, db: Session) -> dict:
-    """Obter dados do mediador (fixos) e do agente responsável pela angariação"""
-    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    """
+    Obter dados do mediador da Agency (tenant).
+    Se a Agency não tiver dados configurados, usa os defaults.
+    """
+    from app.agencies.models import Agency
     
-    # Apenas os campos que existem no modelo ContratoMediacaoImobiliaria
-    dados = {
-        "mediador_nome": MEDIADORA_DADOS["mediador_nome"],
-        "mediador_licenca_ami": MEDIADORA_DADOS["mediador_licenca_ami"],
-        "mediador_nif": MEDIADORA_DADOS["mediador_nif"],
-        "mediador_morada": MEDIADORA_DADOS["mediador_morada"],
-        "mediador_codigo_postal": MEDIADORA_DADOS["mediador_codigo_postal"],
-        "mediador_telefone": MEDIADORA_DADOS["mediador_telefone"],
-        "mediador_email": MEDIADORA_DADOS["mediador_email"],
-    }
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    agency = None
+    
+    # Obter Agency do agente
+    if agent and agent.agency_id:
+        agency = db.query(Agency).filter(Agency.id == agent.agency_id).first()
+    
+    # Usar dados da Agency se disponíveis, senão usar defaults
+    if agency:
+        dados = {
+            "mediador_nome": agency.mediador_nome or MEDIADORA_DADOS_DEFAULT["mediador_nome"],
+            "mediador_licenca_ami": agency.mediador_licenca_ami or MEDIADORA_DADOS_DEFAULT["mediador_licenca_ami"],
+            "mediador_nif": agency.mediador_nif or MEDIADORA_DADOS_DEFAULT["mediador_nif"],
+            "mediador_morada": agency.mediador_morada or MEDIADORA_DADOS_DEFAULT["mediador_morada"],
+            "mediador_codigo_postal": agency.mediador_codigo_postal or MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
+            "mediador_capital_social": agency.mediador_capital_social or MEDIADORA_DADOS_DEFAULT["mediador_capital_social"],
+            "mediador_conservatoria": agency.mediador_conservatoria or MEDIADORA_DADOS_DEFAULT["mediador_conservatoria"],
+            "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
+            "mediador_email": agency.email or MEDIADORA_DADOS_DEFAULT["mediador_email"],
+            # Comissões da Agency
+            "comissao_venda": agency.comissao_venda_percentagem or "5%",
+            "comissao_arrendamento": agency.comissao_arrendamento_percentagem or "100%",
+        }
+    else:
+        dados = {
+            "mediador_nome": MEDIADORA_DADOS_DEFAULT["mediador_nome"],
+            "mediador_licenca_ami": MEDIADORA_DADOS_DEFAULT["mediador_licenca_ami"],
+            "mediador_nif": MEDIADORA_DADOS_DEFAULT["mediador_nif"],
+            "mediador_morada": MEDIADORA_DADOS_DEFAULT["mediador_morada"],
+            "mediador_codigo_postal": MEDIADORA_DADOS_DEFAULT["mediador_codigo_postal"],
+            "mediador_capital_social": MEDIADORA_DADOS_DEFAULT["mediador_capital_social"],
+            "mediador_conservatoria": MEDIADORA_DADOS_DEFAULT["mediador_conservatoria"],
+            "mediador_telefone": MEDIADORA_DADOS_DEFAULT["mediador_telefone"],
+            "mediador_email": MEDIADORA_DADOS_DEFAULT["mediador_email"],
+            "comissao_venda": "5%",
+            "comissao_arrendamento": "100%",
+        }
     
     # Adicionar dados do agente (responsável pela angariação)
     if agent:
@@ -288,6 +321,9 @@ def gerar_pdf(
     if not item:
         raise HTTPException(status_code=404, detail="CMI não encontrado")
     
+    # Obter dados do mediador da Agency (ou defaults)
+    dados_mediador = get_dados_mediador(effective_agent_id, db)
+    
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -349,15 +385,15 @@ def gerar_pdf(
     c.drawCentredString(width/2, y, titulo_neg)
     y -= 8*mm
     
-    # Entre - MEDIADORA (dados fixos)
+    # Entre - MEDIADORA (dados da Agency ou defaults)
     c.setFont("Helvetica-Bold", 9)
     c.drawString(margin_left, y, "Entre:")
     y -= 4*mm
     c.setFont("Helvetica", 8)
-    med = f"{MEDIADORA_DADOS['mediador_nome']}, com sede social na {MEDIADORA_DADOS['mediador_morada']}, "
-    med += f"{MEDIADORA_DADOS['mediador_codigo_postal']}, com o capital social de {MEDIADORA_DADOS['mediador_capital_social']} euros "
-    med += f"e com o NIPC n.º {MEDIADORA_DADOS['mediador_nif']}, matriculada na {MEDIADORA_DADOS['mediador_conservatoria']}, "
-    med += f"detentora da Licença AMI n.º {MEDIADORA_DADOS['mediador_licenca_ami']}, emitida pelo Instituto de Construção e "
+    med = f"{dados_mediador['mediador_nome']}, com sede social na {dados_mediador['mediador_morada']}, "
+    med += f"{dados_mediador['mediador_codigo_postal']}, com o capital social de {dados_mediador['mediador_capital_social']} euros "
+    med += f"e com o NIPC n.º {dados_mediador['mediador_nif']}, matriculada na {dados_mediador['mediador_conservatoria']}, "
+    med += f"detentora da Licença AMI n.º {dados_mediador['mediador_licenca_ami']}, emitida pelo Instituto de Construção e "
     med += "do Imobiliário (INCI), adiante designada como "
     y = draw_text(c, med, margin_left, y, usable_width, 8, 10)
     c.setFont("Helvetica-Bold", 8)
