@@ -204,7 +204,7 @@ function AgentesInner() {
     async function loadStaff() {
       try {
         setLoadingStaff(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/admin/setup/list-staff`);
+        const response = await fetch('/api/staff/list');
         if (!response.ok) throw new Error('Erro ao carregar staff');
         
         const data = await response.json();
@@ -222,7 +222,7 @@ function AgentesInner() {
     if (!confirm('Tem a certeza que deseja remover este membro de staff?')) return;
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'}/admin/setup/delete-user/${id}`, {
+      const response = await fetch(`/api/staff/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Erro ao remover staff');
