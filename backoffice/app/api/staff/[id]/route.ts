@@ -1,10 +1,20 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { API_BASE_URL, SESSION_COOKIE, TENANT_SLUG } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
 
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'
 const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || 'dev_admin_key_change_in_production'
+
+function getAdminHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'X-Admin-Key': ADMIN_SETUP_KEY,
+  }
+  if (TENANT_SLUG) {
+    headers['X-Tenant-Slug'] = TENANT_SLUG
+  }
+  return headers
+}
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +22,7 @@ export async function GET(
 ) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -20,10 +30,8 @@ export async function GET(
 
     const { id } = await params
 
-    const res = await fetch(`${RAILWAY_API}/admin/setup/get-user/${id}`, {
-      headers: {
-        'X-Admin-Key': ADMIN_SETUP_KEY,
-      },
+    const res = await fetch(`${API_BASE_URL}/admin/setup/get-user/${id}`, {
+      headers: getAdminHeaders(),
     })
 
     const data = await res.json()
@@ -45,7 +53,7 @@ export async function PUT(
 ) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -54,11 +62,11 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const res = await fetch(`${RAILWAY_API}/admin/setup/update-user/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/admin/setup/update-user/${id}`, {
       method: 'PUT',
       headers: {
+        ...getAdminHeaders(),
         'Content-Type': 'application/json',
-        'X-Admin-Key': ADMIN_SETUP_KEY,
       },
       body: JSON.stringify(body),
     })
@@ -82,7 +90,7 @@ export async function DELETE(
 ) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -90,11 +98,9 @@ export async function DELETE(
 
     const { id } = await params
 
-    const res = await fetch(`${RAILWAY_API}/admin/setup/delete-user/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/admin/setup/delete-user/${id}`, {
       method: 'DELETE',
-      headers: {
-        'X-Admin-Key': ADMIN_SETUP_KEY,
-      },
+      headers: getAdminHeaders(),
     })
 
     const data = await res.json()

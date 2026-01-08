@@ -1,32 +1,28 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
-
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
-const COOKIE_NAME = "crmplus_staff_session";
 
 export async function GET() {
   try {
     const cookieStore = cookies();
-    const token = cookieStore.get(COOKIE_NAME);
+    const token = cookieStore.get(SESSION_COOKIE);
 
     console.log("[KPIs] Token encontrado:", !!token?.value);
+    console.log("[KPIs] Tenant slug:", TENANT_SLUG);
 
     if (!token?.value) {
       console.log("[KPIs] Sem token - retornando 401");
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    // Fazer request ao Railway backend com o token
-    const url = `${RAILWAY_API}/api/dashboard/kpis`;
+    // Fazer request ao Railway backend com o token e tenant
+    const url = `${API_BASE_URL}/api/dashboard/kpis`;
     console.log("[KPIs] Chamando Railway:", url);
     
     const res = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'Content-Type': 'application/json',
-      },
+      headers: getApiHeaders(token.value),
     });
 
     console.log("[KPIs] Railway respondeu com status:", res.status);

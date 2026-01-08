@@ -1,14 +1,13 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
-
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'
 
 export async function PUT(request: NextRequest) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -16,12 +15,9 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
 
-    const res = await fetch(`${RAILWAY_API}/users/me/password`, {
+    const res = await fetch(`${API_BASE_URL}/users/me/password`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'Content-Type': 'application/json',
-      },
+      headers: getApiHeaders(token.value),
       body: JSON.stringify(body),
     })
 

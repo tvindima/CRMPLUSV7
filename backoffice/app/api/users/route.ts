@@ -1,14 +1,13 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
-
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app'
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -18,16 +17,14 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role')
     const is_active = searchParams.get('is_active')
 
-    let url = `${RAILWAY_API}/users/`
+    let url = `${API_BASE_URL}/users/`
     const params = new URLSearchParams()
     if (role) params.append('role', role)
     if (is_active) params.append('is_active', is_active)
     if (params.toString()) url += `?${params.toString()}`
 
     const res = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
+      headers: getApiHeaders(token.value),
     })
 
     if (!res.ok) {
@@ -45,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('crmplus_staff_session')
+    const token = cookieStore.get(SESSION_COOKIE)
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -53,12 +50,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    const res = await fetch(`${RAILWAY_API}/users/`, {
+    const res = await fetch(`${API_BASE_URL}/users/`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'Content-Type': 'application/json',
-      },
+      headers: getApiHeaders(token.value),
       body: JSON.stringify(body),
     })
 

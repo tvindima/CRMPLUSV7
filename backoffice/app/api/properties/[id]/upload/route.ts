@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { API_BASE_URL, SESSION_COOKIE, TENANT_SLUG } from '@/lib/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
-const COOKIE_NAME = "crmplus_staff_session";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME);
+  const token = cookieStore.get(SESSION_COOKIE);
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,11 +20,17 @@ export async function POST(
     const { id } = await params;
     const formData = await request.formData();
     
-    const res = await fetch(`${RAILWAY_API}/properties/${id}/upload`, {
+    // Build headers with tenant slug (no Content-Type for FormData)
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token.value}`,
+    };
+    if (TENANT_SLUG) {
+      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    }
+    
+    const res = await fetch(`${API_BASE_URL}/properties/${id}/upload`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
+      headers,
       body: formData,
     });
 
@@ -48,4 +52,5 @@ export async function POST(
       { status: 500 }
     );
   }
+}
 }

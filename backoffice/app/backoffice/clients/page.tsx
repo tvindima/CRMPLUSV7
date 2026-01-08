@@ -1,6 +1,7 @@
 'use client';
 
 // Fix: API returns {total, items} structure
+// Fix: Use proxy route for proper tenant isolation
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
@@ -15,8 +16,6 @@ type Client = {
   created_at: string;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
-
 export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
@@ -25,7 +24,10 @@ export default function ClientsPage() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const response = await fetch(`${API_URL}/clients/?limit=100`);
+        // Use proxy route for proper tenant isolation
+        const response = await fetch('/api/clients?limit=100', {
+          credentials: 'include',
+        });
         if (response.ok) {
           const data = await response.json();
           setClients(data.items || []);

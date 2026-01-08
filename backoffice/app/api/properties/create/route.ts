@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const RAILWAY_API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
-const COOKIE_NAME = "crmplus_staff_session";
-
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME);
+  const token = cookieStore.get(SESSION_COOKIE);
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,12 +16,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const res = await fetch(`${RAILWAY_API}/properties/`, {
+    const res = await fetch(`${API_BASE_URL}/properties/`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'Content-Type': 'application/json',
-      },
+      headers: getApiHeaders(token.value),
       body: JSON.stringify(body),
     });
 

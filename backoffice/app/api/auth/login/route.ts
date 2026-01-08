@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
+import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
-const COOKIE_NAME = "crmplus_staff_session";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    
+    // Get headers with tenant slug
+    const headers = getApiHeaders();
+    
+    console.log("[Login] Tenant slug:", TENANT_SLUG);
+    
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
       access_token: token 
     });
     response.cookies.set({
-      name: COOKIE_NAME,
+      name: SESSION_COOKIE,
       value: token,
       httpOnly: true,
       secure: true,
