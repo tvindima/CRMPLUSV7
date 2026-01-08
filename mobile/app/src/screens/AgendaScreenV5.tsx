@@ -50,6 +50,7 @@ export default function AgendaScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<any>();
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -288,12 +289,21 @@ export default function AgendaScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>📅 Agenda</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowModal(true)}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.addButton, styles.escrituraButton]}
+            onPress={() => navigation.navigate('EscrituraForm')}
+          >
+            <Ionicons name="document-text-outline" size={20} color="#fff" />
+            <Text style={styles.escrituraButtonText}>Escritura</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowModal(true)}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Calendar */}
@@ -869,6 +879,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   addButton: {
     width: 44,
     height: 44,
@@ -881,6 +896,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  escrituraButton: {
+    width: 'auto',
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#059669',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  escrituraButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   eventsList: {
     flex: 1,

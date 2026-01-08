@@ -17,6 +17,7 @@ const links = [
   { href: "/backoffice/proposals", label: "Propostas", roles: ["agent", "leader", "admin", "staff", "coordinator", "assistant"] },
   { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff", "coordinator", "assistant"] },
   { href: "/backoffice/pre-angariacoes", label: "Pré-Angariações", roles: ["agent", "leader", "admin", "staff", "coordinator", "assistant"] },
+  { href: "/backoffice/escrituras", label: "📜 Escrituras", roles: ["agent", "leader", "admin", "staff", "coordinator", "assistant"] },
   { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff", "coordinator"] },
   // Secção GESTÃO
   { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff", "coordinator"], isManagement: true },

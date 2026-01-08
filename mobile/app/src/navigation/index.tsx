@@ -33,6 +33,7 @@ import CMIFormScreen from '../screens/CMIFormScreen';
 import TaxCalculatorScreen from '../screens/TaxCalculatorScreen';
 import MortgageSimulatorScreen from '../screens/MortgageSimulatorScreen';
 import ClientsScreen from '../screens/ClientsScreen';
+import EscrituraFormScreen from '../screens/EscrituraFormScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -50,6 +51,7 @@ export type RootStackParamList = {
   TaxCalculator: undefined;
   MortgageSimulator: undefined;
   Clients: undefined;
+  EscrituraForm: { escrituraId?: number; propertyId?: number; clientId?: number; preAngariacaoId?: number };
 };
 
 export type TabParamList = {
@@ -118,6 +120,7 @@ function PropertiesStackNavigator() {
       <PropertiesStack.Screen name="FirstImpressionForm" component={FirstImpressionFormScreen} options={{ title: '1ª Impressão' }} />
       <PropertiesStack.Screen name="FirstImpressionSignature" component={FirstImpressionSignatureScreen} options={{ title: 'Assinatura' }} />
       <PropertiesStack.Screen name="CMIForm" component={CMIFormScreen} options={{ title: 'Contrato de Mediação (CMI)' }} />
+      <PropertiesStack.Screen name="EscrituraForm" component={EscrituraFormScreen} options={{ headerShown: false }} />
     </PropertiesStack.Navigator>
   );
 }
@@ -132,6 +135,7 @@ function AgendaStackNavigator() {
     >
       <AgendaStack.Screen name="AgendaMain" component={AgendaScreenV5} options={{ headerShown: false }} />
       <AgendaStack.Screen name="VisitDetail" component={VisitDetailScreenV4} options={{ title: 'Detalhe da Visita' }} />
+      <AgendaStack.Screen name="EscrituraForm" component={EscrituraFormScreen} options={{ headerShown: false }} />
     </AgendaStack.Navigator>
   );
 }
