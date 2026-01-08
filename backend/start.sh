@@ -35,8 +35,37 @@ echo "🔄 Running database migrations..."
 if alembic upgrade head; then
     echo "✅ Migrations applied successfully"
 else
-    echo "⚠️ Alembic migration failed, trying direct SQL fix..."
-    python fix_clients_columns.py || echo "❌ Direct SQL fix also failed"
+    echo "⚠️ Alembic migration failed, trying with heads..."
+    if alembic upgrade heads; then
+        echo "✅ Migrations applied with 'heads'"
+    else
+        echo "⚠️ Alembic failed, applying critical columns directly..."
+        # Apply critical missing columns
+        python -c "
+from app.database import SessionLocal, engine
+from sqlalchemy import text
+
+db = SessionLocal()
+try:
+    # Add nif and address to agents if missing
+    db.execute(text('ALTER TABLE agents ADD COLUMN IF NOT EXISTS nif VARCHAR(20);'))
+    db.execute(text('ALTER TABLE agents ADD COLUMN IF NOT EXISTS address VARCHAR(500);'))
+    
+    # Add tipo_imovel to first_impressions if missing
+    db.execute(text('ALTER TABLE first_impressions ADD COLUMN IF NOT EXISTS tipo_imovel VARCHAR(100);'))
+    
+    # Add tipo_imovel to pre_angariacoes if missing
+    db.execute(text('ALTER TABLE pre_angariacoes ADD COLUMN IF NOT EXISTS tipo_imovel VARCHAR(100);'))
+    
+    db.commit()
+    print('✅ Critical columns added directly')
+except Exception as e:
+    print(f'❌ Error: {e}')
+    db.rollback()
+finally:
+    db.close()
+" || echo "❌ Direct SQL fix also failed"
+    fi
 fi
 
 echo "🌐 Starting Uvicorn..."
