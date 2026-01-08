@@ -10,15 +10,15 @@ interface AgentData {
   name: string;
   email: string;
   phone: string;
-  tax_id?: string;
-  address?: string;
+  nif?: string;  // Usando nome correto do backend
+  address?: string;  // Usando nome correto do backend
   role?: string;
   team_leader_id?: number | null;
   license_number?: string;
   hire_date?: string;
-  linkedin_url?: string;
-  facebook_url?: string;
-  instagram_url?: string;
+  linkedin?: string;  // Usando nome correto do backend
+  facebook?: string;  // Usando nome correto do backend
+  instagram?: string;  // Usando nome correto do backend
   video_url?: string;
   emergency_contact?: string;
   is_active?: boolean;
@@ -190,8 +190,8 @@ function EditAgentInner() {
               <label className="mb-2 block text-sm font-medium text-[#C5C5C5]">NIF</label>
               <input
                 type="text"
-                value={formData.tax_id || ''}
-                onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                value={formData.nif || ''}
+                onChange={(e) => setFormData({ ...formData, nif: e.target.value })}
                 className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
               />
             </div>
@@ -271,8 +271,8 @@ function EditAgentInner() {
               </label>
               <input
                 type="text"
-                value={formData.instagram_url || ''}
-                onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
+                value={formData.instagram || ''}
+                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
                 className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
                 placeholder="@username ou URL completo"
               />
@@ -289,8 +289,8 @@ function EditAgentInner() {
               </label>
               <input
                 type="text"
-                value={formData.facebook_url || ''}
-                onChange={(e) => setFormData({ ...formData, facebook_url: e.target.value })}
+                value={formData.facebook || ''}
+                onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
                 className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
                 placeholder="URL do perfil ou página"
               />
@@ -307,8 +307,8 @@ function EditAgentInner() {
               </label>
               <input
                 type="text"
-                value={formData.linkedin_url || ''}
-                onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                value={formData.linkedin || ''}
+                onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                 className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
                 placeholder="URL do perfil"
               />

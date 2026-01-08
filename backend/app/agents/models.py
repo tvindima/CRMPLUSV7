@@ -17,6 +17,8 @@ class Agent(Base):
     avatar_url = Column(String, nullable=True)  # Deprecated - usar photo
     photo = Column(String, nullable=True)  # Cloudinary URL
     license_ami = Column(String(50), nullable=True)
+    nif = Column(String(20), nullable=True)  # NIF do agente
+    address = Column(String(500), nullable=True)  # Morada
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=True)
     

@@ -482,9 +482,9 @@ def atualizar_pre_angariacao(
                     fi.client_name = item.proprietario_nome
                     if item.proprietario_nif:
                         fi.client_nif = item.proprietario_nif
-                if item.proprietario_telefone:
-                    fi.client_phone = item.proprietario_telefone
-                fi.updated_at = func.now()
+                    if item.proprietario_telefone:
+                        fi.client_phone = item.proprietario_telefone
+                    fi.updated_at = func.now()
         except Exception as e:
             logger.warning(f"Não foi possível sincronizar 1ª impressão {item.first_impression_id}: {e}")
 

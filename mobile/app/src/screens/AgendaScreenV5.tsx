@@ -28,6 +28,7 @@ const EVENT_TYPES = [
   { value: 'task', label: 'Tarefa', icon: 'checkbox-outline', color: '#10b981' },
   { value: 'call', label: 'Chamada', icon: 'call-outline', color: '#f59e0b' },
   { value: 'personal', label: 'Pessoal', icon: 'happy-outline', color: '#ec4899' },
+  { value: 'birthday', label: 'Aniversário', icon: 'gift-outline', color: '#ff69b4' },
 ];
 
 // Durações
@@ -74,6 +75,7 @@ export default function AgendaScreen() {
   // Load data
   useEffect(() => {
     loadEvents();
+    loadBirthdays();
     loadProperties();
     loadLeads();
   }, [selectedDate]);
@@ -94,11 +96,50 @@ export default function AgendaScreen() {
         },
       });
       
-      setEvents(data || []);
+      setEvents((prev) => {
+        // Manter aniversários (ids começam com 'birthday_')
+        const birthdays = prev.filter((e: any) => String(e.id).startsWith('birthday_'));
+        return [...(data || []), ...birthdays];
+      });
     } catch (error) {
       console.error('Erro ao carregar eventos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Carregar aniversários do mês e adicioná-los como eventos virtuais
+  const loadBirthdays = async () => {
+    try {
+      // Carregar aniversários dos próximos 60 dias para cobrir 2 meses
+      const response: any = await apiService.get('/clients/birthdays', {
+        params: { days_ahead: 60 }
+      });
+      
+      if (response?.items) {
+        // Converter aniversários em eventos virtuais (não editáveis)
+        const birthdayEvents = response.items.map((client: any) => ({
+          id: `birthday_${client.id}`,
+          title: `🎂 ${client.nome} faz ${client.age} anos`,
+          event_type: 'birthday',
+          scheduled_date: client.birthday_date + 'T09:00:00',
+          duration_minutes: 0,
+          location: null,
+          notes: `Tel: ${client.telefone || '-'} | Email: ${client.email || '-'}`,
+          is_birthday: true, // Flag para identificar eventos de aniversário
+          client_id: client.id,
+          client_phone: client.telefone,
+          client_email: client.email,
+        }));
+        
+        setEvents((prev) => {
+          // Remover aniversários antigos e adicionar novos
+          const nonBirthdays = prev.filter((e: any) => !String(e.id).startsWith('birthday_'));
+          return [...nonBirthdays, ...birthdayEvents];
+        });
+      }
+    } catch (error) {
+      console.log('Não foi possível carregar aniversários:', error);
     }
   };
 

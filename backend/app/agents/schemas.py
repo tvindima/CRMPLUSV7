@@ -9,6 +9,8 @@ class AgentBase(BaseModel):
     avatar_url: Optional[str] = None  # Deprecated
     photo: Optional[str] = None  # Cloudinary URL
     license_ami: Optional[str] = None
+    nif: Optional[str] = None  # NIF do agente
+    address: Optional[str] = None  # Morada
     bio: Optional[str] = None
     instagram: Optional[str] = None
     facebook: Optional[str] = None
@@ -31,6 +33,8 @@ class AgentUpdate(BaseModel):
     avatar_url: Optional[str] = None
     photo: Optional[str] = None
     license_ami: Optional[str] = None
+    nif: Optional[str] = None  # NIF do agente
+    address: Optional[str] = None  # Morada
     bio: Optional[str] = None
     instagram: Optional[str] = None
     facebook: Optional[str] = None
