@@ -4,7 +4,7 @@
  */
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
-export const SESSION_COOKIE = 'backoffice_session';
+export const SESSION_COOKIE = 'crmplus_staff_session';
 export const TENANT_SLUG = process.env.NEXT_PUBLIC_TENANT_SLUG || '';
 
 /**

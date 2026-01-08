@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 // CRITICAL: Deve corresponder ao SESSION_COOKIE em lib/api.ts
-const STAFF_COOKIE = "backoffice_session";
+const STAFF_COOKIE = "crmplus_staff_session";
 const LOGIN_PATH = "/backoffice/login";
 const ALLOWED_ROLES = new Set(["staff", "admin", "leader", "agent", "coordinator", "assistant"]);
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
