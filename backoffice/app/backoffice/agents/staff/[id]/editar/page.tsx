@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../../../backoffice/components/ToastProvider";
 import { useRole } from "../../../../../../backoffice/context/roleContext";
@@ -20,16 +21,17 @@ type StaffData = {
   is_active: boolean;
 };
 
-export default function EditStaffPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
+export default function EditStaffPage() {
   return (
     <ToastProvider>
-      <EditStaffInner staffId={resolvedParams.id} />
+      <EditStaffInner />
     </ToastProvider>
   );
 }
 
-function EditStaffInner({ staffId }: { staffId: string }) {
+function EditStaffInner() {
+  const params = useParams();
+  const staffId = params.id as string;
   const toast = useToast();
   const { role: currentUserRole } = useRole();
   const isAdmin = currentUserRole === 'admin';

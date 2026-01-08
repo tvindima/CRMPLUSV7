@@ -3,7 +3,7 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { getSession } from "../../src/services/auth";
 
-type Role = "guest" | "agent" | "leader" | "admin" | "staff";
+type Role = "guest" | "agent" | "leader" | "admin" | "staff" | "coordinator" | "assistant";
 
 type RoleContextValue = {
   role: Role;
@@ -28,7 +28,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         const session = await getSession();
-        const r = session?.role === "staff" ? "admin" : (session?.role as Role) || "guest";
+        // Map role from session, keep original role if valid
+        const sessionRole = session?.role as Role;
+        const validRoles: Role[] = ["agent", "leader", "admin", "staff", "coordinator", "assistant"];
+        const r = validRoles.includes(sessionRole) ? sessionRole : "guest";
         setRole(r);
       } catch {
         setRole("guest");
@@ -43,10 +46,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (role === "admin") {
       return { canEditAllProperties: true, canEditTeamOnly: true, canViewReports: true, canManageAutomation: true };
     }
-    if (role === "leader") {
+    if (role === "leader" || role === "coordinator") {
       return { canEditAllProperties: false, canEditTeamOnly: true, canViewReports: true, canManageAutomation: true };
     }
-    if (role === "agent" || role === "staff") {
+    if (role === "agent" || role === "staff" || role === "assistant") {
       return { canEditAllProperties: false, canEditTeamOnly: true, canViewReports: false, canManageAutomation: false };
     }
     return { canEditAllProperties: false, canEditTeamOnly: false, canViewReports: false, canManageAutomation: false };
