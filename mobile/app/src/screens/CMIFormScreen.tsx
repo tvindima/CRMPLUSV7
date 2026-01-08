@@ -808,20 +808,31 @@ export default function CMIFormScreen({ navigation, route }: Props) {
           const nifDetectado = dados.nif;
           const nomeDetectado = dados.nome;
           
-          // Verificar se já temos este NIF/pessoa registado
-          const isCliente1 = clienteNif === nifDetectado || (nomeDetectado && clienteNome === nomeDetectado);
-          const isCliente2 = cliente2Nif === nifDetectado || (nomeDetectado && cliente2Nome === nomeDetectado);
+          // Helper para verificar se é um placeholder (não um nome real)
+          const isPlaceholder = (nome: string | undefined | null): boolean => {
+            if (!nome) return true;
+            const placeholders = ['a identificar', 'cliente', 'proprietário', 'proprietario', 'vendedor', 'outorgante'];
+            return placeholders.some(p => nome.toLowerCase().trim() === p);
+          };
+          
+          // Considerar slot vazio se nome for placeholder ou não existir
+          const cliente1Vazio = isPlaceholder(clienteNome) && !clienteNif;
+          const cliente2Vazio = isPlaceholder(cliente2Nome) && !cliente2Nif;
+          
+          // Verificar se já temos este NIF/pessoa registado (só se não for placeholder)
+          const isCliente1 = !cliente1Vazio && (clienteNif === nifDetectado || (nomeDetectado && clienteNome === nomeDetectado));
+          const isCliente2 = !cliente2Vazio && (cliente2Nif === nifDetectado || (nomeDetectado && cliente2Nome === nomeDetectado));
           const extraIdx = proprietariosExtras.findIndex(p => p.nif === nifDetectado || p.nome === nomeDetectado);
           
           if (isCliente1) {
-            // Actualizar cliente 1
-            if (dados.nome && !clienteNome) { setClienteNome(dados.nome); camposPreenchidos++; }
+            // Actualizar cliente 1 existente
+            if (dados.nome) { setClienteNome(dados.nome); camposPreenchidos++; }
             if (dados.nif && !clienteNif) { setClienteNif(dados.nif); camposPreenchidos++; }
             if (dados.numero_documento) { setClienteCc(dados.numero_documento); camposPreenchidos++; }
             if (dados.validade) { setClienteCcValidade(dados.validade); camposPreenchidos++; }
           } else if (isCliente2) {
-            // Actualizar cliente 2
-            if (dados.nome && !cliente2Nome) { setCliente2Nome(dados.nome); camposPreenchidos++; }
+            // Actualizar cliente 2 existente
+            if (dados.nome) { setCliente2Nome(dados.nome); camposPreenchidos++; }
             if (dados.nif && !cliente2Nif) { setCliente2Nif(dados.nif); camposPreenchidos++; }
             if (dados.numero_documento) { setCliente2Cc(dados.numero_documento); camposPreenchidos++; }
             if (dados.validade) { setCliente2CcValidade(dados.validade); camposPreenchidos++; }
@@ -838,14 +849,16 @@ export default function CMIFormScreen({ navigation, route }: Props) {
             camposPreenchidos++;
           } else {
             // NOVO PROPRIETÁRIO - encontrar próximo slot disponível
-            if (!clienteNome && !clienteNif) {
-              // Slot 1 vazio
+            if (cliente1Vazio) {
+              // Slot 1 vazio ou tem placeholder - usar este
+              console.log('[OCR CC] ✅ Preenchendo Cliente 1 (PRIMEIRO OUTORGANTE)');
               if (dados.nome) { setClienteNome(dados.nome); camposPreenchidos++; }
               if (dados.nif) { setClienteNif(dados.nif); camposPreenchidos++; }
               if (dados.numero_documento) { setClienteCc(dados.numero_documento); camposPreenchidos++; }
               if (dados.validade) { setClienteCcValidade(dados.validade); camposPreenchidos++; }
-            } else if (!cliente2Nome && !cliente2Nif) {
-              // Slot 2 vazio
+            } else if (cliente2Vazio) {
+              // Slot 2 vazio ou tem placeholder
+              console.log('[OCR CC] ✅ Preenchendo Cliente 2 (SEGUNDO OUTORGANTE)');
               setShowCliente2(true);
               if (dados.nome) { setCliente2Nome(dados.nome); camposPreenchidos++; }
               if (dados.nif) { setCliente2Nif(dados.nif); camposPreenchidos++; }
@@ -853,6 +866,7 @@ export default function CMIFormScreen({ navigation, route }: Props) {
               if (dados.validade) { setCliente2CcValidade(dados.validade); camposPreenchidos++; }
             } else {
               // Adicionar aos extras (herdeiros, co-proprietários)
+              console.log('[OCR CC] ✅ Adicionando como OUTORGANTE EXTRA');
               setProprietariosExtras(prev => [...prev, {
                 nome: dados.nome || '',
                 nif: dados.nif || '',
