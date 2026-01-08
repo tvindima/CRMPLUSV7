@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
+import { SESSION_COOKIE } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-
-const COOKIE_NAME = "crmplus_staff_session";
 
 export async function POST() {
   const response = NextResponse.json({ ok: true });
   
   // Remove cookie
   response.cookies.set({
-    name: COOKIE_NAME,
+    name: SESSION_COOKIE,
     value: "",
     httpOnly: true,
     secure: true,

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { SESSION_COOKIE } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-
-const COOKIE_NAME = "crmplus_staff_session";
 
 /**
  * Endpoint para obter token da sessão
@@ -11,7 +10,7 @@ const COOKIE_NAME = "crmplus_staff_session";
  */
 export async function GET() {
   const cookieStore = await cookies();
-  const tokenCookie = cookieStore.get(COOKIE_NAME);
+  const tokenCookie = cookieStore.get(SESSION_COOKIE);
 
   if (!tokenCookie) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
