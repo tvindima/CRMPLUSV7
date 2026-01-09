@@ -6,6 +6,10 @@ export type DashboardKPIs = {
   propostas_abertas: number;
   agentes_ativos: number;
   visitas_agendadas?: number; // Opcional para dashboard de agente
+  // Estatísticas de escrituras
+  escrituras_agendadas?: number;
+  escrituras_docs_ok?: number;
+  escrituras_docs_pendentes?: number;
   trends: {
     propriedades: string;
     propriedades_up: boolean;
