@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { BackofficeLayout } from "../../../../backoffice/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
-import { getSession } from "../../../../src/services/auth";
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -83,19 +82,18 @@ function EscrituraDetailInner() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const session = await getSession();
-      if (!session?.token) {
-        push("Sessão expirada", "error");
-        router.push("/backoffice/login");
-        return;
+
+      // Usar proxy route em vez de chamada direta
+      const res = await fetch(`/api/escrituras/${escrituraId}`);
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          push("Sessão expirada", "error");
+          router.push("/backoffice/login");
+          return;
+        }
+        throw new Error("Escritura não encontrada");
       }
-
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-      const res = await fetch(`${baseUrl}/escrituras/${escrituraId}`, {
-        headers: { Authorization: `Bearer ${session.token}` },
-      });
-
-      if (!res.ok) throw new Error("Escritura não encontrada");
       
       const data = await res.json();
       setEscritura(data);
@@ -124,13 +122,10 @@ function EscrituraDetailInner() {
   const updateStatus = async (newStatus: string) => {
     try {
       setSaving(true);
-      const session = await getSession();
-      if (!session?.token) return;
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-      const res = await fetch(`${baseUrl}/escrituras/${escrituraId}/status?status=${newStatus}`, {
+      // Usar proxy route
+      const res = await fetch(`/api/escrituras/${escrituraId}/status?status=${newStatus}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${session.token}` },
       });
 
       if (res.ok) {
@@ -147,18 +142,15 @@ function EscrituraDetailInner() {
   const updateDocumentacao = async (pronta: boolean) => {
     try {
       setSaving(true);
-      const session = await getSession();
-      if (!session?.token) return;
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-      let url = `${baseUrl}/escrituras/${escrituraId}/documentacao?pronta=${pronta}`;
+      // Usar proxy route
+      let url = `/api/escrituras/${escrituraId}/documentacao?pronta=${pronta}`;
       if (notasDocumentacao) {
         url += `&notas=${encodeURIComponent(notasDocumentacao)}`;
       }
       
       const res = await fetch(url, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${session.token}` },
       });
 
       if (res.ok) {

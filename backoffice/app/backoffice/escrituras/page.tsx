@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "../../../backoffice/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
-import { getSession } from "../../../src/services/auth";
 import {
   DocumentTextIcon,
   CheckCircleIcon,
@@ -75,18 +74,9 @@ function EscriturasInner() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const session = await getSession();
-      if (!session?.token) {
-        push("Sessão expirada", "error");
-        return;
-      }
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-
-      // Carregar estatísticas
-      const statsRes = await fetch(`${baseUrl}/escrituras/proximas?dias=60`, {
-        headers: { Authorization: `Bearer ${session.token}` },
-      });
+      // Carregar estatísticas usando proxy route
+      const statsRes = await fetch(`/api/escrituras/proximas?dias=60`);
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats({
@@ -95,18 +85,25 @@ function EscriturasInner() {
           proximas: statsData.proximas?.length || 0,
           pendentes_documentacao: statsData.pendentes_documentacao || 0,
         });
+      } else if (statsRes.status === 401) {
+        push("Sessão expirada", "error");
+        return;
       }
 
-      // Carregar lista completa
-      let url = `${baseUrl}/escrituras/?limit=100`;
+      // Carregar lista completa usando proxy route
+      let url = `/api/escrituras?limit=100`;
       if (statusFilter) url += `&status=${statusFilter}`;
       if (pendentesOnly) url += `&pendentes_documentacao=true`;
 
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${session.token}` },
-      });
+      const res = await fetch(url);
 
-      if (!res.ok) throw new Error("Erro ao carregar escrituras");
+      if (!res.ok) {
+        if (res.status === 401) {
+          push("Sessão expirada", "error");
+          return;
+        }
+        throw new Error("Erro ao carregar escrituras");
+      }
       
       const data = await res.json();
       setEscrituras(data.items || []);
@@ -124,13 +121,9 @@ function EscriturasInner() {
 
   const updateDocumentacao = async (id: number, pronta: boolean) => {
     try {
-      const session = await getSession();
-      if (!session?.token) return;
-
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-      const res = await fetch(`${baseUrl}/escrituras/${id}/documentacao?pronta=${pronta}`, {
+      // Usar proxy route
+      const res = await fetch(`/api/escrituras/${id}/documentacao?pronta=${pronta}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${session.token}` },
       });
 
       if (res.ok) {
@@ -144,13 +137,9 @@ function EscriturasInner() {
 
   const updateStatus = async (id: number, newStatus: string) => {
     try {
-      const session = await getSession();
-      if (!session?.token) return;
-
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://crmplusv7-production.up.railway.app";
-      const res = await fetch(`${baseUrl}/escrituras/${id}/status?status=${newStatus}`, {
+      // Usar proxy route
+      const res = await fetch(`/api/escrituras/${id}/status?status=${newStatus}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${session.token}` },
       });
 
       if (res.ok) {
