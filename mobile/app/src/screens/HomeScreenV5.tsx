@@ -50,10 +50,12 @@ interface Shortcut {
 
 const ALL_SHORTCUTS: Shortcut[] = [
   { id: 'leads', label: 'Leads', icon: 'people', color: '#8b5cf6', route: 'Leads', enabled: true },
+  { id: 'clients', label: 'Clientes', icon: 'person-circle', color: '#00d9ff', route: 'Clients', enabled: true },
   { id: 'properties', label: 'Imóveis', icon: 'home', color: '#d946ef', route: 'Propriedades', enabled: true },
   { id: 'agenda', label: 'Agenda', icon: 'calendar', color: '#00d9ff', route: 'Agenda', enabled: true },
   { id: 'ai', label: 'Assistente IA', icon: 'sparkles', color: '#f59e0b', route: 'IA', enabled: true },
   { id: 'new-lead', label: 'Novo Lead', icon: 'person-add', color: '#10b981', route: 'NewLead', enabled: true },
+  { id: 'escritura', label: 'Nova Escritura', icon: 'document-text', color: '#34C759', route: 'EscrituraForm', enabled: true },
   { id: 'site-editor', label: 'Editor Montra', icon: 'globe', color: '#ec4899', route: 'SiteEditor', enabled: true },
   { id: 'tax-calculator', label: 'Calculadora Impostos', icon: 'calculator', color: '#06b6d4', route: 'TaxCalculator', enabled: true },
   { id: 'mortgage-simulator', label: 'Simulador Prestação', icon: 'trending-up', color: '#10b981', route: 'MortgageSimulator', enabled: true },

@@ -398,27 +398,73 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
             {/* Data */}
             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Data *</Text>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={20} color="#1a56db" />
-                <Text style={styles.dateButtonText}>
-                  {formData.data_escritura.toLocaleDateString('pt-PT')}
-                </Text>
-              </TouchableOpacity>
+              {Platform.OS === 'web' ? (
+                <View style={styles.dateButton}>
+                  <Ionicons name="calendar-outline" size={20} color="#1a56db" />
+                  <input
+                    type="date"
+                    value={formData.data_escritura.toISOString().split('T')[0]}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e: any) => {
+                      const newDate = new Date(e.target.value);
+                      setFormData(prev => ({ ...prev, data_escritura: newDate }));
+                    }}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#374151',
+                      fontSize: 16,
+                      marginLeft: 8,
+                      outline: 'none',
+                    } as any}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#1a56db" />
+                  <Text style={styles.dateButtonText}>
+                    {formData.data_escritura.toLocaleDateString('pt-PT')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
             
             {/* Hora */}
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Hora *</Text>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Ionicons name="time-outline" size={20} color="#1a56db" />
-                <Text style={styles.dateButtonText}>{formData.hora_escritura}</Text>
-              </TouchableOpacity>
+              {Platform.OS === 'web' ? (
+                <View style={styles.dateButton}>
+                  <Ionicons name="time-outline" size={20} color="#1a56db" />
+                  <input
+                    type="time"
+                    value={formData.hora_escritura}
+                    onChange={(e: any) => {
+                      setFormData(prev => ({ ...prev, hora_escritura: e.target.value }));
+                    }}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#374151',
+                      fontSize: 16,
+                      marginLeft: 8,
+                      outline: 'none',
+                    } as any}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Ionicons name="time-outline" size={20} color="#1a56db" />
+                  <Text style={styles.dateButtonText}>{formData.hora_escritura}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -663,8 +709,8 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </Modal>
 
-      {/* Date Pickers */}
-      {showDatePicker && (
+      {/* Date Pickers - Apenas para mobile (Android/iOS) */}
+      {Platform.OS !== 'web' && showDatePicker && (
         <DateTimePickerWrapper
           value={formData.data_escritura}
           mode="date"
@@ -674,7 +720,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
         />
       )}
       
-      {showTimePicker && (
+      {Platform.OS !== 'web' && showTimePicker && (
         <DateTimePickerWrapper
           value={(() => {
             const [hours, minutes] = formData.hora_escritura.split(':');

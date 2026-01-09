@@ -86,6 +86,8 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="LeadDetail" component={LeadDetailScreenV4} options={{ title: 'Detalhe do Lead' }} />
       <HomeStack.Screen name="TaxCalculator" component={TaxCalculatorScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="MortgageSimulator" component={MortgageSimulatorScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="Clients" component={ClientsScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="EscrituraForm" component={EscrituraFormScreen} options={{ headerShown: false }} />
     </HomeStack.Navigator>
   );
 }
