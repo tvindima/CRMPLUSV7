@@ -146,8 +146,8 @@ export default function AgendaScreen() {
 
   const loadProperties = async () => {
     try {
-      const data = await apiService.get('/properties');
-      setProperties(data || []);
+      const data = await apiService.get('/mobile/properties');
+      setProperties(data?.items || data || []);
     } catch (error) {
       console.error('Erro ao carregar imóveis:', error);
     }

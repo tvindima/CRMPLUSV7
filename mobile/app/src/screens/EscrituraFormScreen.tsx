@@ -19,7 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerWrapper from '../components/DateTimePickerWrapper';
 
 interface Props {
   navigation: any;
@@ -108,9 +108,11 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
   const loadProperties = async () => {
     setLoadingProperties(true);
     try {
-      const response = await apiService.get('/properties/', { limit: 500 });
-      if (response.data?.items) {
-        setProperties(response.data.items);
+      const response = await apiService.get('/mobile/properties', { limit: 500 });
+      if (response?.items) {
+        setProperties(response.items);
+      } else if (Array.isArray(response)) {
+        setProperties(response);
       }
     } catch (error) {
       console.error('Erro ao carregar imóveis:', error);
@@ -121,14 +123,14 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const loadPropertyDetails = async (propertyId: number) => {
     try {
-      const response = await apiService.get(`/properties/${propertyId}`);
-      if (response.data) {
-        setSelectedProperty(response.data);
+      const response = await apiService.get(`/mobile/properties/${propertyId}`);
+      if (response) {
+        setSelectedProperty(response);
         // Pré-preencher valor de venda se disponível
-        if (response.data.preco_venda && !formData.valor_venda) {
+        if (response.preco_venda && !formData.valor_venda) {
           setFormData(prev => ({
             ...prev,
-            valor_venda: response.data.preco_venda.toString(),
+            valor_venda: response.preco_venda.toString(),
           }));
         }
       }
@@ -663,18 +665,17 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
 
       {/* Date Pickers */}
       {showDatePicker && (
-        <DateTimePicker
+        <DateTimePickerWrapper
           value={formData.data_escritura}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateChange}
           minimumDate={new Date()}
-          locale="pt-PT"
         />
       )}
       
       {showTimePicker && (
-        <DateTimePicker
+        <DateTimePickerWrapper
           value={(() => {
             const [hours, minutes] = formData.hora_escritura.split(':');
             const date = new Date();
@@ -684,8 +685,6 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleTimeChange}
-          minuteInterval={15}
-          locale="pt-PT"
         />
       )}
     </KeyboardAvoidingView>
