@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, getServerApiHeaders, API_BASE_URL } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,18 +8,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
-
-    // Este endpoint pode não requerer auth em setup
+    const token = await getAuthToken();
     const body = await request.json();
-    const url = `${API_BASE_URL}/admin/setup/create-user`;
+    
+    // Este endpoint pode não requerer auth em setup
+    const headers = await getServerApiHeaders(token || undefined);
 
-    const headers = token?.value 
-      ? getApiHeaders(token.value) 
-      : getApiHeaders();
-
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE_URL}/admin/setup/create-user`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

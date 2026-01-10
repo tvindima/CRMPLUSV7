@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet } from "@/lib/server-api";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const queryString = request.nextUrl.searchParams.toString();
-    const url = `${API_BASE_URL}/pre-angariacoes/${queryString ? `?${queryString}` : ""}`;
+    const endpoint = `/pre-angariacoes/${queryString ? `?${queryString}` : ""}`;
 
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-      cache: "no-store",
-    });
+    const res = await serverApiGet(endpoint, token);
 
     if (!res.ok) {
       const error = await res.text();

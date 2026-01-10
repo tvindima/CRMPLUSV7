@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,21 +8,18 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     // Forward query params
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/website/clients/${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/website/clients/${queryString ? `?${queryString}` : ''}`;
 
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet(endpoint, token);
 
     if (!res.ok) {
       return NextResponse.json({ error: "Erro ao buscar clientes" }, { status: res.status });

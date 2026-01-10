@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE } from "@/lib/api";
+import { getAuthToken, serverApiGet, getTenantSlug, API_BASE_URL, getServerApiHeaders } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,32 +8,22 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
+    const tenantSlug = await getTenantSlug();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     // Build URL with query params
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/clients/${queryString ? '?' + queryString : ''}`;
+    const endpoint = `/clients/${queryString ? '?' + queryString : ''}`;
     
-    console.log("[Clients] Fetching from:", url);
-    console.log("[Clients] Tenant slug:", TENANT_SLUG);
+    console.log("[Clients] Fetching:", endpoint);
+    console.log("[Clients] Tenant slug:", tenantSlug);
 
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${token.value}`,
-      'Content-Type': 'application/json',
-    };
-    
-    // CRITICAL: Pass tenant slug for multi-tenancy isolation
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
-    }
-
-    const res = await fetch(url, { headers });
+    const res = await serverApiGet(endpoint, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -55,10 +44,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
@@ -66,7 +54,7 @@ export async function POST(request: NextRequest) {
     
     // Extrair agent_id do token JWT
     const jwt = await import("jsonwebtoken");
-    const decoded = jwt.decode(token.value) as { agent_id?: number } | null;
+    const decoded = jwt.decode(token) as { agent_id?: number } | null;
     const agentId = decoded?.agent_id;
     
     if (!agentId) {
@@ -75,15 +63,7 @@ export async function POST(request: NextRequest) {
     
     // Backend requer agent_id como query parameter
     const url = `${API_BASE_URL}/clients/?agent_id=${agentId}`;
-
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${token.value}`,
-      'Content-Type': 'application/json',
-    };
-    
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
-    }
+    const headers = await getServerApiHeaders(token);
 
     const res = await fetch(url, {
       method: 'POST',

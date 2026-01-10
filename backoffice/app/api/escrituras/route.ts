@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet, serverApiPost } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,20 +8,17 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/escrituras${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/escrituras${queryString ? `?${queryString}` : ''}`;
 
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet(endpoint, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -42,21 +38,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const body = await request.json();
-    const url = `${API_BASE_URL}/escrituras`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPost('/escrituras', body, token);
 
     if (!res.ok) {
       const error = await res.text();

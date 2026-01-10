@@ -1,25 +1,18 @@
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api'
+import { getAuthToken, serverApiPut } from '@/lib/server-api'
 
 export const dynamic = 'force-dynamic'
 
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE)
+    const token = await getAuthToken()
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const body = await request.json()
-
-    const res = await fetch(`${API_BASE_URL}/users/me/password`, {
-      method: 'PUT',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    })
+    const res = await serverApiPut('/users/me/password', body, token)
 
     if (!res.ok) {
       const error = await res.json()

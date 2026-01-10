@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, getServerApiHeaders, API_BASE_URL } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
 
-    const url = `${API_BASE_URL}/api/dashboard/leads/${params.id}/assign${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE_URL}/api/dashboard/leads/${id}/assign${queryString ? `?${queryString}` : ''}`;
+    const headers = await getServerApiHeaders(token);
+    
     const res = await fetch(url, {
       method: 'POST',
-      headers: getApiHeaders(token.value),
+      headers,
     });
 
     if (!res.ok) {

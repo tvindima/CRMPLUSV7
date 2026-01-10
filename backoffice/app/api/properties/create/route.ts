@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api';
+import { getAuthToken, serverApiPost } from '@/lib/server-api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE);
+  const token = await getAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,12 +13,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
-    const res = await fetch(`${API_BASE_URL}/properties/`, {
-      method: 'POST',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPost('/properties/', body, token);
 
     if (!res.ok) {
       const errorText = await res.text();

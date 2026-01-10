@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { NextResponse } from "next/server";
+import { getAuthToken, serverApiGet } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,16 +8,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const res = await fetch(`${API_BASE_URL}/website/clients/stats`, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet('/website/clients/stats', token);
 
     if (!res.ok) {
       return NextResponse.json({ error: "Erro ao buscar estatísticas" }, { status: res.status });

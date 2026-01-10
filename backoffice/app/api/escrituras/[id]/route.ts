@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet, serverApiPut, serverApiDelete } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,19 +11,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const { id } = await params;
-    const url = `${API_BASE_URL}/escrituras/${id}`;
-
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet(`/escrituras/${id}`, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -47,22 +41,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const { id } = await params;
     const body = await request.json();
-    const url = `${API_BASE_URL}/escrituras/${id}`;
-
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPut(`/escrituras/${id}`, body, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -85,20 +72,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const { id } = await params;
-    const url = `${API_BASE_URL}/escrituras/${id}`;
-
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiDelete(`/escrituras/${id}`, token);
 
     if (!res.ok) {
       const error = await res.text();

@@ -1,26 +1,21 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet, serverApiDelete } from "@/lib/server-api";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const url = `${API_BASE_URL}/pre-angariacoes/${params.id}`;
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-      cache: "no-store",
-    });
+    const { id } = await params;
+    const res = await serverApiGet(`/pre-angariacoes/${id}`, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -38,22 +33,17 @@ export async function GET(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const url = `${API_BASE_URL}/pre-angariacoes/${params.id}`;
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: getApiHeaders(token.value),
-      cache: "no-store",
-    });
+    const { id } = await params;
+    const res = await serverApiDelete(`/pre-angariacoes/${id}`, token);
 
     if (!res.ok) {
       const error = await res.text();

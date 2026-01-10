@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders, TENANT_SLUG } from "@/lib/api";
+import { getAuthToken, serverApiGet, serverApiPut } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,16 +8,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const res = await fetch(`${API_BASE_URL}/admin/settings/watermark`, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet('/admin/settings/watermark', token);
 
     if (!res.ok) {
       return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: res.status });
@@ -37,20 +33,14 @@ export async function GET() {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const body = await request.json();
-
-    const res = await fetch(`${API_BASE_URL}/admin/settings/watermark`, {
-      method: 'PUT',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPut('/admin/settings/watermark', body, token);
 
     if (!res.ok) {
       return NextResponse.json({ error: "Erro ao guardar" }, { status: res.status });

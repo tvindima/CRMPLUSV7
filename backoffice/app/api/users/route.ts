@@ -1,13 +1,11 @@
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api'
+import { getAuthToken, serverApiGet, serverApiPost } from '@/lib/server-api'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE)
+    const token = await getAuthToken()
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -17,15 +15,13 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role')
     const is_active = searchParams.get('is_active')
 
-    let url = `${API_BASE_URL}/users/`
+    let endpoint = '/users/'
     const params = new URLSearchParams()
     if (role) params.append('role', role)
     if (is_active) params.append('is_active', is_active)
-    if (params.toString()) url += `?${params.toString()}`
+    if (params.toString()) endpoint += `?${params.toString()}`
 
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-    })
+    const res = await serverApiGet(endpoint, token)
 
     if (!res.ok) {
       return NextResponse.json({ error: 'Failed to fetch users' }, { status: res.status })
@@ -41,20 +37,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE)
+    const token = await getAuthToken()
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const body = await request.json()
-
-    const res = await fetch(`${API_BASE_URL}/users/`, {
-      method: 'POST',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    })
+    const res = await serverApiPost('/users/', body, token)
 
     if (!res.ok) {
       const error = await res.json()

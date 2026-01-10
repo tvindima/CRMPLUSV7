@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from '@/lib/api';
+import { getAuthToken, serverApiGet, serverApiPut, serverApiDelete } from '@/lib/server-api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,8 +9,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE);
+  const token = await getAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,10 +17,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    
-    const res = await fetch(`${API_BASE_URL}/properties/${id}`, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet(`/properties/${id}`, token);
 
     if (!res.ok) {
       if (res.status === 404) {
@@ -51,8 +46,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE);
+  const token = await getAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,12 +55,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    const res = await fetch(`${API_BASE_URL}/properties/${id}`, {
-      method: 'PUT',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPut(`/properties/${id}`, body, token);
 
     if (!res.ok) {
       const errorText = await res.text();
@@ -92,8 +81,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE);
+  const token = await getAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -101,11 +89,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    
-    const res = await fetch(`${API_BASE_URL}/properties/${id}`, {
-      method: 'DELETE',
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiDelete(`/properties/${id}`, token);
 
     if (!res.ok) {
       const errorText = await res.text();

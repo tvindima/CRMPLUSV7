@@ -108,6 +108,19 @@ export async function serverApiPatch(endpoint: string, body: any, token?: string
 }
 
 /**
+ * Faz uma chamada PATCH ao backend SEM body (para query params)
+ */
+export async function serverApiPatchNoBody(endpoint: string, token?: string): Promise<Response> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = await getServerApiHeaders(token);
+  
+  return fetch(url, {
+    method: 'PATCH',
+    headers,
+  });
+}
+
+/**
  * Faz uma chamada DELETE ao backend com headers corretos
  */
 export async function serverApiDelete(endpoint: string, token?: string): Promise<Response> {

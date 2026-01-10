@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders, TENANT_SLUG } from "@/lib/api";
+import { getAuthToken, serverApiPut, getTenantSlug, API_BASE_URL } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +8,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
+    const tenantSlug = await getTenantSlug();
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
     }
 
     const res = await fetch(`${API_BASE_URL}/public/branding`, {
@@ -37,20 +38,14 @@ export async function GET() {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const body = await request.json();
-
-    const res = await fetch(`${API_BASE_URL}/admin/settings/branding`, {
-      method: 'PUT',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPut('/admin/settings/branding', body, token);
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));

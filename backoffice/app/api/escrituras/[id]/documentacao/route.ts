@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiPatchNoBody } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +11,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
@@ -28,15 +26,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Parâmetro 'pronta' é obrigatório" }, { status: 400 });
     }
 
-    let url = `${API_BASE_URL}/escrituras/${id}/documentacao?pronta=${pronta}`;
+    let endpoint = `/escrituras/${id}/documentacao?pronta=${pronta}`;
     if (notas) {
-      url += `&notas=${encodeURIComponent(notas)}`;
+      endpoint += `&notas=${encodeURIComponent(notas)}`;
     }
 
-    const res = await fetch(url, {
-      method: 'PATCH',
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiPatchNoBody(endpoint, token);
 
     if (!res.ok) {
       const error = await res.text();
