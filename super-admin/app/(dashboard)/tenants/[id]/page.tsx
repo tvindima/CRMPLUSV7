@@ -133,15 +133,19 @@ export default function TenantDetailPage() {
   const handleDelete = async () => {
     setActionLoading('delete');
     try {
-      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}?permanent=true`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         router.push('/tenants');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Erro ao eliminar tenant');
       }
     } catch (error) {
       console.error('Error deleting tenant:', error);
+      alert('Erro ao eliminar tenant');
     } finally {
       setActionLoading(null);
       setShowDeleteConfirm(false);
