@@ -108,6 +108,12 @@ class TenantMiddleware(BaseHTTPMiddleware):
         # 1. Header explícito (prioridade máxima)
         tenant_slug = request.headers.get("X-Tenant-Slug")
         
+        # Debug logging para auth routes
+        if "/auth/" in path:
+            print(f"[TENANT DEBUG] Path: {path}")
+            print(f"[TENANT DEBUG] X-Tenant-Slug header: {tenant_slug}")
+            print(f"[TENANT DEBUG] Host header: {request.headers.get('Host', 'N/A')}")
+        
         # 2. Domínio do request
         if not tenant_slug:
             host = request.headers.get("Host", "")
@@ -133,12 +139,21 @@ class TenantMiddleware(BaseHTTPMiddleware):
             schema_name = f"tenant_{tenant_slug.lower()}"
             set_tenant_schema(schema_name)
             
+            # Debug logging para auth routes
+            if "/auth/" in path:
+                print(f"[TENANT DEBUG] Setting schema to: {schema_name}")
+            
             # Adicionar tenant ao request state para uso nos endpoints
             request.state.tenant_slug = tenant_slug
             request.state.tenant_schema = schema_name
         else:
             # Sem tenant, usar schema public
             set_tenant_schema(DEFAULT_SCHEMA)
+            
+            # Debug logging para auth routes
+            if "/auth/" in path:
+                print(f"[TENANT DEBUG] No tenant found, using default schema: {DEFAULT_SCHEMA}")
+            
             request.state.tenant_slug = None
             request.state.tenant_schema = DEFAULT_SCHEMA
         

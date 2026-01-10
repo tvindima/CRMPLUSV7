@@ -22,7 +22,9 @@ export async function POST(req: NextRequest) {
       headers['X-Tenant-Slug'] = tenantSlug;
     }
     
-    console.log("[Login] Tenant slug:", tenantSlug);
+    console.log("[Login API Route] Tenant slug from cookie:", tenantSlug);
+    console.log("[Login API Route] Calling backend:", `${API_BASE_URL}/auth/login`);
+    console.log("[Login API Route] Headers:", JSON.stringify(headers));
     
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
