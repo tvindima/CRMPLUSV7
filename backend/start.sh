@@ -57,6 +57,19 @@ try:
     # Add tipo_imovel to pre_angariacoes if missing
     db.execute(text('ALTER TABLE pre_angariacoes ADD COLUMN IF NOT EXISTS tipo_imovel VARCHAR(100);'))
     
+    # Add multi-tenant fields to tenants if missing
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(20);'))
+    db.execute(text(\"ALTER TABLE tenants ADD COLUMN IF NOT EXISTS sector VARCHAR(50) DEFAULT 'real_estate';\"))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(200);'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_created BOOLEAN DEFAULT false;'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0;'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_verified BOOLEAN DEFAULT false;'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS domain_verification_token VARCHAR(100);'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(100);'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(100);'))
+    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS billing_email VARCHAR(200);'))
+    
     db.commit()
     print('✅ Critical columns added directly')
 except Exception as e:
