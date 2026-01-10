@@ -392,6 +392,11 @@ class TenantProvisioner:
         admin_created: bool = False
     ) -> Dict[str, Any]:
         """Constrói o resultado do provisionamento."""
+        # URLs padrão para trials (wildcard domains)
+        # Tenants com domínio próprio têm os valores em primary_domain e backoffice_domain
+        backoffice_url = tenant.backoffice_domain or f"{tenant.slug}.backoffice.crmplus.trioto.tech"
+        site_url = tenant.primary_domain or f"{tenant.slug}.crmplus.trioto.tech"
+        
         return {
             "success": success,
             "tenant": {
@@ -409,9 +414,9 @@ class TenantProvisioner:
                 "created": admin_created,
             } if admin_email else None,
             "urls": {
-                "backoffice": f"https://{tenant.slug}.backoffice.crmplus.pt",
-                "site": f"https://{tenant.slug}.crmplus.pt",
-                "api": f"https://api.crmplus.pt",
+                "backoffice": f"https://{backoffice_url}",
+                "site": f"https://{site_url}",
+                "api": "https://crmplusv7-production.up.railway.app",
             },
             "logs": self.logs,
             "errors": self.errors,
