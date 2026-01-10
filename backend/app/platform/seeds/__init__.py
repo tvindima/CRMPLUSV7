@@ -292,6 +292,111 @@ def get_available_sectors() -> Dict[str, str]:
 # TERMINOLOGIA POR SETOR
 # ===========================================
 
+# Sub-sectores disponíveis com nome amigável
+AVAILABLE_SUB_SECTORS = {
+    # Serviços profissionais
+    "training": "Formação e Educação",
+    "law_firm": "Escritório de Advogados",
+    "consulting": "Consultoria",
+    "health": "Saúde e Bem-estar",
+    "accounting": "Contabilidade",
+    "engineering": "Engenharia",
+    
+    # Indústria e produção
+    "manufacturing": "Fabricação/Indústria",
+    "construction": "Construção Civil",
+    
+    # Comércio especializado
+    "electronics": "Eletrónica",
+    "furniture": "Mobiliário",
+    "sports_equipment": "Equipamento Desportivo",
+    
+    # Outros
+    "other_services": "Outro Serviço",
+    "other_retail": "Outro Comércio",
+}
+
+# Sub-sectores com terminologia específica
+SUB_SECTOR_TERMINOLOGY: Dict[str, Dict[str, str]] = {
+    # Serviços especializados
+    "training": {
+        "item": "Curso",
+        "items": "Cursos",
+        "item_singular": "curso",
+        "item_plural": "cursos",
+        "visit": "Formação",
+        "visits": "Formações",
+        "schedule_visit": "Agendar Formação",
+    },
+    "law_firm": {
+        "item": "Processo",
+        "items": "Processos",
+        "item_singular": "processo",
+        "item_plural": "processos",
+        "visit": "Consulta",
+        "visits": "Consultas",
+        "schedule_visit": "Agendar Consulta",
+    },
+    "consulting": {
+        "item": "Projeto",
+        "items": "Projetos",
+        "item_singular": "projeto",
+        "item_plural": "projetos",
+        "visit": "Consultoria",
+        "visits": "Consultorias",
+        "schedule_visit": "Agendar Consultoria",
+    },
+    "health": {
+        "item": "Consulta",
+        "items": "Consultas",
+        "item_singular": "consulta",
+        "item_plural": "consultas",
+        "visit": "Atendimento",
+        "visits": "Atendimentos",
+        "schedule_visit": "Agendar Atendimento",
+    },
+    "manufacturing": {
+        "item": "Produto",
+        "items": "Produtos",
+        "item_singular": "produto",
+        "item_plural": "produtos",
+        "visit": "Demonstração",
+        "visits": "Demonstrações",
+        "schedule_visit": "Agendar Demonstração",
+    },
+    "accounting": {
+        "item": "Cliente",
+        "items": "Clientes",
+        "item_singular": "cliente",
+        "item_plural": "clientes",
+        "visit": "Reunião",
+        "visits": "Reuniões",
+        "schedule_visit": "Agendar Reunião",
+    },
+    "engineering": {
+        "item": "Projeto",
+        "items": "Projetos",
+        "item_singular": "projeto",
+        "item_plural": "projetos",
+        "visit": "Reunião Técnica",
+        "visits": "Reuniões Técnicas",
+        "schedule_visit": "Agendar Reunião",
+    },
+    "construction": {
+        "item": "Obra",
+        "items": "Obras",
+        "item_singular": "obra",
+        "item_plural": "obras",
+        "visit": "Visita de Obra",
+        "visits": "Visitas de Obra",
+        "schedule_visit": "Agendar Visita",
+    },
+}
+
+def get_available_sub_sectors() -> Dict[str, str]:
+    """Retorna sub-sectores disponíveis com nomes amigáveis"""
+    return AVAILABLE_SUB_SECTORS
+
 SECTOR_TERMINOLOGY: Dict[str, Dict[str, str]] = {
     "real_estate": {
         # Entidades principais
@@ -565,6 +670,37 @@ def get_sector_terminology(sector: str) -> Dict[str, str]:
     Retorna terminologia genérica se o setor não for encontrado.
     """
     return SECTOR_TERMINOLOGY.get(sector, SECTOR_TERMINOLOGY["other"])
+
+
+def get_tenant_terminology(tenant_data: dict) -> Dict[str, str]:
+    """
+    Retorna a terminologia completa para um tenant, aplicando:
+    1. Terminologia base do sector
+    2. Override do sub_sector (se existir)
+    3. Override do custom_terminology (se existir)
+    
+    Args:
+        tenant_data: Dict com 'sector', 'sub_sector' (opcional), 'custom_terminology' (opcional)
+    
+    Returns:
+        Dict com toda a terminologia merged
+    """
+    sector = tenant_data.get('sector', 'other')
+    sub_sector = tenant_data.get('sub_sector')
+    custom_terminology = tenant_data.get('custom_terminology', {})
+    
+    # 1. Base do sector
+    terminology = get_sector_terminology(sector).copy()
+    
+    # 2. Merge sub-sector (se existir)
+    if sub_sector and sub_sector in SUB_SECTOR_TERMINOLOGY:
+        terminology.update(SUB_SECTOR_TERMINOLOGY[sub_sector])
+    
+    # 3. Merge custom (prioridade máxima)
+    if custom_terminology:
+        terminology.update(custom_terminology)
+    
+    return terminology
 
 
 def get_term(sector: str, key: str, default: str = "") -> str:

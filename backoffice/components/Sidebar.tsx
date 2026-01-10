@@ -20,8 +20,16 @@ function getLinks(term: (key: string, fallback?: string) => string, sector: stri
   const preAngLabel = sector === 'automotive' ? 'Pré-Avaliações' : 
                       sector === 'real_estate' ? 'Pré-Angariações' : 
                       'Pré-Registos';
+
+  // Label para "Agentes" varia por sector
+  const agentsLabel = sector === 'automotive' ? 'Comerciais' : 
+                      sector === 'real_estate' ? 'Agentes' : 
+                      'Colaboradores';
   
-  return [
+  // Escrituras só para imobiliário
+  const isRealEstate = sector === 'real_estate';
+  
+  const links = [
     { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/properties", label: term('items', 'Propriedades'), roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
@@ -32,16 +40,19 @@ function getLinks(term: (key: string, fallback?: string) => string, sector: stri
     { href: "/backoffice/proposals", label: "Propostas", roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/pre-angariacoes", label: preAngLabel, roles: ["agent", "leader", "admin", "staff"] },
-    { href: "/backoffice/escrituras", label: "📜 Escrituras", roles: ["agent", "leader", "admin", "staff"] },
+    // Escrituras só aparece para imobiliário
+    ...(isRealEstate ? [{ href: "/backoffice/escrituras", label: "📜 Escrituras", roles: ["agent", "leader", "admin", "staff"] }] : []),
     { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff"] },
     // Secção GESTÃO
-    { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
+    { href: "/backoffice/agents", label: agentsLabel, roles: ["leader", "admin", "staff"], isManagement: true },
     { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
     { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
     { href: "/backoffice/config/branding", label: "🎨 Branding Site", roles: ["admin", "staff"], isManagement: true },
     { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true },
     { href: "/backoffice/config", label: "⚙️ Configurações", roles: ["admin", "staff"], isManagement: true },
   ];
+
+  return links;
 }
 
 const iconCircle = (

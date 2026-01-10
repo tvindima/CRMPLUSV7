@@ -10,29 +10,32 @@ import {
   BuildingOfficeIcon,
   BellIcon 
 } from "@heroicons/react/24/outline";
-
-const configSections = [
-  {
-    title: "Marca de Água",
-    description: "Configurar watermark para imagens dos imóveis",
-    href: "/backoffice/config/watermark",
-    icon: PhotoIcon,
-  },
-  {
-    title: "Utilizadores",
-    description: "Gerir utilizadores e permissões",
-    href: "/backoffice/users",
-    icon: UserGroupIcon,
-  },
-  {
-    title: "Agentes",
-    description: "Gerir agentes e equipas",
-    href: "/backoffice/agents",
-    icon: BuildingOfficeIcon,
-  },
-];
+import { useTerminology } from "@/context/TerminologyContext";
 
 export default function ConfigPage() {
+  const { term } = useTerminology();
+  
+  const configSections = [
+    {
+      title: "Marca de Água",
+      description: `Configurar watermark para imagens dos ${term('items', 'itens').toLowerCase()}`,
+      href: "/backoffice/config/watermark",
+      icon: PhotoIcon,
+    },
+    {
+      title: "Utilizadores",
+      description: "Gerir utilizadores e permissões",
+      href: "/backoffice/users",
+      icon: UserGroupIcon,
+    },
+    {
+      title: term('agents', 'Agentes'),
+      description: `Gerir ${term('agents', 'agentes').toLowerCase()} e equipas`,
+      href: "/backoffice/agents",
+      icon: BuildingOfficeIcon,
+    },
+  ];
+  
   return (
     <ToastProvider>
       <BackofficeLayout title="Configurações">

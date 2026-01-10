@@ -28,8 +28,8 @@ export default function NewPropertyPage() {
       // Redirect to property detail page
       router.push(`/backoffice/properties/${property.id}`);
     } catch (err: any) {
-      console.error("Erro ao criar imóvel:", err);
-      setError(err.message || "Erro ao criar imóvel. Tente novamente.");
+      console.error(`Erro ao criar ${term('item_singular', 'item')}:`, err);
+      setError(err.message || `Erro ao criar ${term('item_singular', 'item')}. Tente novamente.`);
       setLoading(false);
     }
   }

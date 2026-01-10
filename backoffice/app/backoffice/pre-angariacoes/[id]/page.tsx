@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { BackofficeLayout } from "../../../../backoffice/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
 import { getPreAngariacao, type PreAngariacaoDetail } from "../../../../src/services/backofficeApi";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 
 // Ícones inline
 const DownloadIcon = () => (
@@ -19,9 +21,16 @@ function PreAngariacaoDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { push } = useToast();
+  const { sector } = useTenant();
+  const { term } = useTerminology();
   const [item, setItem] = useState<PreAngariacaoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+
+  // Título dinâmico baseado no sector
+  const pageTitle = sector === 'automotive' ? 'Pré-Avaliação' : 
+                    sector === 'real_estate' ? 'Pré-Angariação' : 
+                    'Pré-Registo';
 
   const id = useMemo(() => Number(params?.id), [params]);
 
@@ -33,8 +42,8 @@ function PreAngariacaoDetailPage() {
         const data = await getPreAngariacao(id);
         setItem(data);
       } catch (error) {
-        console.error("Erro ao carregar pré-angariação:", error);
-        push("Erro ao carregar pré-angariação", "error");
+        console.error(`Erro ao carregar ${pageTitle.toLowerCase()}:`, error);
+        push(`Erro ao carregar ${pageTitle.toLowerCase()}`, "error");
       } finally {
         setLoading(false);
       }
@@ -125,14 +134,14 @@ function PreAngariacaoDetailPage() {
         </div>
       ) : !item ? (
         <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6 text-sm text-red-300">
-          Não foi possível carregar esta pré-angariação.
+          Não foi possível carregar esta {pageTitle.toLowerCase()}.
         </div>
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4">
-              <p className="text-xs uppercase text-[#888]">Agente</p>
-              <p className="text-lg font-semibold text-white">{item.agent_name || `Agente #${item.agent_id}`}</p>
+              <p className="text-xs uppercase text-[#888]">{term('agent', 'Agente')}</p>
+              <p className="text-lg font-semibold text-white">{item.agent_name || `${term('agent', 'Agente')} #${item.agent_id}`}</p>
               <p className="text-xs text-[#9CA3AF] mt-1">Criado em {new Date(item.created_at).toLocaleString("pt-PT")}</p>
             </div>
             <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4">

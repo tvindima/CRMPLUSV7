@@ -8,6 +8,7 @@ import { DataTable } from "@/components/DataTable";
 import { Drawer } from "@/components/Drawer";
 import { TeamForm } from "@/components/TeamForm";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
+import { useTerminology } from "@/context/TerminologyContext";
 import {
   BackofficeTeam,
   BackofficeAgent,
@@ -23,6 +24,7 @@ import { useRole } from "@/context/roleContext";
 function EquipasPageContent() {
   const { push } = useToast();
   const { permissions } = useRole();
+  const { term } = useTerminology();
   
   const [teams, setTeams] = useState<BackofficeTeam[]>([]);
   const [agents, setAgents] = useState<BackofficeAgent[]>([]);
@@ -152,7 +154,7 @@ function EquipasPageContent() {
         <div className="relative mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-white">Gestão de Equipas</h1>
-            <p className="text-sm text-[#C5C5C5]">Organize agentes em equipas e atribua líderes.</p>
+            <p className="text-sm text-[#C5C5C5]">Organize {term('agents', 'agentes').toLowerCase()} em equipas e atribua líderes.</p>
           </div>
           {permissions.canEditAllProperties && (
             <button

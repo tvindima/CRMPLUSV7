@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { UploadArea } from "./UploadArea";
 import { BackofficeProperty, BackofficePropertyPayload } from "@/src/services/backofficeApi";
 import { DISTRICTS, MUNICIPALITIES, PARISHES, CONDITIONS, ENERGY_CERTIFICATES } from "@/src/data/portugal";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
+import { getSectorConfig, shouldShowField } from "@/lib/sectorConfig";
 
 export type PropertyFormSubmit = {
   payload: BackofficePropertyPayload;
@@ -30,21 +33,7 @@ const toNumber = (value: string): number | null => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
-// Opções para dropdowns
-const BUSINESS_TYPES = ["Venda", "Arrendamento", "Trespasse"];
-const PROPERTY_TYPES = [
-  "Apartamento",
-  "Moradia",
-  "Terreno",
-  "Loja",
-  "Armazém",
-  "Escritório",
-  "Garagem",
-  "Prédio",
-  "Quinta",
-  "Casa Antiga"
-];
-const TYPOLOGIES = ["T0", "T1", "T2", "T3", "T4", "T5", "T6+"];
+// Opções estáticas para status
 const STATUSES = [
   { value: "AVAILABLE", label: "Disponível" },
   { value: "RESERVED", label: "Reservado" },
@@ -53,6 +42,11 @@ const STATUSES = [
 ];
 
 export function PropertyForm({ initial, onSubmit, loading }: Props) {
+  // Contextos para terminologia dinâmica
+  const { sector } = useTenant();
+  const { term } = useTerminology();
+  const sectorConfig = useMemo(() => getSectorConfig(sector), [sector]);
+  
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(initial?.agent_id?.toString() || "");
   const [reference, setReference] = useState(initial?.reference || "");
@@ -281,7 +275,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Apartamento T2 em Leiria"
+              placeholder={sectorConfig.placeholders.title}
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             />
           </div>
@@ -300,66 +294,69 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             >
               <option value="">Selecione...</option>
-              {BUSINESS_TYPES.map((type) => (
+              {sectorConfig.businessTypes.map((type) => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Tipo de Imóvel *</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.property_type} *</label>
             <select
               value={propertyType}
               onChange={(e) => setPropertyType(e.target.value)}
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             >
               <option value="">Selecione...</option>
-              {PROPERTY_TYPES.map((type) => (
+              {sectorConfig.propertyTypes.map((type) => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
           </div>
+          {sectorConfig.typologies.length > 0 && (
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Tipologia</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.typology}</label>
             <select
               value={typology}
               onChange={(e) => setTypology(e.target.value)}
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             >
               <option value="">Selecione...</option>
-              {TYPOLOGIES.map((t) => (
+              {sectorConfig.typologies.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
+          )}
         </div>
       </div>
 
       {/* Secção: Valores e Áreas */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#888]">Valores e Áreas</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#888]">Valores {sector === 'real_estate' ? 'e Áreas' : ''}</h3>
         <div className="grid gap-3 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs text-[#999]">Preço (€) *</label>
             <input
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="150000"
+              placeholder={sectorConfig.placeholders.price}
               type="text"
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Área útil (m²)</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.area} ({sectorConfig.labels.area_unit})</label>
             <input
               value={usableArea}
               onChange={(e) => setUsableArea(e.target.value)}
-              placeholder="120"
+              placeholder={sectorConfig.placeholders.area}
               type="text"
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             />
           </div>
+          {shouldShowField(sector, 'area_land') && (
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Área terreno (m²)</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.area_land || 'Área terreno'} ({sectorConfig.labels.area_unit})</label>
             <input
               value={landArea}
               onChange={(e) => setLandArea(e.target.value)}
@@ -368,15 +365,17 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
               className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
             />
           </div>
+          )}
         </div>
       </div>
 
-      {/* Secção: Características */}
+      {/* Secção: Características - Só para imobiliário/hospitality */}
+      {shouldShowField(sector, 'bedrooms') && (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-[#888]">Características</h3>
         <div className="grid gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Quartos</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.bedrooms || 'Quartos'}</label>
             <input
               value={bedrooms}
               onChange={(e) => setBedrooms(e.target.value)}
@@ -387,7 +386,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Casas de Banho</label>
+            <label className="mb-1 block text-xs text-[#999]">{sectorConfig.labels.bathrooms || 'Casas de Banho'}</label>
             <input
               value={bathrooms}
               onChange={(e) => setBathrooms(e.target.value)}
@@ -583,14 +582,14 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
               className="h-4 w-4 rounded border-neutral-600 bg-neutral-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
             />
             <label htmlFor="isFeatured" className="text-sm text-white cursor-pointer">
-              ⭐ Imóvel em Destaque (aparece na home)
+              ⭐ {term('item')} em Destaque (aparece na home)
             </label>
           </div>
         </div>
         <p className="text-xs text-[#666]">
-          {!isPublished && "⚠️ Este imóvel ficará apenas em rascunho e não será exibido no site."}
-          {isPublished && !isFeatured && "✅ Este imóvel será publicado normalmente nas listagens."}
-          {isPublished && isFeatured && "🌟 Este imóvel será publicado E destacado na página inicial!"}
+          {!isPublished && `⚠️ Este ${term('item_singular').toLowerCase()} ficará apenas em rascunho e não será exibido no site.`}
+          {isPublished && !isFeatured && `✅ Este ${term('item_singular').toLowerCase()} será publicado normalmente nas listagens.`}
+          {isPublished && isFeatured && `🌟 Este ${term('item_singular').toLowerCase()} será publicado E destacado na página inicial!`}
         </p>
       </div>
 
@@ -602,7 +601,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descrição detalhada do imóvel para o site..."
+            placeholder={`Descrição detalhada do ${term('item_singular').toLowerCase()} para o site...`}
             rows={4}
             className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
           />
@@ -647,7 +646,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
         disabled={loading}
         className="w-full rounded-lg bg-gradient-to-r from-[#E10600] to-[#a10600] px-4 py-3 text-sm font-semibold uppercase tracking-wide shadow-[0_0_12px_rgba(225,6,0,0.6)] transition hover:shadow-[0_0_20px_rgba(225,6,0,0.8)] disabled:opacity-60"
       >
-        {loading ? "A guardar..." : "Guardar Imóvel"}
+        {loading ? "A guardar..." : `Guardar ${term('item')}`}
       </button>
     </form>
   );

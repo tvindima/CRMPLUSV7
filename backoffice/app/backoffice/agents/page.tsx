@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type AgentItem = {
   id: number;
@@ -155,6 +156,7 @@ export default function AgentesPage() {
 
 function AgentesInner() {
   const toast = useToast();
+  const { term } = useTerminology();
   const [items, setItems] = useState<AgentItem[]>([]);
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
   const [search, setSearch] = useState("");
@@ -168,7 +170,7 @@ function AgentesInner() {
         setLoading(true);
         // FIXED: Usar proxy route com tenant isolation
         const response = await fetch(`/api/agents?limit=50`);
-        if (!response.ok) throw new Error('Erro ao carregar agentes');
+        if (!response.ok) throw new Error(`Erro ao carregar ${term('agents', 'agentes').toLowerCase()}`);
         
         const data = await response.json();
         const agents = data
@@ -192,8 +194,8 @@ function AgentesInner() {
         
         setItems(agents);
       } catch (error) {
-        console.error("Erro ao carregar agentes:", error);
-        toast?.push("Erro ao carregar agentes", "error");
+        console.error(`Erro ao carregar ${term('agents', 'agentes').toLowerCase()}:`, error);
+        toast?.push(`Erro ao carregar ${term('agents', 'agentes').toLowerCase()}`, "error");
       } finally {
         setLoading(false);
       }
@@ -250,7 +252,7 @@ function AgentesInner() {
   }, [staffItems, search]);
 
   return (
-    <BackofficeLayout title="Agentes">
+    <BackofficeLayout title={term('agents', 'Agentes')}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           value={search}
@@ -268,7 +270,7 @@ function AgentesInner() {
           onClick={() => window.location.href = '/backoffice/agents/new'}
           className="w-full sm:w-auto sm:ml-auto rounded bg-[#E10600] px-4 py-2 text-sm font-medium text-white hover:bg-[#C10500] transition-colors"
         >
-          + Novo Agente
+          + Novo {term('agent', 'Agente')}
         </button>
       </div>
 
@@ -283,9 +285,9 @@ function AgentesInner() {
           <span className="text-right">Opções</span>
         </div>
         {loading ? (
-          <div className="py-12 text-center text-[#C5C5C5]">A carregar agentes...</div>
+          <div className="py-12 text-center text-[#C5C5C5]">A carregar {term('agents', 'agentes').toLowerCase()}...</div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-[#C5C5C5]">Nenhum agente encontrado.</div>
+          <div className="py-12 text-center text-[#C5C5C5]">Nenhum {term('agent', 'agente').toLowerCase()} encontrado.</div>
         ) : (
           filtered.map((agent) => (
             <AgentRow key={agent.id} agent={agent} />
@@ -294,7 +296,7 @@ function AgentesInner() {
       </div>
 
       <p className="mt-2 text-xs text-[#C5C5C5]">
-        {loading ? "Carregando..." : `Total: ${filtered.length} agente${filtered.length !== 1 ? 's' : ''}`}
+        {loading ? "Carregando..." : `Total: ${filtered.length} ${term('agent', 'agente').toLowerCase()}${filtered.length !== 1 ? 's' : ''}`}
       </p>
 
       {/* Secção de Staff */}

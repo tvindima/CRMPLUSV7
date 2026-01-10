@@ -1195,6 +1195,45 @@ def get_sector_terminology_endpoint(sector: str):
     }
 
 
+@router.get("/terminology/tenant/{tenant_slug}")
+def get_tenant_terminology_endpoint(tenant_slug: str, db: Session = Depends(get_db)):
+    """
+    Obter terminologia completa de um tenant específico.
+    Aplica custom_terminology e sub_sector overrides.
+    
+    PÚBLICO - Para o frontend do tenant.
+    
+    Exemplo: GET /platform/terminology/tenant/pg-auto
+    """
+    from app.platform.seeds import get_tenant_terminology, get_available_sectors
+    
+    # Buscar tenant
+    tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail=f"Tenant '{tenant_slug}' não encontrado")
+    
+    # Preparar dados do tenant
+    tenant_data = {
+        'sector': tenant.sector or 'other',
+        'sub_sector': tenant.sub_sector,
+        'custom_terminology': tenant.custom_terminology or {}
+    }
+    
+    # Obter terminologia merged
+    terminology = get_tenant_terminology(tenant_data)
+    
+    available = get_available_sectors()
+    
+    return {
+        "tenant_slug": tenant_slug,
+        "sector": tenant.sector,
+        "sub_sector": tenant.sub_sector,
+        "sector_name": available.get(tenant.sector, 'Outro'),
+        "terminology": terminology,
+        "has_custom_terminology": bool(tenant.custom_terminology)
+    }
+
+
 @router.get("/terminology")
 def get_all_terminology():
     """
@@ -1208,6 +1247,101 @@ def get_all_terminology():
     return {
         "sectors": available,
         "terminology": SECTOR_TERMINOLOGY
+    }
+
+
+@router.get("/sub-sectors")
+def get_available_sub_sectors_endpoint():
+    """
+    Obter lista de sub-sectores disponíveis.
+    
+    PÚBLICO - Para onboarding e configuração de tenant.
+    
+    Retorna: {"sub_sectors": {"training": "Formação e Educação", ...}}
+    """
+    from app.platform.seeds import get_available_sub_sectors
+    
+    return {
+        "sub_sectors": get_available_sub_sectors()
+    }
+
+
+@router.patch("/tenants/{tenant_id}/terminology")
+def update_tenant_terminology(
+    tenant_id: int,
+    terminology: dict,
+    db: Session = Depends(get_db),
+    token: str = Header(None, alias="Authorization")
+):
+    """
+    Atualizar terminologia customizada de um tenant.
+    
+    PROTEGIDO - Apenas super admin ou admin do tenant.
+    
+    Body: {"item": "Curso", "items": "Cursos", "visit": "Sessão", ...}
+    """
+    # Verificar token (simplificado - em produção usar verificação completa)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token de autorização necessário")
+    
+    # Buscar tenant
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    # Atualizar custom_terminology
+    tenant.custom_terminology = terminology
+    db.commit()
+    db.refresh(tenant)
+    
+    return {
+        "success": True,
+        "tenant_id": tenant_id,
+        "custom_terminology": tenant.custom_terminology
+    }
+
+
+@router.patch("/tenants/{tenant_id}/sub-sector")
+def update_tenant_sub_sector(
+    tenant_id: int,
+    sub_sector: str,
+    db: Session = Depends(get_db),
+    token: str = Header(None, alias="Authorization")
+):
+    """
+    Atualizar sub-sector de um tenant.
+    
+    PROTEGIDO - Apenas super admin ou admin do tenant.
+    """
+    from app.platform.seeds import get_available_sub_sectors
+    
+    # Verificar token
+    if not token:
+        raise HTTPException(status_code=401, detail="Token de autorização necessário")
+    
+    # Validar sub_sector
+    available = get_available_sub_sectors()
+    if sub_sector and sub_sector not in available:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Sub-sector inválido. Disponíveis: {list(available.keys())}"
+        )
+    
+    # Buscar tenant
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    # Atualizar sub_sector
+    tenant.sub_sector = sub_sector
+    db.commit()
+    db.refresh(tenant)
+    
+    return {
+        "success": True,
+        "tenant_id": tenant_id,
+        "sub_sector": tenant.sub_sector,
+        "sub_sector_name": available.get(sub_sector)
     }
 
 

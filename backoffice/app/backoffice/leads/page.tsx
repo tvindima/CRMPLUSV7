@@ -7,6 +7,7 @@ import { DataTable } from "../../../backoffice/components/DataTable";
 import { Drawer } from "../../../backoffice/components/Drawer";
 import { LeadForm, LeadFormSubmit } from "../../../backoffice/components/LeadForm";
 import { useRole } from "../../../backoffice/context/roleContext";
+import { useTerminology } from "@/context/TerminologyContext";
 import {
   BackofficeLead,
   createBackofficeLead,
@@ -27,6 +28,7 @@ export default function LeadsPage() {
 function LeadsInner() {
   const toast = useToast();
   const { permissions } = useRole();
+  const { term } = useTerminology();
   const [items, setItems] = useState<BackofficeLead[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | LeadStatus>("all");
@@ -101,12 +103,13 @@ function LeadsInner() {
     }
   };
 
+  const visitLabel = term('visit', 'Visita');
   const statusLabels: Record<LeadStatus, string> = {
     new: "Nova",
     contacted: "Contactada",
     qualified: "Qualificada",
     proposal_sent: "Proposta Enviada",
-    visit_scheduled: "Visita Agendada",
+    visit_scheduled: `${visitLabel} Agendada`,
     negotiation: "Em Negociação",
     converted: "Convertida",
     lost: "Perdida",
@@ -161,7 +164,7 @@ function LeadsInner() {
         <div className="overflow-hidden rounded-2xl border border-[#1F1F22] bg-[#0F0F10]">
           <DataTable
             dense
-            columns={["Nome", "Email", "Telefone", "Origem", "Estado", "Criado", "Agente"]}
+            columns={["Nome", "Email", "Telefone", "Origem", "Estado", "Criado", term('agent', 'Agente')]}
             rows={filtered.map((lead) => [
               lead.name,
               lead.email,
@@ -169,7 +172,7 @@ function LeadsInner() {
               lead.origin || "—",
               statusLabels[lead.status] || lead.status,
               formatDate(lead.created_at),
-              lead.assigned_agent_id ? `Agente #${lead.assigned_agent_id}` : "Não atribuído",
+              lead.assigned_agent_id ? `${term('agent', 'Agente')} #${lead.assigned_agent_id}` : "Não atribuído",
             ])}
             actions={
               permissions.canEditAllProperties

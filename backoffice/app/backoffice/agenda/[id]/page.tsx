@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../../backoffice/components/ToastProvider";
 import { CalendarIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type Props = { params: { id: string } };
 
@@ -18,20 +19,21 @@ type Visit = {
   notes: string | null;
 };
 
-export default function VisitaDetalhePage({ params }: Props) {
+export default function AgendamentoDetalhePage({ params }: Props) {
   const router = useRouter();
+  const { term } = useTerminology();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Buscar visita real da API quando endpoint existir
+    // TODO: Buscar agendamento real da API quando endpoint existir
     // fetch(`/api/visits/${params.id}`)
     setLoading(false);
   }, [params.id]);
 
   return (
     <ToastProvider>
-      <BackofficeLayout title={`Visita ${params.id}`}>
+      <BackofficeLayout title={`${term('visit_singular', 'Agendamento')} ${params.id}`}>
         <button
           onClick={() => router.back()}
           className="mb-4 flex items-center gap-2 text-sm text-[#999] hover:text-white"
@@ -53,7 +55,7 @@ export default function VisitaDetalhePage({ params }: Props) {
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <Info label="Data" value={visit.scheduled_at} />
-              <Info label="Agente" value={visit.agent_name} />
+              <Info label={term('agent', 'Comercial')} value={visit.agent_name} />
               <Info label="Estado" value={visit.status} />
             </div>
             {visit.notes && (
@@ -70,12 +72,12 @@ export default function VisitaDetalhePage({ params }: Props) {
         ) : (
           <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-12 text-center">
             <CalendarIcon className="mx-auto h-12 w-12 text-[#555]" />
-            <p className="mt-4 text-[#999]">Visita não encontrada</p>
+            <p className="mt-4 text-[#999]">{term('visit_singular', 'Agendamento')} não encontrado</p>
             <button
               onClick={() => router.push("/backoffice/agenda")}
               className="mt-4 text-sm text-[#E10600] hover:underline"
             >
-              Ver todas as visitas
+              Ver todos os {term('visits', 'agendamentos').toLowerCase()}
             </button>
           </div>
         )}

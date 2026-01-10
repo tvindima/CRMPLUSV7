@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
 import { BackofficeProperty, getBackofficeProperty } from "../../../../src/services/backofficeApi";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type Props = { params: { id: string } };
 
-export default function ImovelDetalhePage({ params }: Props) {
+export default function ItemDetalhePage({ params }: Props) {
   return (
     <ToastProvider>
-      <ImovelDetalheInner id={Number(params.id)} />
+      <ItemDetalheInner id={Number(params.id)} />
     </ToastProvider>
   );
 }
@@ -25,8 +27,10 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
   );
 }
 
-function ImovelDetalheInner({ id }: { id: number }) {
+function ItemDetalheInner({ id }: { id: number }) {
   const toast = useToast();
+  const { sector, isRealEstate } = useTenant();
+  const { term } = useTerminology();
   const [property, setProperty] = useState<BackofficeProperty | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +41,7 @@ function ImovelDetalheInner({ id }: { id: number }) {
         const data = await getBackofficeProperty(id);
         setProperty(data);
       } catch (err: any) {
-        toast.push(err?.message || "Erro ao carregar imóvel", "error");
+        toast.push(err?.message || `Erro ao carregar ${term('item_singular', 'item')}`, "error");
       } finally {
         setLoading(false);
       }
@@ -46,9 +50,9 @@ function ImovelDetalheInner({ id }: { id: number }) {
   }, [id, toast]);
 
   return (
-    <BackofficeLayout title="Imóvel">
+    <BackofficeLayout title={term('item', 'Item')}>
       {loading && <p className="text-sm text-[#C5C5C5]">A carregar...</p>}
-      {!loading && !property && <p className="text-sm text-red-400">Imóvel não encontrado.</p>}
+      {!loading && !property && <p className="text-sm text-red-400">{term('item', 'Item')} não encontrado.</p>}
 
       {property && (
         <div className="space-y-6">
@@ -104,8 +108,8 @@ function ImovelDetalheInner({ id }: { id: number }) {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 text-white">
-              <h3 className="text-lg font-semibold">Visitas</h3>
-              <p className="text-sm text-[#C5C5C5]">TODO: listar visitas quando API estiver disponível.</p>
+              <h3 className="text-lg font-semibold">{term('visits', 'Agendamentos')}</h3>
+              <p className="text-sm text-[#C5C5C5]">TODO: listar {term('visits', 'agendamentos').toLowerCase()} quando API estiver disponível.</p>
             </div>
             <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 text-white">
               <h3 className="text-lg font-semibold">Contactos</h3>

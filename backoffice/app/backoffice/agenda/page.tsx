@@ -5,6 +5,7 @@ import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../backoffice/components/ToastProvider";
 import { DataTable } from "../../../backoffice/components/DataTable";
 import { CalendarIcon } from "@heroicons/react/24/outline";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type VisitItem = {
   id: number;
@@ -24,6 +25,7 @@ export default function AgendaPage() {
 }
 
 function AgendaInner() {
+  const { term } = useTerminology();
   const [visits, setVisits] = useState<VisitItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Todas");
@@ -40,7 +42,7 @@ function AgendaInner() {
       // setVisits(data);
       setVisits([]);
     } catch (error) {
-      console.error("Erro ao carregar visitas:", error);
+      console.error(`Erro ao carregar ${term('visits', 'agendamentos').toLowerCase()}:`, error);
       setVisits([]);
     } finally {
       setLoading(false);
@@ -73,15 +75,15 @@ function AgendaInner() {
       ) : visits.length === 0 ? (
         <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-12 text-center">
           <CalendarIcon className="mx-auto h-12 w-12 text-[#555]" />
-          <p className="mt-4 text-[#999]">Nenhuma visita agendada</p>
+          <p className="mt-4 text-[#999]">Nenhum {term('visit_singular', 'agendamento').toLowerCase()} marcado</p>
           <p className="mt-2 text-xs text-[#666]">
-            As visitas agendadas aparecerão aqui quando forem criadas
+            Os {term('visits', 'agendamentos').toLowerCase()} aparecerão aqui quando forem criados
           </p>
         </div>
       ) : (
         <DataTable
           dense
-          columns={["Data", "Lead", "Agente", "Estado", "Referência", "Ações"]}
+          columns={["Data", "Lead", term('agent', 'Comercial'), "Estado", "Referência", "Ações"]}
           rows={filtered.map((v) => [
             v.data,
             v.lead,

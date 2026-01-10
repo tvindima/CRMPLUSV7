@@ -71,6 +71,11 @@ class Tenant(Base):
     
     # Setor de atividade
     sector = Column(String(50), default='real_estate')  # real_estate, automotive, services, etc.
+    sub_sector = Column(String(100), nullable=True)  # Sub-categoria: 'law_firm', 'training', 'consulting', etc.
+    
+    # Terminologia personalizada (override do sector padrão)
+    # Exemplo: {"item": "Curso", "items": "Cursos", "visit": "Formação"}
+    custom_terminology = Column(JSON, nullable=True)
     
     # Admin inicial do tenant
     admin_email = Column(String(200), nullable=True)

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
+import { useTerminology } from "@/context/TerminologyContext";
 
 export default function NewOpportunityPage() {
   const router = useRouter();
+  const { term } = useTerminology();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     clientName: "",
@@ -14,6 +16,9 @@ export default function NewOpportunityPage() {
     value: "",
     notes: "",
   });
+
+  const itemLabel = term('item', 'Imóvel');
+  const visitLabel = term('visit', 'Visita');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +39,7 @@ export default function NewOpportunityPage() {
       <div className="mx-auto max-w-2xl">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-white">Nova Oportunidade de Negócio</h1>
-          <p className="text-sm text-[#999]">Registar interesse de cliente em imóvel</p>
+          <p className="text-sm text-[#999]">Registar interesse de cliente em {itemLabel.toLowerCase()}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -54,7 +59,7 @@ export default function NewOpportunityPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-[#999]">Referência do Imóvel *</label>
+              <label className="block text-sm text-[#999]">Referência do {itemLabel} *</label>
               <input
                 type="text"
                 required
@@ -78,7 +83,7 @@ export default function NewOpportunityPage() {
                   className="mt-1 w-full rounded-lg border border-[#23232B] bg-[#0F0F12] px-4 py-2.5 text-white focus:border-[#E10600]/50 focus:outline-none"
                 >
                   <option value="contact">Contacto Inicial</option>
-                  <option value="visit">Visita Agendada</option>
+                  <option value="visit">{visitLabel} Agendada</option>
                   <option value="proposal">Proposta Enviada</option>
                   <option value="negotiation">Em Negociação</option>
                   <option value="closed">Fechado</option>

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
+import { useTerminology } from "@/context/TerminologyContext";
 
 export default function NewActivityPage() {
   const router = useRouter();
+  const { term } = useTerminology();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: "call" as 'call' | 'email' | 'meeting' | 'note',
@@ -90,7 +92,7 @@ export default function NewActivityPage() {
                   value={formData.relatedTo}
                   onChange={(e) => setFormData({...formData, relatedTo: e.target.value})}
                   className="mt-1 w-full rounded-lg border border-[#23232B] bg-[#0F0F12] px-4 py-2.5 text-white placeholder-[#555] focus:border-[#E10600]/50 focus:outline-none"
-                  placeholder="Cliente ou Ref. Imóvel"
+                  placeholder={`Cliente ou Ref. ${term('item', 'Item')}`}
                 />
               </div>
             </div>

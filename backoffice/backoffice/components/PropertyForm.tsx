@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { UploadArea } from "./UploadArea";
 import { BackofficeProperty, BackofficePropertyPayload } from "../../src/services/backofficeApi";
 import { DISTRICTS, MUNICIPALITIES, PARISHES, CONDITIONS, ENERGY_CERTIFICATES } from "../data/portugal";
+import { useTerminology } from "../../context/TerminologyContext";
+import { useTenant } from "../../context/TenantContext";
 
 export type PropertyFormSubmit = {
   payload: BackofficePropertyPayload;
@@ -31,29 +33,31 @@ const toNumber = (value: string): number | null => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
-// Opções para dropdowns
-const BUSINESS_TYPES = ["Venda", "Arrendamento", "Trespasse"];
-const PROPERTY_TYPES = [
-  "Apartamento",
-  "Moradia",
-  "Terreno",
-  "Loja",
-  "Armazém",
-  "Escritório",
-  "Garagem",
-  "Prédio",
-  "Quinta",
-  "Casa Antiga"
-];
-const TYPOLOGIES = ["T0", "T1", "T2", "T3", "T4", "T5", "T6+"];
-const STATUSES = [
-  { value: "AVAILABLE", label: "Disponível" },
-  { value: "RESERVED", label: "Reservado" },
-  { value: "SOLD", label: "Vendido" },
-  { value: "CANCELLED", label: "Cancelado" }
-];
-
 export function PropertyForm({ initial, onSubmit, loading }: Props) {
+  const { term } = useTerminology();
+  const { sector, isAutomotive } = useTenant();
+  
+  // Labels dinâmicos
+  const itemLabel = term('item', 'Imóvel');
+  const itemLabelLower = itemLabel.toLowerCase();
+  
+  // Opções dinâmicas baseadas no sector
+  const BUSINESS_TYPES = sector === 'automotive' 
+    ? ["Venda", "Aluguer"] 
+    : ["Venda", "Arrendamento", "Trespasse"];
+  
+  const PROPERTY_TYPES = sector === 'automotive'
+    ? ["Ligeiro", "Comercial", "Motociclo", "Pesado", "Outro"]
+    : ["Apartamento", "Moradia", "Terreno", "Loja", "Armazém", "Escritório", "Garagem", "Prédio", "Quinta", "Casa Antiga"];
+  
+  const TYPOLOGIES = ["T0", "T1", "T2", "T3", "T4", "T5", "T6+"];
+  const STATUSES = [
+    { value: "AVAILABLE", label: "Disponível" },
+    { value: "RESERVED", label: "Reservado" },
+    { value: "SOLD", label: "Vendido" },
+    { value: "CANCELLED", label: "Cancelado" }
+  ];
+  
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(initial?.agent_id?.toString() || "");
   const [reference, setReference] = useState(initial?.reference || "");
@@ -155,7 +159,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     
     // Validações obrigatórias
     if (!reference) errs.push("Referência é obrigatória");
-    if (!selectedAgentId) errs.push("Agente é obrigatório");
+    if (!selectedAgentId) errs.push(`${term('agent', 'Agente')} é obrigatório`);
     if (!selectedDistrict) errs.push("Distrito é obrigatório");
     if (!selectedMunicipality) errs.push("Concelho é obrigatório");
     
@@ -166,9 +170,9 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     const landAreaNumber = toNumber(landArea);
     const agentIdNumber = Number(selectedAgentId);
     
-    // ✅ IMAGENS SÃO OBRIGATÓRIAS - sem imagens o imóvel não aparece corretamente no site
+    // ✅ IMAGENS SÃO OBRIGATÓRIAS - sem imagens o item não aparece corretamente no site
     if (existingImages.length === 0 && newFiles.length === 0) {
-      errs.push("❌ Pelo menos uma imagem é obrigatória para publicar o imóvel");
+      errs.push(`❌ Pelo menos uma imagem é obrigatória para publicar o ${itemLabelLower}`);
     }
     
     // Validar novos campos opcionais
@@ -316,7 +320,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[#999]">Tipo de Imóvel *</label>
+            <label className="mb-1 block text-xs text-[#999]">Tipo de {itemLabel} *</label>
             <select
               value={propertyType}
               onChange={(e) => setPropertyType(e.target.value)}
@@ -593,14 +597,14 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
               className="h-4 w-4 rounded border-neutral-600 bg-neutral-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
             />
             <label htmlFor="isFeatured" className="text-sm text-white cursor-pointer">
-              ⭐ Imóvel em Destaque (aparece na home)
+              ⭐ {itemLabel} em Destaque (aparece na home)
             </label>
           </div>
         </div>
         <p className="text-xs text-[#666]">
-          {!isPublished && "⚠️ Este imóvel ficará apenas em rascunho e não será exibido no site."}
-          {isPublished && !isFeatured && "✅ Este imóvel será publicado normalmente nas listagens."}
-          {isPublished && isFeatured && "🌟 Este imóvel será publicado E destacado na página inicial!"}
+          {!isPublished && `⚠️ Este ${itemLabelLower} ficará apenas em rascunho e não será exibido no site.`}
+          {isPublished && !isFeatured && `✅ Este ${itemLabelLower} será publicado normalmente nas listagens.`}
+          {isPublished && isFeatured && `🌟 Este ${itemLabelLower} será publicado E destacado na página inicial!`}
         </p>
       </div>
 
@@ -612,7 +616,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descrição detalhada do imóvel para o site..."
+            placeholder={`Descrição detalhada do ${itemLabelLower} para o site...`}
             rows={4}
             className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
           />
@@ -721,7 +725,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-[#888]">Imagens *</h3>
         <p className="text-xs text-yellow-400">
-          ⚠️ <strong>Obrigatório:</strong> Adicione pelo menos 1 foto do imóvel. Sem imagens, o imóvel não aparece corretamente nas galerias do site.
+          ⚠️ <strong>Obrigatório:</strong> Adicione pelo menos 1 foto do {itemLabelLower}. Sem imagens, o {itemLabelLower} não aparece corretamente nas galerias do site.
         </p>
         <UploadArea
           existingUrls={existingImages}
@@ -748,7 +752,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
         disabled={loading}
         className="w-full rounded-lg bg-gradient-to-r from-[#E10600] to-[#a10600] px-4 py-3 text-sm font-semibold uppercase tracking-wide shadow-[0_0_12px_rgba(225,6,0,0.6)] transition hover:shadow-[0_0_20px_rgba(225,6,0,0.8)] disabled:opacity-60"
       >
-        {loading ? "A guardar..." : "Guardar Imóvel"}
+        {loading ? "A guardar..." : `Guardar ${itemLabel}`}
       </button>
     </form>
   );

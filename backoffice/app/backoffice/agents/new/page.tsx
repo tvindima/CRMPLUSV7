@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
+import { useTerminology } from '@/context/TerminologyContext';
 
 interface AgentFormData {
   name: string;
@@ -47,6 +48,8 @@ export default function NewAgentPage() {
 
 function NewAgentInner() {
   const toast = useToast();
+  const { term } = useTerminology();
+  const agentLabel = term('agent', 'Agente');
   const [loading, setLoading] = useState(false);
   const [agents, setAgents] = useState<Array<{ id: number; name: string }>>([]);
   const [documents, setDocuments] = useState({
@@ -209,7 +212,7 @@ function NewAgentInner() {
   };
 
   return (
-    <BackofficeLayout title="Novo Agente">
+    <BackofficeLayout title={`Novo ${agentLabel}`}>
       <form onSubmit={handleSubmit} className="max-w-4xl space-y-4 md:space-y-6 pb-8">
         {/* Dados Básicos */}
         <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">

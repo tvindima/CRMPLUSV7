@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
+import { useTerminology } from '@/context/TerminologyContext';
 
 interface AgentData {
   id: number;
@@ -47,6 +48,8 @@ function EditAgentInner() {
   const params = useParams();
   const agentId = params.id as string;
   const toast = useToast();
+  const { term } = useTerminology();
+  const agentLabel = term('agent', 'Agente');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [agents, setAgents] = useState<Array<{ id: number; name: string }>>([]);
@@ -104,15 +107,15 @@ function EditAgentInner() {
         }
       );
 
-      if (!response.ok) throw new Error('Erro ao atualizar agente');
+      if (!response.ok) throw new Error(`Erro ao atualizar ${agentLabel.toLowerCase()}`);
 
-      toast?.push('Agente atualizado com sucesso!', 'success');
+      toast?.push(`${agentLabel} atualizado com sucesso!`, 'success');
       setTimeout(() => {
         window.location.href = '/backoffice/agents';
       }, 1500);
     } catch (error) {
-      console.error('Erro ao atualizar agente:', error);
-      toast?.push('Erro ao atualizar agente', 'error');
+      console.error(`Erro ao atualizar ${agentLabel.toLowerCase()}:`, error);
+      toast?.push(`Erro ao atualizar ${agentLabel.toLowerCase()}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -120,7 +123,7 @@ function EditAgentInner() {
 
   if (loading) {
     return (
-      <BackofficeLayout title="Editar Agente">
+      <BackofficeLayout title={`Editar ${agentLabel}`}>
         <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E10600] border-t-transparent"></div>
           <span className="ml-3 text-[#C5C5C5]">A carregar...</span>
@@ -131,9 +134,9 @@ function EditAgentInner() {
 
   if (!formData) {
     return (
-      <BackofficeLayout title="Editar Agente">
+      <BackofficeLayout title={`Editar ${agentLabel}`}>
         <div className="py-20 text-center text-[#C5C5C5]">
-          Agente não encontrado
+          {agentLabel} não encontrado
         </div>
       </BackofficeLayout>
     );

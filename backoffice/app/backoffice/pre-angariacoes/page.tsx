@@ -6,13 +6,22 @@ import { BackofficeLayout } from "../../../backoffice/components/BackofficeLayou
 import { ToastProvider, useToast } from "../../../backoffice/components/ToastProvider";
 import { getPreAngariacoes, cancelPreAngariacao, type PreAngariacaoListItem } from "../../../src/services/backofficeApi";
 import { XCircleIcon } from "@heroicons/react/24/outline";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 
 function PreAngariacoesInner() {
   const { push } = useToast();
   const router = useRouter();
+  const { sector } = useTenant();
+  const { term } = useTerminology();
   const [items, setItems] = useState<PreAngariacaoListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
+
+  // Título dinâmico baseado no sector
+  const pageTitle = sector === 'automotive' ? 'Pré-Avaliações' : 
+                    sector === 'real_estate' ? 'Pré-Angariações' : 
+                    'Pré-Registos';
 
   useEffect(() => {
     const load = async () => {
@@ -25,8 +34,8 @@ function PreAngariacoesInner() {
           : data.filter((item) => item.status !== "cancelado");
         setItems(filtered);
       } catch (error: any) {
-        console.error("Erro ao carregar pré-angariações:", error);
-        push("Erro ao carregar pré-angariações", "error");
+        console.error(`Erro ao carregar ${pageTitle.toLowerCase()}:`, error);
+        push(`Erro ao carregar ${pageTitle.toLowerCase()}`, "error");
       } finally {
         setLoading(false);
       }
@@ -35,11 +44,11 @@ function PreAngariacoesInner() {
   }, [status, push]);
 
   return (
-    <BackofficeLayout title="Pré-Angariações">
+    <BackofficeLayout title={pageTitle}>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm text-[#C5C5C5]">
-            Visibilidade total (apenas administradores). Todas as visitas/pastas iniciadas pelos agentes.
+            Visibilidade total (apenas administradores). Todas as avaliações/pastas iniciadas pelos {term('agents', 'agentes').toLowerCase()}.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -65,7 +74,7 @@ function PreAngariacoesInner() {
       <div className="overflow-hidden rounded-2xl border border-[#1F1F22] bg-[#0F0F10]">
         <div className="grid grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.8fr] gap-3 border-b border-[#1F1F22] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#888] md:grid-cols-[1.1fr_1fr_0.9fr_0.7fr_0.7fr_0.8fr]">
           <span>Proprietário</span>
-          <span>Agente</span>
+          <span>{term('agent', 'Agente')}</span>
           <span>Morada</span>
           <span>Status</span>
           <span className="hidden md:block">Data</span>
@@ -85,7 +94,7 @@ function PreAngariacoesInner() {
                 push("Pré-angariação cancelada.", "success");
               } catch (error: any) {
                 console.error("Erro ao cancelar:", error);
-                push("Erro ao cancelar pré-angariação", "error");
+                push(`Erro ao cancelar ${pageTitle.slice(0, -1).toLowerCase()}`, "error");
               }
             };
 
@@ -101,7 +110,7 @@ function PreAngariacoesInner() {
                   <div className="text-xs text-[#C5C5C5]">{item.referencia_interna || `PA-${item.id}`}</div>
                 </div>
                 <div className="text-xs text-[#C5C5C5] md:text-sm">
-                  {item.agent_name || `Agente #${item.agent_id}`}
+                  {item.agent_name || `${term('agent', 'Agente')} #${item.agent_id}`}
                 </div>
                 <div className="text-[#C5C5C5] text-xs md:text-sm" title={item.morada || undefined}>
                   {item.morada || '—'}
@@ -128,7 +137,7 @@ function PreAngariacoesInner() {
                 <button
                   onClick={handleCancel}
                   className="absolute right-3 top-3 rounded-full p-1.5 text-[#ef4444] hover:bg-[#1f1f22]"
-                  title="Cancelar/ocultar para o agente"
+                  title={`Cancelar/ocultar para o ${term('agent', 'agente').toLowerCase()}`}
                 >
                   <XCircleIcon className="h-5 w-5" />
                 </button>

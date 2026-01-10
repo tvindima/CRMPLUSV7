@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../backoffice/components/ToastProvider";
+import { useTerminology } from "@/context/TerminologyContext";
 
 export default function ModaisPage() {
   return (
@@ -15,6 +16,7 @@ export default function ModaisPage() {
 }
 
 function ModalDemo() {
+  const { term } = useTerminology();
   const [openConfirm, setOpenConfirm] = useState(false);
   const [openSession, setOpenSession] = useState(false);
 
@@ -32,7 +34,7 @@ function ModalDemo() {
       {openConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="w-full max-w-md rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6 text-white">
-            <h3 className="text-lg font-semibold">Eliminar imóvel</h3>
+            <h3 className="text-lg font-semibold">Eliminar {term('item_singular', 'item')}</h3>
             <p className="mt-2 text-sm text-[#C5C5C5]">Esta ação é irreversível. Confirma que pretendes eliminar?</p>
             <div className="mt-4 flex justify-end gap-3 text-sm">
               <button className="rounded-lg bg-[#101013] px-3 py-2 ring-1 ring-[#2A2A2E]" onClick={() => setOpenConfirm(false)}>

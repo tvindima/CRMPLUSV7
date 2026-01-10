@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ChartBarIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type ReportStats = {
   total_properties: number;
@@ -12,6 +13,7 @@ type ReportStats = {
 };
 
 export default function RelatoriosPage() {
+  const { term } = useTerminology();
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,7 @@ export default function RelatoriosPage() {
             </h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-lg bg-[#151518] p-4">
-                <p className="text-sm text-[#999]">Total Propriedades</p>
+                <p className="text-sm text-[#999]">Total {term('items', 'Itens')}</p>
                 <p className="text-2xl font-bold text-white">{stats?.total_properties || 0}</p>
               </div>
               <div className="rounded-lg bg-[#151518] p-4">
@@ -69,7 +71,7 @@ export default function RelatoriosPage() {
                 <p className="text-2xl font-bold text-white">{stats?.total_leads || 0}</p>
               </div>
               <div className="rounded-lg bg-[#151518] p-4">
-                <p className="text-sm text-[#999]">Agentes Ativos</p>
+                <p className="text-sm text-[#999]">{term('agents', 'Comerciais')} Ativos</p>
                 <p className="text-2xl font-bold text-white">{stats?.total_agents || 0}</p>
               </div>
             </div>

@@ -5,19 +5,22 @@ import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { PropertyForm, PropertyFormSubmit } from "@/backoffice/components/PropertyForm";
 import { ToastProvider, useToast } from "../../../../../backoffice/components/ToastProvider";
 import { BackofficeProperty, getBackofficeProperty, updateBackofficeProperty } from "@/src/services/backofficeApi";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type Props = { params: { id: string } };
 
-export default function EditarImovelPage({ params }: Props) {
+export default function EditarItemPage({ params }: Props) {
   return (
     <ToastProvider>
-      <EditarImovelInner id={Number(params.id)} />
+      <EditarItemInner id={Number(params.id)} />
     </ToastProvider>
   );
 }
 
-function EditarImovelInner({ id }: { id: number }) {
+function EditarItemInner({ id }: { id: number }) {
   const toast = useToast();
+  const { term } = useTerminology();
   const [property, setProperty] = useState<BackofficeProperty | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,7 +32,7 @@ function EditarImovelInner({ id }: { id: number }) {
         const data = await getBackofficeProperty(id);
         setProperty(data);
       } catch (err: any) {
-        toast.push(err?.message || "Erro ao carregar imóvel", "error");
+        toast.push(err?.message || `Erro ao carregar ${term('item_singular', 'item')}`, "error");
       } finally {
         setLoading(false);
       }
@@ -41,7 +44,7 @@ function EditarImovelInner({ id }: { id: number }) {
     setSaving(true);
     try {
       await updateBackofficeProperty(id, payload, files, imagesToKeep);
-      toast.push("Imóvel atualizado", "success");
+      toast.push(`${term('item', 'Item')} atualizado`, "success");
     } catch (err: any) {
       toast.push(err?.message || "Erro ao atualizar", "error");
     } finally {
@@ -50,10 +53,10 @@ function EditarImovelInner({ id }: { id: number }) {
   };
 
   return (
-    <BackofficeLayout title="Editar imóvel">
+    <BackofficeLayout title={`Editar ${term('item_singular', 'item')}`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-lg font-semibold text-white">Atualizar imóvel</p>
+          <p className="text-lg font-semibold text-white">Atualizar {term('item_singular', 'item')}</p>
           <p className="text-sm text-[#C5C5C5]">Preenche os campos conforme o render (9/10). TODO: validar campos extra.</p>
         </div>
         <div className="flex gap-2 text-sm text-[#C5C5C5]">
@@ -62,8 +65,8 @@ function EditarImovelInner({ id }: { id: number }) {
         </div>
       </div>
 
-      {loading && <p className="text-sm text-[#C5C5C5]">A carregar imóvel...</p>}
-      {!loading && !property && <p className="text-sm text-red-400">Imóvel não encontrado.</p>}
+      {loading && <p className="text-sm text-[#C5C5C5]">A carregar {term('item_singular', 'item')}...</p>}
+      {!loading && !property && <p className="text-sm text-red-400">{term('item', 'Item')} não encontrado.</p>}
       {property && <PropertyForm initial={property} onSubmit={handleSubmit} loading={saving} />}
     </BackofficeLayout>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
+import { useTerminology } from "@/context/TerminologyContext";
 import { 
   UserGroupIcon, 
   MagnifyingGlassIcon,
@@ -42,6 +43,7 @@ type FilterType = 'all' | 'investidor' | 'pontual' | 'arrendamento';
 type InterestFilter = 'all' | 'compra' | 'arrendamento';
 
 export default function WebsiteClientsPage() {
+  const { term } = useTerminology();
   const [clients, setClients] = useState<WebsiteClient[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -223,7 +225,7 @@ export default function WebsiteClientsPage() {
         {/* Por Agente */}
         {stats && stats.by_agent.length > 0 && (
           <div className="rounded-xl border border-[#23232B] bg-[#0F0F12] p-4">
-            <h3 className="mb-3 text-sm font-semibold text-white">Distribuição por Agente</h3>
+            <h3 className="mb-3 text-sm font-semibold text-white">Distribuição por {term('agent', 'Agente')}</h3>
             <div className="flex flex-wrap gap-3">
               {stats.by_agent.map((item) => (
                 <div 
@@ -335,7 +337,7 @@ export default function WebsiteClientsPage() {
                     Interesse
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#999]">
-                    Agente
+                    {term('agent', 'Agente')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#999]">
                     Registo

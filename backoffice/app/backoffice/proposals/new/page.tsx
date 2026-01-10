@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
+import { useTerminology } from "@/context/TerminologyContext";
 
 export default function NewProposalPage() {
   const router = useRouter();
+  const { term } = useTerminology();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     clientName: "",
@@ -55,7 +57,7 @@ export default function NewProposalPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-[#999]">Referência do Imóvel *</label>
+              <label className="block text-sm text-[#999]">Referência do {term('item', 'Item')} *</label>
               <input
                 type="text"
                 required

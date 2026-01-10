@@ -141,12 +141,14 @@ export default function DashboardPage() {
   const itemsLabel = term('items', 'Propriedades');
   const itemsActiveLabel = `${itemsLabel} ${sector === 'automotive' ? 'em Stock' : 'Ativas'}`;
   const itemIcon = isAutomotive ? TruckIcon : HomeIcon;
+  const agentsLabel = term('agents', 'Agentes');
+  const visitsLabel = term('visits', 'Visitas');
   
   const [kpis, setKpis] = useState<KPI[]>([
     { title: itemsActiveLabel, value: "0", icon: itemIcon, iconColor: "text-purple-400", bgGradient: "from-purple-500/20 to-pink-500/20", trend: "+12%", trendUp: true },
     { title: "Novas Leads (7d)", value: "0", icon: SparklesIcon, iconColor: "text-blue-400", bgGradient: "from-blue-500/20 to-cyan-500/20", trend: "+8%", trendUp: true },
     { title: "Propostas em Aberto", value: "0", icon: DocumentTextIcon, iconColor: "text-orange-400", bgGradient: "from-orange-500/20 to-red-500/20", trend: "+5%", trendUp: true },
-    { title: "Agentes Ativos", value: "0", icon: UserGroupIcon, iconColor: "text-green-400", bgGradient: "from-green-500/20 to-emerald-500/20" },
+    { title: `${agentsLabel} Ativos`, value: "0", icon: UserGroupIcon, iconColor: "text-green-400", bgGradient: "from-green-500/20 to-emerald-500/20" },
   ]);
   
   // Estados para dados da API (inicializar vazios)
@@ -223,7 +225,7 @@ export default function DashboardPage() {
             trendUp: kpisData.trends.propostas_up
           },
           { 
-            title: "Agentes Ativos", 
+            title: `${agentsLabel} Ativos`, 
             value: kpisData.agentes_ativos.toString(), 
             icon: UserGroupIcon, 
             iconColor: "text-green-400", 
@@ -354,7 +356,7 @@ export default function DashboardPage() {
       contacted: { text: "Contactada", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
       qualified: { text: "Qualificada", color: "bg-green-500/20 text-green-400 border-green-500/30" },
       proposal_sent: { text: "Proposta Enviada", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-      visit_scheduled: { text: "Visita Agendada", color: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
+      visit_scheduled: { text: `${visitsLabel.slice(0, -1)} Agendada`, color: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
       negotiation: { text: "Em Negociação", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
       converted: { text: "Convertida", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
       lost: { text: "Perdida", color: "bg-red-500/20 text-red-400 border-red-500/30" },
@@ -366,7 +368,7 @@ export default function DashboardPage() {
     const icons = {
       reuniao: UserGroupIcon,
       chamada: PhoneIcon,
-      visita: HomeIcon,
+      visita: itemIcon,
       revisao: DocumentTextIcon,
     };
     return icons[tipo];
@@ -732,7 +734,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="text-center">
                           <p className="font-bold text-white">{agent.visitas}</p>
-                          <p className="text-neutral-400">Visitas</p>
+                          <p className="text-neutral-400">{visitsLabel}</p>
                         </div>
                       </div>
 
@@ -994,10 +996,10 @@ export default function DashboardPage() {
                   <button
                     onClick={() => router.push('/backoffice/agents/new')}
                     className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 border border-green-500/20 transition-all group"
-                    title="Adicionar novo agente à equipa"
+                    title={`Adicionar novo ${term('agent', 'agente').toLowerCase()} à equipa`}
                   >
                     <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-                    <span className="text-xs sm:text-sm font-medium text-white">Adicionar Agente</span>
+                    <span className="text-xs sm:text-sm font-medium text-white">Adicionar {term('agent', 'Agente')}</span>
                   </button>
                 </div>
               </GlowCard>

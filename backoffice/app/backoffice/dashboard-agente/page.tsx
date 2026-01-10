@@ -15,12 +15,15 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   EyeIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { getSession } from "../../../src/services/auth";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 import {
   getAgentKPIs,
   getAgentLeads,
@@ -99,13 +102,15 @@ export default function DashboardAgentePage() {
   }
 
   return (
-    <BackofficeLayout title="Dashboard do Agente">
+    <BackofficeLayout title={`Dashboard do ${term('agent', 'Agente')}`}>
       <DashboardAgenteInner user={user} />
     </BackofficeLayout>
   );
 }
 
 function DashboardAgenteInner({ user }: { user: any }) {
+  const { sector, isAutomotive } = useTenant();
+  const { term } = useTerminology();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -113,6 +118,11 @@ function DashboardAgenteInner({ user }: { user: any }) {
   const [pieChartData, setPieChartData] = useState<any[]>([]);
   const [statusChartData, setStatusChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Labels dinâmicos baseados no sector
+  const itemsLabel = term('items', 'Propriedades');
+  const visitsLabel = term('visits', 'Visitas');
+  const itemIcon = isAutomotive ? TruckIcon : HomeIcon;
 
   useEffect(() => {
     loadDashboardData();
@@ -126,9 +136,9 @@ function DashboardAgenteInner({ user }: { user: any }) {
         const kpisData = await getAgentKPIs();
         const newKpis: KPI[] = [
           {
-            title: "Minhas Propriedades",
+            title: `${itemsLabel} Ativas`,
             value: kpisData.propriedades_ativas,
-            icon: HomeIcon,
+            icon: itemIcon,
             iconColor: "text-blue-400",
             bgGradient: "from-blue-500/20 to-blue-600/20",
             trend: kpisData.trends.propriedades,
@@ -153,7 +163,7 @@ function DashboardAgenteInner({ user }: { user: any }) {
             trendUp: kpisData.trends.propostas_up,
           },
           {
-            title: "Visitas Agendadas",
+            title: `${visitsLabel} Agendadas`,
             value: kpisData.visitas_agendadas || 0,
             icon: CalendarIcon,
             iconColor: "text-green-400",

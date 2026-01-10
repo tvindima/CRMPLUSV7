@@ -6,11 +6,13 @@ import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider } from "../../../../backoffice/components/ToastProvider";
 import { UserIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { getBackofficeLead, BackofficeLead } from "@/src/services/backofficeApi";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type Props = { params: { id: string } };
 
 export default function LeadDetalhePage({ params }: Props) {
   const router = useRouter();
+  const { term } = useTerminology();
   const [lead, setLead] = useState<BackofficeLead | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,12 +30,13 @@ export default function LeadDetalhePage({ params }: Props) {
     loadLead();
   }, [params.id]);
 
+  const visitLabel = term('visit', 'Visita');
   const statusLabels: Record<string, string> = {
     new: "Nova",
     contacted: "Contactada",
     qualified: "Qualificada",
     proposal_sent: "Proposta Enviada",
-    visit_scheduled: "Visita Agendada",
+    visit_scheduled: `${visitLabel} Agendada`,
     negotiation: "Em Negociação",
     converted: "Convertida",
     lost: "Perdida",
