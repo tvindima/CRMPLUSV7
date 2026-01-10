@@ -127,9 +127,9 @@ class TenantMiddleware(BaseHTTPMiddleware):
         
         # Definir schema
         if tenant_slug:
-            # Schema do tenant usa o slug como nome
-            # Ex: tenant 'imoveismais' -> schema 'imoveismais'
-            schema_name = tenant_slug.lower().replace("-", "_")
+            # Schema do tenant usa o formato tenant_{slug}
+            # Ex: tenant 'imoveismais' -> schema 'tenant_imoveismais'
+            schema_name = f"tenant_{tenant_slug.lower().replace('-', '_')}"
             set_tenant_schema(schema_name)
             
             # Adicionar tenant ao request state para uso nos endpoints

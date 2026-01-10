@@ -1,16 +1,28 @@
-import { NextResponse } from "next/server";
-import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { NextResponse, NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { API_BASE_URL, SESSION_COOKIE } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Get headers with tenant slug
-    const headers = getApiHeaders();
+    // Obter tenant slug do cookie (definido pelo middleware) ou env var
+    const cookieStore = cookies();
+    const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || '';
     
-    console.log("[Login] Tenant slug:", TENANT_SLUG);
+    // Construir headers com tenant
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
+    }
+    
+    console.log("[Login] Tenant slug:", tenantSlug);
     
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",

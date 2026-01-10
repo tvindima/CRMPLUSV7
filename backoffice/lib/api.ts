@@ -8,6 +8,24 @@ export const SESSION_COOKIE = 'crmplus_staff_session';
 export const TENANT_SLUG = process.env.NEXT_PUBLIC_TENANT_SLUG || '';
 
 /**
+ * Obtém o tenant slug - primeiro do cookie, depois da env var
+ */
+export function getTenantSlug(): string {
+  // Client-side: tentar ler do cookie
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'tenant_slug' && value) {
+        return value;
+      }
+    }
+  }
+  // Fallback para variável de ambiente (deploys dedicados)
+  return TENANT_SLUG;
+}
+
+/**
  * Retorna os headers padrão para chamadas API incluindo X-Tenant-Slug
  */
 export function getApiHeaders(token?: string): Record<string, string> {
@@ -17,8 +35,9 @@ export function getApiHeaders(token?: string): Record<string, string> {
   };
   
   // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
-  if (TENANT_SLUG) {
-    headers['X-Tenant-Slug'] = TENANT_SLUG;
+  const tenantSlug = getTenantSlug();
+  if (tenantSlug) {
+    headers['X-Tenant-Slug'] = tenantSlug;
   }
   
   if (token) {

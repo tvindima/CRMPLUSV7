@@ -8,6 +8,58 @@ const LOGIN_PATH = "/backoffice/login";
 const ALLOWED_ROLES = new Set(["staff", "admin", "leader", "agent", "coordinator", "assistant"]);
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
+// Domínios wildcard para multi-tenant (trials e novos tenants)
+const WILDCARD_DOMAINS = [
+  ".backoffice.crmplus.trioto.tech",  // slug.backoffice.crmplus.trioto.tech
+  ".bo.crmplus.trioto.tech",          // slug.bo.crmplus.trioto.tech (alternativo curto)
+];
+
+// Domínios que NÃO são multi-tenant (deploys dedicados)
+const DEDICATED_DOMAINS = [
+  "backoffice.luisgaspar.pt",
+  "backoffice.imoveismais.com",
+  "localhost",
+];
+
+/**
+ * Extrai o slug do tenant a partir do hostname.
+ * 
+ * Exemplos:
+ * - nazareia.backoffice.crmplus.trioto.tech → "nazareia"
+ * - backoffice.luisgaspar.pt → null (domínio dedicado)
+ * - localhost:3000 → null (desenvolvimento)
+ */
+function extractTenantSlug(host: string): string | null {
+  // Remove porta se existir
+  const hostname = host.split(":")[0];
+  
+  // Verificar se é domínio dedicado
+  for (const dedicated of DEDICATED_DOMAINS) {
+    if (hostname === dedicated || hostname.endsWith(dedicated)) {
+      return null; // Usar configuração de ambiente
+    }
+  }
+  
+  // Verificar wildcards
+  for (const wildcard of WILDCARD_DOMAINS) {
+    if (hostname.endsWith(wildcard)) {
+      // Extrair slug: nazareia.backoffice.crmplus.trioto.tech → nazareia
+      const slug = hostname.replace(wildcard, "");
+      if (slug && !slug.includes(".")) {
+        return slug;
+      }
+    }
+  }
+  
+  // Tentar extrair de subdomínio genérico: xxx.backoffice.yyy.zzz
+  const parts = hostname.split(".");
+  if (parts.length >= 4 && parts[1] === "backoffice") {
+    return parts[0];
+  }
+  
+  return null;
+}
+
 async function verifyStaffToken(token: string) {
   const secret = process.env.CRMPLUS_AUTH_SECRET;
   // Primeiro tenta validar localmente. Se a secret não estiver definida ou falhar,
@@ -47,8 +99,28 @@ export async function middleware(req: NextRequest) {
   }
 
   const { pathname } = req.nextUrl;
+  const host = req.headers.get("host") || "";
+  
+  // Extrair tenant slug do subdomínio (se aplicável)
+  const tenantSlug = extractTenantSlug(host);
+  
+  // Criar response com headers do tenant
+  const response = NextResponse.next();
+  
+  // Se temos um tenant slug, adicionar aos headers para uso no frontend
+  if (tenantSlug) {
+    response.headers.set("x-tenant-slug", tenantSlug);
+    // Também definir cookie para facilitar acesso client-side
+    response.cookies.set("tenant_slug", tenantSlug, {
+      path: "/",
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+  
   if (pathname.startsWith(LOGIN_PATH)) {
-    return NextResponse.next();
+    return response;
   }
 
   const token =
@@ -63,7 +135,7 @@ export async function middleware(req: NextRequest) {
 
   try {
     await verifyStaffToken(token);
-    return NextResponse.next();
+    return response;
   } catch (err) {
     const url = req.nextUrl.clone();
     url.pathname = "/backoffice/errors/forbidden";
@@ -78,4 +150,4 @@ export const config = {
 };
 
 // Export para testes unitários
-export const __test = { verifyStaffToken };
+export const __test = { verifyStaffToken, extractTenantSlug };
