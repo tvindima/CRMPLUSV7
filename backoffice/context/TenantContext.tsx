@@ -19,6 +19,7 @@ interface TenantConfig {
 interface TenantContextType {
   tenant: TenantConfig | null;
   sector: string;
+  tenantSlug: string;
   loading: boolean;
   isRealEstate: boolean;
   isAutomotive: boolean;
@@ -72,12 +73,14 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sector = tenant?.sector || 'real_estate';
+  const tenantSlug = tenant?.slug || 'default';
 
   return (
     <TenantContext.Provider
       value={{
         tenant,
         sector,
+        tenantSlug,
         loading,
         isRealEstate: sector === 'real_estate',
         isAutomotive: sector === 'automotive',
@@ -99,6 +102,7 @@ export function useTenant() {
     return {
       tenant: DEFAULT_TENANT,
       sector: 'real_estate',
+      tenantSlug: 'default',
       loading: false,
       isRealEstate: true,
       isAutomotive: false,
