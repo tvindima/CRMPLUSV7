@@ -959,3 +959,269 @@ async def update_platform_settings(
     db.refresh(settings)
     
     return settings
+
+
+# ===========================================
+# PROVISIONING ENDPOINTS (NOVOS)
+# ===========================================
+
+@router.post("/provision", response_model=schemas.TenantProvisionResponse)
+async def provision_new_tenant(
+    request: schemas.TenantProvisionRequest,
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Provisionar novo tenant completo.
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    
+    Este endpoint:
+    1. Cria o registo do tenant
+    2. Cria o schema PostgreSQL isolado
+    3. Copia estrutura de tabelas
+    4. Aplica seeds do setor escolhido
+    5. Cria admin inicial (se fornecido)
+    
+    Retorna credenciais do admin se a password foi gerada.
+    """
+    from app.platform.provisioning import provision_new_tenant as do_provision
+    
+    result = do_provision(
+        db=db,
+        name=request.name,
+        sector=request.sector,
+        plan=request.plan,
+        admin_email=request.admin_email,
+        admin_name=request.admin_name,
+        admin_password=request.admin_password,
+        primary_domain=request.primary_domain,
+        backoffice_domain=request.backoffice_domain,
+        logo_url=request.logo_url,
+        primary_color=request.primary_color,
+    )
+    
+    # Converter para schema de resposta
+    tenant_data = None
+    if result.get("tenant"):
+        tenant = db.query(Tenant).filter(Tenant.id == result["tenant"]["id"]).first()
+        if tenant:
+            tenant_data = schemas.TenantOut.model_validate(tenant)
+    
+    return schemas.TenantProvisionResponse(
+        success=result["success"],
+        tenant=tenant_data,
+        admin_email=result.get("admin", {}).get("email") if result.get("admin") else None,
+        admin_password=result.get("admin", {}).get("password") if result.get("admin") else None,
+        admin_created=result.get("admin", {}).get("created", False) if result.get("admin") else False,
+        urls=result.get("urls", {}),
+        logs=result.get("logs", []),
+        errors=result.get("errors", []),
+    )
+
+
+@router.post("/register", response_model=schemas.TenantProvisionResponse)
+async def register_tenant_self_service(
+    request: schemas.TenantRegister,
+    db: Session = Depends(get_db)
+):
+    """
+    Registo self-service de novo tenant.
+    
+    PÚBLICO - Não requer autenticação (para página de registo).
+    
+    Nota: Em produção, adicionar rate limiting e verificação de email.
+    """
+    # Verificar se registo está ativado
+    settings = db.query(PlatformSettings).first()
+    if settings and not settings.registration_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registo de novos tenants está temporariamente desativado"
+        )
+    
+    # Verificar se email já existe
+    existing = db.query(Tenant).filter(Tenant.admin_email == request.admin_email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este email já está associado a uma conta"
+        )
+    
+    from app.platform.provisioning import provision_new_tenant as do_provision
+    
+    result = do_provision(
+        db=db,
+        name=request.company_name,
+        sector=request.sector,
+        plan="trial",  # Self-service sempre começa com trial
+        admin_email=request.admin_email,
+        admin_name=request.admin_name,
+        admin_password=request.admin_password,
+        logo_url=request.logo_url,
+        primary_color=request.primary_color,
+    )
+    
+    # Converter para schema de resposta
+    tenant_data = None
+    if result.get("tenant"):
+        tenant = db.query(Tenant).filter(Tenant.id == result["tenant"]["id"]).first()
+        if tenant:
+            tenant_data = schemas.TenantOut.model_validate(tenant)
+    
+    # TODO: Enviar email de boas-vindas
+    
+    return schemas.TenantProvisionResponse(
+        success=result["success"],
+        tenant=tenant_data,
+        admin_email=result.get("admin", {}).get("email") if result.get("admin") else None,
+        admin_password=None,  # Não retornar password em self-service
+        admin_created=result.get("admin", {}).get("created", False) if result.get("admin") else False,
+        urls=result.get("urls", {}),
+        logs=[],  # Não expor logs em self-service
+        errors=result.get("errors", []) if not result["success"] else [],
+    )
+
+
+@router.get("/sectors", response_model=schemas.AvailableSectorsResponse)
+def get_available_sectors():
+    """
+    Listar setores de atividade disponíveis.
+    
+    PÚBLICO - Para formulário de registo.
+    """
+    from app.platform.seeds import get_available_sectors
+    
+    sectors_dict = get_available_sectors()
+    sectors = [
+        schemas.SectorInfo(slug=slug, name=name)
+        for slug, name in sectors_dict.items()
+    ]
+    
+    return schemas.AvailableSectorsResponse(sectors=sectors)
+
+
+@router.get("/plans", response_model=schemas.AvailablePlansResponse)
+def get_available_plans():
+    """
+    Listar planos disponíveis.
+    
+    PÚBLICO - Para página de preços.
+    """
+    from app.platform.provisioning import PLANS
+    
+    plans = [
+        schemas.PlanInfo(
+            slug=slug,
+            name=slug.capitalize(),
+            max_agents=config["max_agents"],
+            max_properties=config["max_properties"],
+            features=[]
+        )
+        for slug, config in PLANS.items()
+    ]
+    
+    return schemas.AvailablePlansResponse(plans=plans)
+
+
+@router.get("/tenants/{tenant_id}/stats", response_model=schemas.TenantStats)
+def get_tenant_detailed_stats(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Obter estatísticas detalhadas de um tenant.
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    # Contar dados do schema do tenant
+    stats = {"agents": 0, "properties": 0, "leads": 0, "users": 0}
+    
+    if tenant.schema_name:
+        try:
+            # Mudar para schema do tenant
+            db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+            
+            # Contar registos
+            for table, key in [("agents", "agents"), ("properties", "properties"), ("leads", "leads"), ("users", "users")]:
+                try:
+                    result = db.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                    stats[key] = result.scalar() or 0
+                except:
+                    pass
+            
+            # Voltar ao schema public
+            db.execute(text('SET search_path TO public'))
+        except Exception as e:
+            print(f"[PLATFORM] Erro ao obter stats do tenant {tenant_id}: {e}")
+    
+    return schemas.TenantStats(
+        tenant_id=tenant.id,
+        tenant_slug=tenant.slug,
+        tenant_name=tenant.name,
+        agents_count=stats["agents"],
+        properties_count=stats["properties"],
+        leads_count=stats["leads"],
+        users_count=stats["users"]
+    )
+
+
+class CreateAdminRequest(schemas.BaseModel):
+    """Request body para criação de admin"""
+    email: str
+    name: str
+    password: str | None = None
+
+
+@router.post("/tenants/{tenant_id}/create-admin")
+async def create_tenant_admin(
+    tenant_id: int,
+    request: CreateAdminRequest,
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Criar admin inicial para um tenant existente.
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    if not tenant.schema_name:
+        raise HTTPException(status_code=400, detail="Tenant não tem schema provisionado")
+    
+    from app.platform.provisioning import TenantProvisioner, generate_password
+    
+    provisioner = TenantProvisioner(db)
+    
+    generated_password = None
+    admin_password = request.password
+    if not admin_password:
+        generated_password = generate_password()
+        admin_password = generated_password
+    
+    success = provisioner._create_tenant_admin(
+        schema_name=tenant.schema_name,
+        email=request.email,
+        name=request.name,
+        password=admin_password
+    )
+    
+    if success:
+        tenant.admin_email = request.email
+        tenant.admin_created = True
+        db.commit()
+    
+    return {
+        "success": success,
+        "admin_email": request.email,
+        "admin_password": generated_password,  # Só retorna se foi gerada
+        "message": "Admin criado com sucesso" if success else "Falha ao criar admin"
+    }

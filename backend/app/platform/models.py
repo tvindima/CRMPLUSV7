@@ -67,6 +67,27 @@ class Tenant(Base):
     # Branding override (se diferente do padrão)
     logo_url = Column(String(500), nullable=True)
     primary_color = Column(String(20), nullable=True)
+    secondary_color = Column(String(20), nullable=True)
+    
+    # Setor de atividade
+    sector = Column(String(50), default='real_estate')  # real_estate, automotive, services, etc.
+    
+    # Admin inicial do tenant
+    admin_email = Column(String(200), nullable=True)
+    admin_created = Column(Boolean, default=False)
+    
+    # Onboarding
+    onboarding_completed = Column(Boolean, default=False)
+    onboarding_step = Column(Integer, default=0)
+    
+    # Verificação de domínio customizado
+    custom_domain_verified = Column(Boolean, default=False)
+    domain_verification_token = Column(String(100), nullable=True)
+    
+    # Billing (para futuro Stripe)
+    stripe_customer_id = Column(String(100), nullable=True)
+    stripe_subscription_id = Column(String(100), nullable=True)
+    billing_email = Column(String(200), nullable=True)
     
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())

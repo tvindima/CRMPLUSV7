@@ -27,6 +27,22 @@ class TenantCreate(TenantBase):
     max_agents: int = 10
     max_properties: int = 100
     is_trial: bool = False
+    sector: str = "real_estate"
+
+
+class TenantRegister(BaseModel):
+    """Schema para registo self-service de novo tenant"""
+    company_name: str
+    sector: str = "real_estate"
+    plan: str = "trial"
+    admin_email: EmailStr
+    admin_name: str
+    admin_password: str
+    phone: Optional[str] = None
+    
+    # Opcionais
+    logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
 
 
 class TenantUpdate(BaseModel):
@@ -43,7 +59,11 @@ class TenantUpdate(BaseModel):
     is_trial: Optional[bool] = None
     logo_url: Optional[str] = None
     primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    sector: Optional[str] = None
     features: Optional[Dict[str, Any]] = None
+    onboarding_completed: Optional[bool] = None
+    billing_email: Optional[EmailStr] = None
 
 
 class TenantOut(TenantBase):
@@ -58,6 +78,8 @@ class TenantOut(TenantBase):
     trial_ends_at: Optional[datetime] = None
     logo_url: Optional[str] = None
     primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    sector: Optional[str] = "real_estate"
     features: Dict[str, Any] = {}
     created_at: Optional[datetime] = None
     
@@ -68,6 +90,11 @@ class TenantOut(TenantBase):
     failed_at: Optional[datetime] = None
     schema_name: Optional[str] = None
     schema_revision: Optional[str] = None
+    
+    # Admin e onboarding
+    admin_email: Optional[str] = None
+    admin_created: bool = False
+    onboarding_completed: bool = False
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -185,3 +212,61 @@ class PlatformDashboard(BaseModel):
     total_properties: int
     total_leads: int
     tenants_by_plan: Dict[str, int]
+    tenants_by_sector: Dict[str, int] = {}
+
+
+# ===========================================
+# PROVISIONING SCHEMAS
+# ===========================================
+
+class TenantProvisionRequest(BaseModel):
+    """Request para provisionar novo tenant via super-admin"""
+    name: str
+    sector: str = "real_estate"
+    plan: str = "trial"
+    admin_email: Optional[EmailStr] = None
+    admin_name: Optional[str] = None
+    admin_password: Optional[str] = None  # Se não fornecido, será gerado
+    primary_domain: Optional[str] = None
+    backoffice_domain: Optional[str] = None
+    logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
+
+
+class TenantProvisionResponse(BaseModel):
+    """Resposta do provisionamento"""
+    success: bool
+    tenant: Optional[TenantOut] = None
+    admin_email: Optional[str] = None
+    admin_password: Optional[str] = None  # Apenas se foi gerada
+    admin_created: bool = False
+    urls: Dict[str, str] = {}
+    logs: list = []
+    errors: list = []
+
+
+class SectorInfo(BaseModel):
+    """Informação sobre um setor disponível"""
+    slug: str
+    name: str
+    description: Optional[str] = None
+
+
+class AvailableSectorsResponse(BaseModel):
+    """Lista de setores disponíveis"""
+    sectors: list[SectorInfo]
+
+
+class PlanInfo(BaseModel):
+    """Informação sobre um plano"""
+    slug: str
+    name: str
+    max_agents: int
+    max_properties: int
+    price: Optional[float] = None
+    features: list[str] = []
+
+
+class AvailablePlansResponse(BaseModel):
+    """Lista de planos disponíveis"""
+    plans: list[PlanInfo]

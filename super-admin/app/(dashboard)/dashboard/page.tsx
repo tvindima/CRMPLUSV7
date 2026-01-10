@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Cookies from 'js-cookie';
 import {
   Building2,
@@ -9,6 +11,13 @@ import {
   FileText,
   TrendingUp,
   Activity,
+  Plus,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  XCircle,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
@@ -21,6 +30,7 @@ interface Dashboard {
   total_properties: number;
   total_leads: number;
   tenants_by_plan: Record<string, number>;
+  tenants_by_sector?: Record<string, number>;
 }
 
 interface Tenant {
@@ -28,11 +38,18 @@ interface Tenant {
   slug: string;
   name: string;
   plan: string;
+  sector?: string;
+  status: string;
   is_active: boolean;
+  is_trial: boolean;
+  trial_ends_at?: string;
   created_at: string;
+  admin_email?: string;
+  admin_created: boolean;
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +133,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-4">
+        <Link
+          href="/tenants/new"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Novo Tenant
+        </Link>
+        <button
+          onClick={() => fetchData()}
+          className="flex items-center gap-2 px-4 py-2 bg-background-secondary border border-border text-white rounded-lg hover:bg-background transition-colors"
+        >
+          <RefreshCw className="w-5 h-5" />
+          Atualizar
+        </button>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map((stat) => (
@@ -131,6 +166,51 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Alerts Section */}
+      {tenants.some(t => t.status === 'failed' || t.status === 'pending' || !t.admin_created) && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <AlertTriangle className="w-5 h-5 text-warning" />
+            <h3 className="font-semibold text-warning">Ações Pendentes</h3>
+          </div>
+          <div className="space-y-2">
+            {tenants.filter(t => t.status === 'failed').map(t => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-white">
+                  <XCircle className="w-4 h-4 inline mr-2 text-danger" />
+                  {t.name} - Provisionamento falhou
+                </span>
+                <Link href={`/tenants/${t.id}`} className="text-primary hover:underline">
+                  Resolver
+                </Link>
+              </div>
+            ))}
+            {tenants.filter(t => t.status === 'pending').map(t => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-white">
+                  <Clock className="w-4 h-4 inline mr-2 text-warning" />
+                  {t.name} - Aguarda provisionamento
+                </span>
+                <Link href={`/tenants/${t.id}`} className="text-primary hover:underline">
+                  Ver
+                </Link>
+              </div>
+            ))}
+            {tenants.filter(t => t.status === 'ready' && !t.admin_created).map(t => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-white">
+                  <Users className="w-4 h-4 inline mr-2 text-blue-500" />
+                  {t.name} - Sem admin criado
+                </span>
+                <Link href={`/tenants/${t.id}`} className="text-primary hover:underline">
+                  Criar Admin
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tenants by Plan */}
       {dashboard?.tenants_by_plan && Object.keys(dashboard.tenants_by_plan).length > 0 && (
@@ -156,14 +236,18 @@ export default function DashboardPage() {
 
       {/* Recent Tenants */}
       <div className="bg-background-secondary rounded-xl border border-border overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">Tenants Recentes</h3>
+          <Link href="/tenants" className="text-primary hover:underline text-sm flex items-center gap-1">
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
         <div className="divide-y divide-border">
           {tenants.slice(0, 5).map((tenant) => (
-            <div
+            <Link
               key={tenant.id}
-              className="px-6 py-4 flex items-center justify-between hover:bg-background/50 transition-colors"
+              href={`/tenants/${tenant.id}`}
+              className="px-6 py-4 flex items-center justify-between hover:bg-background/50 transition-colors block"
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
@@ -175,6 +259,14 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                {/* Status badge */}
+                {tenant.status === 'ready' ? (
+                  <CheckCircle className="w-4 h-4 text-success" />
+                ) : tenant.status === 'failed' ? (
+                  <XCircle className="w-4 h-4 text-danger" />
+                ) : (
+                  <Clock className="w-4 h-4 text-warning" />
+                )}
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                   tenant.plan === 'enterprise' ? 'bg-primary/20 text-primary' :
                   tenant.plan === 'pro' ? 'bg-secondary/20 text-secondary' :
@@ -182,13 +274,26 @@ export default function DashboardPage() {
                 }`}>
                   {tenant.plan}
                 </span>
+                {tenant.is_trial && (
+                  <span className="px-2 py-1 bg-warning/20 text-warning rounded text-xs font-medium">
+                    Trial
+                  </span>
+                )}
                 <span className={`w-2 h-2 rounded-full ${tenant.is_active ? 'bg-success' : 'bg-danger'}`} />
               </div>
-            </div>
+            </Link>
           ))}
           {tenants.length === 0 && (
-            <div className="px-6 py-8 text-center text-text-muted">
-              Nenhum tenant registado
+            <div className="px-6 py-8 text-center">
+              <Building2 className="w-12 h-12 text-text-muted mx-auto mb-3" />
+              <p className="text-text-muted mb-4">Nenhum tenant registado</p>
+              <Link
+                href="/tenants/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Criar Primeiro Tenant
+              </Link>
             </div>
           )}
         </div>
