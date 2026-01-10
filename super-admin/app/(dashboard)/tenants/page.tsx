@@ -42,11 +42,13 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [showModal, setShowModal] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -174,6 +176,7 @@ export default function TenantsPage() {
 
   const handleDelete = async (tenant: Tenant) => {
     const token = Cookies.get('platform_token');
+    setDeleting(true);
     try {
       const res = await fetch(`${API_URL}/platform/tenants/${tenant.id}?permanent=true`, {
         method: 'DELETE',
@@ -181,8 +184,9 @@ export default function TenantsPage() {
       });
 
       if (res.ok) {
+        // Remove from local state immediately
+        setTenants(prev => prev.filter(t => t.id !== tenant.id));
         setDeletingTenant(null);
-        fetchTenants();
       } else {
         const error = await res.json();
         alert(error.detail || 'Erro ao eliminar tenant');
@@ -190,15 +194,24 @@ export default function TenantsPage() {
     } catch (error) {
       console.error('Error deleting tenant:', error);
       alert('Erro ao eliminar tenant');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const filteredTenants = tenants.filter(
-    (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase()) ||
-      t.primary_domain?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTenants = tenants.filter((t) => {
+    // Filter by active status
+    if (filter === 'active' && !t.is_active) return false;
+    if (filter === 'inactive' && t.is_active) return false;
+    
+    // Filter by search
+    const searchLower = search.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(searchLower) ||
+      t.slug.toLowerCase().includes(searchLower) ||
+      t.primary_domain?.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (loading) {
     return (
@@ -211,24 +224,62 @@ export default function TenantsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Pesquisar tenants..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-primary"
-          />
+      <div className="flex flex-col gap-4">
+        {/* Filter Tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter('active')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filter === 'active'
+                ? 'bg-primary text-white'
+                : 'bg-background-secondary text-text-muted hover:text-white'
+            }`}
+          >
+            Activos ({tenants.filter(t => t.is_active).length})
+          </button>
+          <button
+            onClick={() => setFilter('inactive')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filter === 'inactive'
+                ? 'bg-warning text-white'
+                : 'bg-background-secondary text-text-muted hover:text-white'
+            }`}
+          >
+            Inactivos ({tenants.filter(t => !t.is_active).length})
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filter === 'all'
+                ? 'bg-background text-white border border-border'
+                : 'bg-background-secondary text-text-muted hover:text-white'
+            }`}
+          >
+            Todos ({tenants.length})
+          </button>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Novo Tenant
-        </button>
+        
+        {/* Search and New */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Pesquisar tenants..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Tenant
+          </button>
+        </div>
+      </div>
       </div>
 
       {/* Tenants Grid */}
@@ -541,15 +592,24 @@ export default function TenantsPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingTenant(null)}
-                className="flex-1 px-4 py-2 bg-background border border-border text-white rounded-lg hover:bg-background/80 transition-colors"
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-background border border-border text-white rounded-lg hover:bg-background/80 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(deletingTenant)}
-                className="flex-1 px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors"
+                disabled={deleting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors disabled:opacity-50"
               >
-                Eliminar
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    A eliminar...
+                  </>
+                ) : (
+                  'Eliminar'
+                )}
               </button>
             </div>
           </div>
