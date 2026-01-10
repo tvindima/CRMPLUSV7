@@ -42,7 +42,7 @@ if DATABASE_URL:
         schema = current_tenant_schema.get()
         if schema:
             cursor = dbapi_conn.cursor()
-            cursor.execute(f"SET search_path TO {schema}, public")
+            cursor.execute(f'SET search_path TO "{schema}", public')
             cursor.close()
 else:
     # SQLite fallback (local development)
@@ -70,7 +70,7 @@ def get_db():
         # Se temos um tenant definido, garantir que o search_path está correto
         schema = current_tenant_schema.get()
         if schema and DATABASE_URL:  # Só para PostgreSQL
-            db.execute(text(f"SET search_path TO {schema}, public"))
+            db.execute(text(f'SET search_path TO "{schema}", public'))
         yield db
     finally:
         db.close()
