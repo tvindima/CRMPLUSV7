@@ -165,7 +165,7 @@ class TenantProvisioner:
             slug=slug,
             name=name,
             sector=sector,
-            sub_sector=sub_sector if sub_sector and sub_sector != 'none' else None,
+            # sub_sector=sub_sector if sub_sector and sub_sector != 'none' else None,  # TEMPORARIAMENTE COMENTADO
             plan=plan,
             max_agents=plan_config["max_agents"],
             max_properties=plan_config["max_properties"],
@@ -177,7 +177,7 @@ class TenantProvisioner:
             logo_url=logo_url,
             primary_color=primary_color,
             admin_email=admin_email,
-            custom_terminology=custom_terminology,
+            # custom_terminology=custom_terminology,  # TEMPORARIAMENTE COMENTADO
         )
         
         self.db.add(tenant)

@@ -1217,8 +1217,8 @@ def get_tenant_terminology_endpoint(tenant_slug: str, db: Session = Depends(get_
     # Preparar dados do tenant
     tenant_data = {
         'sector': tenant.sector or 'other',
-        'sub_sector': tenant.sub_sector,
-        'custom_terminology': tenant.custom_terminology or {}
+        'sub_sector': None,  # tenant.sub_sector,  # TEMPORARIAMENTE COMENTADO
+        'custom_terminology': {}  # tenant.custom_terminology or {}  # TEMPORARIAMENTE COMENTADO
     }
     
     # Obter terminologia merged
@@ -1229,10 +1229,10 @@ def get_tenant_terminology_endpoint(tenant_slug: str, db: Session = Depends(get_
     return {
         "tenant_slug": tenant_slug,
         "sector": tenant.sector,
-        "sub_sector": tenant.sub_sector,
+        "sub_sector": None,  # tenant.sub_sector,  # TEMPORARIAMENTE COMENTADO
         "sector_name": available.get(tenant.sector, 'Outro'),
         "terminology": terminology,
-        "has_custom_terminology": bool(tenant.custom_terminology)
+        "has_custom_terminology": False  # bool(tenant.custom_terminology)  # TEMPORARIAMENTE COMENTADO
     }
 
 
