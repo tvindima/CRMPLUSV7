@@ -280,7 +280,6 @@ export default function TenantsPage() {
           </button>
         </div>
       </div>
-      </div>
 
       {/* Tenants Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
