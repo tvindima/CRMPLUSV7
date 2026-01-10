@@ -3,13 +3,13 @@ import { getSiteUrl } from "../../src/lib/siteUrl";
 
 const siteUrl = getSiteUrl();
 
+// Metadata genérico - será sobrescrito dinamicamente pelo componente cliente
 export const metadata: Metadata = {
-  title: "Todos os Imóveis",
-  description: "Explore o nosso portefólio completo de imóveis. Apartamentos, moradias, terrenos e imóveis comerciais para venda e arrendamento em Portugal.",
-  keywords: ["imóveis", "apartamentos", "moradias", "casas", "venda", "arrendamento", "Portugal", "Leiria"],
+  title: "Catálogo",
+  description: "Explore o nosso portefólio completo.",
   openGraph: {
-    title: "Todos os Imóveis | Imóveis Mais",
-    description: "Explore o nosso portefólio completo de imóveis. Apartamentos, moradias, terrenos e imóveis comerciais para venda e arrendamento.",
+    title: "Catálogo",
+    description: "Explore o nosso portefólio completo.",
     type: "website",
     url: `${siteUrl}/imoveis`,
   },

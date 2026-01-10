@@ -16,6 +16,11 @@ function ImoveisContent() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Atualizar título da página baseado na terminologia
+  useEffect(() => {
+    document.title = `Todos os ${terms.itemsCapitalized}`;
+  }, [terms]);
   
   // URL params
   const agentIdParam = searchParams.get('agent_id');
