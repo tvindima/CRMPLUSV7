@@ -1144,6 +1144,55 @@ def get_all_terminology():
     }
 
 
+@router.get("/form-fields/{sector}")
+def get_sector_form_fields(sector: str):
+    """
+    Obter campos de formulário para um setor específico.
+    
+    PÚBLICO - Para formulário de criação/edição de itens.
+    
+    Retorna a configuração completa do formulário:
+    - sections: Seções do formulário com labels e ícones
+    - fields: Lista de todos os campos
+    - fields_by_section: Campos organizados por seção
+    
+    Exemplo: GET /platform/form-fields/automotive
+    """
+    from app.platform.form_fields import get_form_config, SECTOR_FIELDS_MAP
+    from app.platform.seeds import get_available_sectors
+    
+    available = get_available_sectors()
+    if sector not in available:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Setor '{sector}' não encontrado. Disponíveis: {list(available.keys())}"
+        )
+    
+    return get_form_config(sector)
+
+
+@router.get("/form-fields")
+def get_all_form_fields():
+    """
+    Obter campos de formulário de todos os setores.
+    
+    PÚBLICO - Para cache no frontend.
+    """
+    from app.platform.form_fields import get_form_config, SECTOR_FIELDS_MAP
+    from app.platform.seeds import get_available_sectors
+    
+    available = get_available_sectors()
+    configs = {}
+    
+    for sector in available.keys():
+        configs[sector] = get_form_config(sector)
+    
+    return {
+        "sectors": available,
+        "form_configs": configs
+    }
+
+
 @router.get("/plans", response_model=schemas.AvailablePlansResponse)
 def get_available_plans():
     """
