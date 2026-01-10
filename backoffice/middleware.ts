@@ -9,15 +9,14 @@ const ALLOWED_ROLES = new Set(["staff", "admin", "leader", "agent", "coordinator
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 // Domínios wildcard para multi-tenant (trials e novos tenants)
-const WILDCARD_DOMAINS = [
-  ".backoffice.crmplus.trioto.tech",  // slug.backoffice.crmplus.trioto.tech
-  ".bo.crmplus.trioto.tech",          // slug.bo.crmplus.trioto.tech (alternativo curto)
-];
+// Novo padrão: bo-slug.crmplus.trioto.tech
+const WILDCARD_PATTERN = ".crmplus.trioto.tech";
 
 // Domínios que NÃO são multi-tenant (deploys dedicados)
 const DEDICATED_DOMAINS = [
   "backoffice.luisgaspar.pt",
   "backoffice.imoveismais.com",
+  "backoffice.luiscarlosgaspar.com",
   "localhost",
 ];
 
@@ -25,7 +24,8 @@ const DEDICATED_DOMAINS = [
  * Extrai o slug do tenant a partir do hostname.
  * 
  * Exemplos:
- * - nazareia.backoffice.crmplus.trioto.tech → "nazareia"
+ * - bo-nazareia.crmplus.trioto.tech → "nazareia"
+ * - bo-pg-auto.crmplus.trioto.tech → "pg-auto"
  * - backoffice.luisgaspar.pt → null (domínio dedicado)
  * - localhost:3000 → null (desenvolvimento)
  */
@@ -40,21 +40,16 @@ function extractTenantSlug(host: string): string | null {
     }
   }
   
-  // Verificar wildcards
-  for (const wildcard of WILDCARD_DOMAINS) {
-    if (hostname.endsWith(wildcard)) {
-      // Extrair slug: nazareia.backoffice.crmplus.trioto.tech → nazareia
-      const slug = hostname.replace(wildcard, "");
-      if (slug && !slug.includes(".")) {
-        return slug;
-      }
+  // Verificar padrão: bo-slug.crmplus.trioto.tech
+  if (hostname.endsWith(WILDCARD_PATTERN)) {
+    // Extrair: bo-pg-auto.crmplus.trioto.tech → bo-pg-auto
+    const subdomain = hostname.replace(WILDCARD_PATTERN, "");
+    
+    // Verificar se é backoffice (começa com "bo-")
+    if (subdomain.startsWith("bo-")) {
+      // Extrair slug: bo-pg-auto → pg-auto
+      return subdomain.substring(3);
     }
-  }
-  
-  // Tentar extrair de subdomínio genérico: xxx.backoffice.yyy.zzz
-  const parts = hostname.split(".");
-  if (parts.length >= 4 && parts[1] === "backoffice") {
-    return parts[0];
   }
   
   return null;
