@@ -7,12 +7,12 @@ const PLATFORM_API = process.env.PLATFORM_API_URL || 'https://crmplusv7-producti
 export async function GET(request: NextRequest) {
   try {
     // 1. Tentar obter slug do cookie (definido pelo middleware)
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     let tenantSlug = cookieStore.get('tenant_slug')?.value || '';
     
     // 2. Fallback: header x-tenant-slug
     if (!tenantSlug) {
-      const headersList = headers();
+      const headersList = await headers();
       tenantSlug = headersList.get('x-tenant-slug') || '';
     }
     
@@ -21,17 +21,22 @@ export async function GET(request: NextRequest) {
       tenantSlug = process.env.TENANT_SLUG || '';
     }
     
-    // 4. Fallback: extrair do hostname
+    // 4. Fallback: extrair do hostname (padrão bo-slug.crmplus.trioto.tech)
     if (!tenantSlug) {
-      const headersList = headers();
+      const headersList = await headers();
       const host = headersList.get('host') || '';
-      const hostParts = host.split('.');
+      const hostname = host.split(':')[0];
       
-      // xxx.backoffice.crmplus.trioto.tech → xxx
-      if (hostParts.length >= 4 && hostParts[1] === 'backoffice') {
-        tenantSlug = hostParts[0];
+      // bo-pg-auto.crmplus.trioto.tech → pg-auto
+      if (hostname.endsWith('.crmplus.trioto.tech')) {
+        const subdomain = hostname.replace('.crmplus.trioto.tech', '');
+        if (subdomain.startsWith('bo-')) {
+          tenantSlug = subdomain.substring(3);
+        }
       }
     }
+    
+    console.log('[Tenant Config] Resolved tenant slug:', tenantSlug || '(empty)');
 
     if (!tenantSlug) {
       // Sem tenant identificado - retornar config default
