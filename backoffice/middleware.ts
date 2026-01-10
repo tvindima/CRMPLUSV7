@@ -114,6 +114,12 @@ export async function middleware(req: NextRequest) {
     });
   }
   
+  // Para rotas /api/*, apenas definir o cookie e deixar passar
+  // A autenticação é feita internamente pelos endpoints
+  if (pathname.startsWith("/api/")) {
+    return response;
+  }
+  
   if (pathname.startsWith(LOGIN_PATH)) {
     return response;
   }
@@ -140,8 +146,8 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Protege todas as rotas /backoffice/* EXCETO /backoffice/login
-  // NÃO protege /api/* (endpoints da API precisam validar auth internamente)
-  matcher: ["/backoffice/((?!login).*)"],
+  // TAMBÉM corre em /api/* para definir o cookie do tenant
+  matcher: ["/backoffice/((?!login).*)", "/api/:path*"],
 };
 
 // Export para testes unitários
