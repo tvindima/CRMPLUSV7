@@ -130,3 +130,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|icon.png|icon.svg|brand/|robots.txt|sitemap.xml).*)',
   ],
 };
+// Trigger redeploy Sat Jan 10 20:00:40 WET 2026
