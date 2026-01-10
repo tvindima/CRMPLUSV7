@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { getTenantSlugFromCookie, getApiUrl } from '@/lib/tenant';
 
 interface Branding {
   agency_name: string;
@@ -63,8 +64,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        // Usa a variável de ambiente do tenant actual
-        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+        const apiUrl = getApiUrl();
+        const tenantSlug = getTenantSlugFromCookie();
         
         if (!apiUrl) {
           console.warn('No API URL configured for branding');
@@ -72,8 +73,12 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Usar endpoint público (sem autenticação)
-        const response = await fetch(`${apiUrl}/public/branding`);
+        // Usar endpoint público com header do tenant
+        const response = await fetch(`${apiUrl}/public/branding`, {
+          headers: {
+            'X-Tenant-Slug': tenantSlug,
+          },
+        });
         
         if (response.ok) {
           const data = await response.json();

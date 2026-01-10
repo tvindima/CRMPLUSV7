@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 const BACKEND_URL = (process.env.BACKEND_URL || 'https://crmplusv7-production.up.railway.app').replace(/\/+$/, '');
 const HOP_BY_HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'content-length', 'host']);
@@ -29,6 +30,12 @@ async function proxyRequest(request: NextRequest, pathSegments: string[] = []) {
   const url = buildBackendUrl(pathSegments, request.nextUrl.searchParams.toString());
   const method = request.method.toUpperCase();
   const headers = sanitizeHeaders(request.headers);
+  
+  // Add tenant slug from cookie
+  const cookieStore = await cookies();
+  const tenantSlug = cookieStore.get('tenant_slug')?.value || 'imoveismais';
+  headers.set('X-Tenant-Slug', tenantSlug);
+  
   const hasBody = !['GET', 'HEAD'].includes(method);
   const body = hasBody ? await request.arrayBuffer() : undefined;
 

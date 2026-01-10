@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { getApiUrl, getTenantSlugFromCookie } from "@/lib/tenant";
 
 interface LeadContactFormProps {
   propertyId: number;
@@ -38,12 +39,11 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
     setErrorMessage("");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
-      
-      const response = await fetch(`${API_URL}/leads/from-website`, {
+      const response = await fetch(`${getApiUrl()}/leads/from-website`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-Tenant-Slug": getTenantSlugFromCookie(),
         },
         body: JSON.stringify({
           name: formData.name,

@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+import { getTenantSlugFromCookie, getApiUrl } from "@/lib/tenant";
+
+const API_BASE = getApiUrl();
 const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
 // ✅ REMOVER MOCKS - usar apenas dados reais do backend
@@ -69,8 +71,19 @@ export type Agent = {
   whatsapp?: string | null;
 };
 
+// Helper to get tenant header
+function getTenantHeader(): Record<string, string> {
+  if (typeof window !== 'undefined') {
+    return { 'X-Tenant-Slug': getTenantSlugFromCookie() };
+  }
+  return {};
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { next: { revalidate: 30 } });
+  const res = await fetch(`${API_BASE}${path}`, { 
+    next: { revalidate: 30 },
+    headers: getTenantHeader(),
+  });
   if (!res.ok) {
     throw new Error(`Erro ao chamar ${path}: ${res.status}`);
   }

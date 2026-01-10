@@ -9,8 +9,8 @@ const ALLOWED_ROLES = new Set(["staff", "admin", "leader", "agent", "coordinator
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 // Domínios wildcard para multi-tenant (trials e novos tenants)
-// Novo padrão: bo-slug.crmplus.trioto.tech
-const WILDCARD_PATTERN = ".crmplus.trioto.tech";
+// Novo padrão: slug.bo.crmplus.trioto.tech
+const WILDCARD_PATTERN = ".bo.crmplus.trioto.tech";
 
 // Domínios que NÃO são multi-tenant (deploys dedicados)
 const DEDICATED_DOMAINS = [
@@ -24,8 +24,8 @@ const DEDICATED_DOMAINS = [
  * Extrai o slug do tenant a partir do hostname.
  * 
  * Exemplos:
- * - bo-nazareia.crmplus.trioto.tech → "nazareia"
- * - bo-pg-auto.crmplus.trioto.tech → "pg-auto"
+ * - nazareia.bo.crmplus.trioto.tech → "nazareia"
+ * - pg-auto.bo.crmplus.trioto.tech → "pg-auto"
  * - backoffice.luisgaspar.pt → null (domínio dedicado)
  * - localhost:3000 → null (desenvolvimento)
  */
@@ -40,15 +40,12 @@ function extractTenantSlug(host: string): string | null {
     }
   }
   
-  // Verificar padrão: bo-slug.crmplus.trioto.tech
+  // Verificar padrão: slug.bo.crmplus.trioto.tech
   if (hostname.endsWith(WILDCARD_PATTERN)) {
-    // Extrair: bo-pg-auto.crmplus.trioto.tech → bo-pg-auto
-    const subdomain = hostname.replace(WILDCARD_PATTERN, "");
-    
-    // Verificar se é backoffice (começa com "bo-")
-    if (subdomain.startsWith("bo-")) {
-      // Extrair slug: bo-pg-auto → pg-auto
-      return subdomain.substring(3);
+    // Extrair: pg-auto.bo.crmplus.trioto.tech → pg-auto
+    const slug = hostname.replace(WILDCARD_PATTERN, "");
+    if (slug && slug.length > 0) {
+      return slug;
     }
   }
   

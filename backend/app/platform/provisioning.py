@@ -394,8 +394,8 @@ class TenantProvisioner:
         """Constrói o resultado do provisionamento."""
         # URLs padrão para trials (wildcard domains)
         # Tenants com domínio próprio têm os valores em primary_domain e backoffice_domain
-        # Padrão: bo-slug.crmplus.trioto.tech (backoffice) e slug.crmplus.trioto.tech (site)
-        backoffice_url = tenant.backoffice_domain or f"bo-{tenant.slug}.crmplus.trioto.tech"
+        # Padrão: slug.bo.crmplus.trioto.tech (backoffice) e slug.crmplus.trioto.tech (site)
+        backoffice_url = tenant.backoffice_domain or f"{tenant.slug}.bo.crmplus.trioto.tech"
         site_url = tenant.primary_domain or f"{tenant.slug}.crmplus.trioto.tech"
         
         return {

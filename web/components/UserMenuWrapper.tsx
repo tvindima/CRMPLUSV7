@@ -5,8 +5,9 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { MortgageSimulator } from "./MortgageSimulator";
 import { TaxCalculator } from "./TaxCalculator";
+import { getApiUrl, getTenantSlugFromCookie } from "@/lib/tenant";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+const API_BASE = getApiUrl();
 
 interface UserData {
   id?: number;
@@ -114,7 +115,10 @@ export function UserMenuWrapper() {
         // Registar novo cliente via API
         const response = await fetch(`${API_BASE}/website/auth/register`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Tenant-Slug": getTenantSlugFromCookie(),
+          },
           body: JSON.stringify({
             name: formData.name,
             email: formData.email,
@@ -141,7 +145,10 @@ export function UserMenuWrapper() {
         // Login via API
         const response = await fetch(`${API_BASE}/website/auth/login`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Tenant-Slug": getTenantSlugFromCookie(),
+          },
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
@@ -188,7 +195,11 @@ export function UserMenuWrapper() {
 
   const fetchAgents = async (interestType: string) => {
     try {
-      const response = await fetch(`${API_BASE}/website/auth/agents?interest_type=${interestType}`);
+      const response = await fetch(`${API_BASE}/website/auth/agents?interest_type=${interestType}`, {
+        headers: {
+          "X-Tenant-Slug": getTenantSlugFromCookie(),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setAgents(data);
