@@ -22,11 +22,11 @@ interface BrandingContextType {
   loading: boolean;
 }
 
-// Defaults genéricos - serão substituídos pelos valores da API
+// Defaults CRM Plus - serão substituídos pelos valores da API do tenant
 const defaultBranding: Branding = {
-  agency_name: 'Imóveis Mais',
-  agency_logo_url: '/brand/agency-logo.svg',
-  agency_slogan: 'Casas e investimentos à medida',
+  agency_name: 'CRM Plus',
+  agency_logo_url: '/brand/logoCRMPLUSS.png',
+  agency_slogan: 'Sistema Imobiliário Profissional',
   primary_color: '#E10600',
   secondary_color: '#C5C5C5',
   background_color: '#0B0B0D',
