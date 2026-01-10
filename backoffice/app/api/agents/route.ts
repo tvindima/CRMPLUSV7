@@ -1,26 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { API_BASE_URL, TENANT_SLUG, SESSION_COOKIE, getApiHeaders } from "@/lib/api";
+import { getAuthToken, serverApiGet, serverApiPost } from "@/lib/server-api";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     // Forward query params
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/agents/${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/agents/${queryString ? `?${queryString}` : ''}`;
 
-    const res = await fetch(url, {
-      headers: getApiHeaders(token.value),
-    });
+    const res = await serverApiGet(endpoint, token);
 
     if (!res.ok) {
       const error = await res.text();
@@ -41,20 +37,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE);
+    const token = await getAuthToken();
 
-    if (!token?.value) {
+    if (!token) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const res = await fetch(`${API_BASE_URL}/agents/`, {
-      method: 'POST',
-      headers: getApiHeaders(token.value),
-      body: JSON.stringify(body),
-    });
+    const res = await serverApiPost('/agents/', body, token);
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));
