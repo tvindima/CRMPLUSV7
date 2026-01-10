@@ -15,8 +15,10 @@ interface TenantDetails {
   id: string;
   name: string;
   slug: string;
-  domain: string | null;
-  custom_domain: string | null;
+  email: string | null;
+  phone: string | null;
+  primary_domain: string | null;
+  backoffice_domain: string | null;
   custom_domain_verified: boolean;
   plan: string;
   is_active: boolean;
@@ -26,7 +28,10 @@ interface TenantDetails {
   updated_at: string;
   sector: string;
   status: 'pending' | 'provisioning' | 'ready' | 'failed';
-  status_message: string | null;
+  provisioning_error: string | null;
+  provisioned_at: string | null;
+  failed_at: string | null;
+  schema_name: string | null;
   primary_color: string;
   secondary_color: string;
   logo_url: string | null;
@@ -37,10 +42,9 @@ interface TenantDetails {
   billing_email: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
-  max_users: number;
-  max_storage_gb: number;
-  features: string[];
-  settings: Record<string, unknown>;
+  max_agents: number;
+  max_properties: number;
+  features: Record<string, unknown>;
 }
 
 interface TenantStats {
@@ -296,7 +300,7 @@ export default function TenantDetailPage() {
             <AlertTriangle className="w-5 h-5 text-danger" />
             <div>
               <p className="font-medium text-danger">Provisionamento falhou</p>
-              <p className="text-sm text-text-muted">{tenant.status_message || 'Erro desconhecido'}</p>
+              <p className="text-sm text-text-muted">{tenant.provisioning_error || 'Erro desconhecido'}</p>
             </div>
           </div>
           <button
@@ -425,37 +429,79 @@ export default function TenantDetailPage() {
               </h2>
             </div>
             <div className="p-6 space-y-4">
+              {/* Site/Montra */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-text-muted mb-1">Domínio Principal</p>
-                  <p className="text-white font-medium">{tenant.domain || `${tenant.slug}.crmplusv7.com`}</p>
+                  <p className="text-sm text-text-muted mb-1">Site / Montra</p>
+                  <p className="text-white font-medium">
+                    {tenant.primary_domain || `${tenant.slug}.crmplus.trioto.tech`}
+                  </p>
+                  {tenant.primary_domain && (
+                    <p className="text-xs text-text-muted mt-1">Domínio próprio configurado</p>
+                  )}
                 </div>
-                <button
-                  onClick={() => copyToClipboard(tenant.domain || `${tenant.slug}.crmplusv7.com`)}
-                  className="p-2 hover:bg-background rounded-lg"
-                >
-                  <Copy className="w-4 h-4 text-text-muted" />
-                </button>
-              </div>
-              {tenant.custom_domain && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-text-muted mb-1">Domínio Personalizado</p>
-                    <p className="text-white font-medium flex items-center gap-2">
-                      {tenant.custom_domain}
-                      {tenant.custom_domain_verified ? (
-                        <CheckCircle className="w-4 h-4 text-success" />
-                      ) : (
-                        <AlertTriangle className="w-4 h-4 text-warning" />
-                      )}
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://${tenant.primary_domain || `${tenant.slug}.crmplus.trioto.tech`}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-background rounded-lg text-text-muted hover:text-white"
+                  >
+                    <Globe className="w-4 h-4" />
+                  </a>
                   <button
-                    onClick={() => copyToClipboard(tenant.custom_domain!)}
+                    onClick={() => copyToClipboard(tenant.primary_domain || `${tenant.slug}.crmplus.trioto.tech`)}
                     className="p-2 hover:bg-background rounded-lg"
                   >
                     <Copy className="w-4 h-4 text-text-muted" />
                   </button>
+                </div>
+              </div>
+
+              {/* Backoffice */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-text-muted mb-1">Backoffice</p>
+                  <p className="text-white font-medium">
+                    {tenant.backoffice_domain || `${tenant.slug}.backoffice.crmplus.trioto.tech`}
+                  </p>
+                  {tenant.backoffice_domain && (
+                    <p className="text-xs text-text-muted mt-1">Domínio próprio configurado</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://${tenant.backoffice_domain || `${tenant.slug}.backoffice.crmplus.trioto.tech`}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-background rounded-lg text-text-muted hover:text-white"
+                  >
+                    <Globe className="w-4 h-4" />
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(tenant.backoffice_domain || `${tenant.slug}.backoffice.crmplus.trioto.tech`)}
+                    className="p-2 hover:bg-background rounded-lg"
+                  >
+                    <Copy className="w-4 h-4 text-text-muted" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Schema Info */}
+              {tenant.schema_name && (
+                <div className="pt-3 mt-3 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-text-muted mb-1">Schema PostgreSQL</p>
+                      <p className="text-white font-mono text-sm">{tenant.schema_name}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(tenant.schema_name!)}
+                      className="p-2 hover:bg-background rounded-lg"
+                    >
+                      <Copy className="w-4 h-4 text-text-muted" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -570,25 +616,25 @@ export default function TenantDetailPage() {
             <div className="p-6 space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted">Utilizadores</span>
-                  <span className="text-white">{stats?.total_users || 0} / {tenant.max_users}</span>
+                  <span className="text-text-muted">Agentes</span>
+                  <span className="text-white">{stats?.total_users || 0} / {tenant.max_agents}</span>
                 </div>
                 <div className="h-2 bg-background rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary rounded-full"
-                    style={{ width: `${Math.min(((stats?.total_users || 0) / tenant.max_users) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((stats?.total_users || 0) / (tenant.max_agents || 10)) * 100, 100)}%` }}
                   />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted">Storage</span>
-                  <span className="text-white">{stats?.storage_used_mb || 0} MB / {tenant.max_storage_gb} GB</span>
+                  <span className="text-text-muted">Imóveis</span>
+                  <span className="text-white">{stats?.total_clients || 0} / {tenant.max_properties}</span>
                 </div>
                 <div className="h-2 bg-background rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-secondary rounded-full"
-                    style={{ width: `${Math.min(((stats?.storage_used_mb || 0) / (tenant.max_storage_gb * 1024)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((stats?.total_clients || 0) / (tenant.max_properties || 100)) * 100, 100)}%` }}
                   />
                 </div>
               </div>
