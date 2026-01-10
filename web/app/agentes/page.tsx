@@ -49,5 +49,3 @@ export default async function EquipaPage() {
 
   return <TeamPageClient agentMembers={agentMembers} staffMembers={staffMembers} />;
 }
-  );
-}
