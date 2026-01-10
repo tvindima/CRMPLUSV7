@@ -31,12 +31,6 @@ export default function CompararPage() {
   useEffect(() => {
     document.title = `Comparar ${terms.itemsCapitalized}`;
   }, [terms]);
-  const [showSimulator, setShowSimulator] = useState<number | null>(null);
-  const [showTaxCalc, setShowTaxCalc] = useState<number | null>(null);
-  const [showExternalModal, setShowExternalModal] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [pendingTool, setPendingTool] = useState<string>("");
-  const [pendingPrice, setPendingPrice] = useState<number>(0);
 
   const handleToolClick = (tool: "simulator" | "tax", price: number) => {
     if (!isAuthenticated) {
