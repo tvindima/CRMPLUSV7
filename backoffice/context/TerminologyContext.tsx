@@ -99,15 +99,17 @@ const TerminologyContext = createContext<TerminologyContextType | undefined>(und
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
 
-// Cache local de terminologia
+// Cache local de terminologia por tenant_slug
 const terminologyCache: Record<string, Terminology> = {};
 
 export function TerminologyProvider({ 
   children,
   sector: propSector,
+  tenantSlug,
 }: { 
   children: ReactNode;
   sector?: string;
+  tenantSlug?: string;
 }) {
   const [sector, setSector] = useState(propSector || 'real_estate');
   const [terminology, setTerminology] = useState<Terminology>(DEFAULT_TERMINOLOGY);
@@ -122,20 +124,33 @@ export function TerminologyProvider({
 
   useEffect(() => {
     const loadTerminology = async () => {
+      const cacheKey = tenantSlug || sector;
+      
       // Verificar cache primeiro
-      if (terminologyCache[sector]) {
-        setTerminology(terminologyCache[sector]);
+      if (terminologyCache[cacheKey]) {
+        setTerminology(terminologyCache[cacheKey]);
         return;
       }
 
       setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/platform/terminology/${sector}`);
+        // Se temos tenantSlug, usar endpoint específico do tenant (com custom_terminology)
+        // Caso contrário, usar endpoint genérico do sector
+        const endpoint = tenantSlug 
+          ? `/platform/terminology/tenant/${tenantSlug}`
+          : `/platform/terminology/${sector}`;
+          
+        const response = await fetch(`${API_URL}${endpoint}`);
         if (response.ok) {
           const data = await response.json();
           const newTerminology = { ...DEFAULT_TERMINOLOGY, ...data.terminology };
-          terminologyCache[sector] = newTerminology;
+          terminologyCache[cacheKey] = newTerminology;
           setTerminology(newTerminology);
+          
+          // Se recebemos sector do tenant, atualizar
+          if (data.sector) {
+            setSector(data.sector);
+          }
         }
       } catch (error) {
         console.error('Error loading terminology:', error);
@@ -146,7 +161,7 @@ export function TerminologyProvider({
     };
 
     loadTerminology();
-  }, [sector]);
+  }, [sector, tenantSlug]);
 
   // Função helper para obter termo
   const term = (key: string, fallback?: string): string => {
