@@ -745,22 +745,44 @@ async def update_tenant(
 @router.delete("/tenants/{tenant_id}")
 async def delete_tenant(
     tenant_id: int, 
+    permanent: bool = False,
     db: Session = Depends(get_db),
     current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """
-    Desactivar tenant (soft delete) - PROTEGIDO.
+    Eliminar tenant - PROTEGIDO.
     
-    Não remove da BD, apenas marca como inactivo.
+    Por defeito faz soft delete (is_active=False).
+    Com ?permanent=true, elimina permanentemente da BD e o schema.
     """
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
     
-    tenant.is_active = False
-    db.commit()
+    tenant_name = tenant.name
+    tenant_slug = tenant.slug
+    schema_name = tenant.schema_name
     
-    return {"message": f"Tenant '{tenant.slug}' desactivado"}
+    if permanent:
+        # Eliminar schema se existir
+        if schema_name:
+            try:
+                db.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+                db.commit()
+            except Exception as e:
+                print(f"[DELETE TENANT] Warning: Could not drop schema {schema_name}: {e}")
+        
+        # Eliminar registo do tenant
+        db.delete(tenant)
+        db.commit()
+        
+        return {"message": f"Tenant '{tenant_slug}' eliminado permanentemente", "deleted": True}
+    else:
+        # Soft delete - apenas desactivar
+        tenant.is_active = False
+        db.commit()
+        
+        return {"message": f"Tenant '{tenant_slug}' desactivado", "deleted": False}
 
 
 @router.post("/tenants/{tenant_id}/activate")

@@ -175,7 +175,7 @@ export default function TenantsPage() {
   const handleDelete = async (tenant: Tenant) => {
     const token = Cookies.get('platform_token');
     try {
-      const res = await fetch(`${API_URL}/platform/tenants/${tenant.id}`, {
+      const res = await fetch(`${API_URL}/platform/tenants/${tenant.id}?permanent=true`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
