@@ -1,13 +1,9 @@
 /**
  * Public API service for fetching tenant-specific data
- * Uses internal proxy route to handle tenant headers server-side
+ * Works in both Server Components (SSR) and Client Components
  */
 
-// Use internal proxy in production, direct API in development
-const API_BASE = typeof window !== 'undefined' 
-  ? '/api/proxy'  // Client-side: use internal proxy
-  : (process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app');
-
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
 const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
 export type Property = {
@@ -59,46 +55,74 @@ export type Agent = {
 };
 
 /**
- * Get tenant slug from cookie (client-side only)
+ * Get tenant slug - MUST work in both server and client contexts
+ * WITHOUT using next/headers (which breaks client components)
  */
-function getTenantSlugFromCookie(): string {
+async function getTenantSlug(): Promise<string> {
+  // Server-side: dynamically import next/headers
+  if (typeof window === 'undefined') {
+    try {
+      const { cookies, headers } = await import('next/headers');
+      
+      // Try cookie first
+      try {
+        const cookieStore = await cookies();
+        const tenantCookie = cookieStore.get('tenant_slug');
+        if (tenantCookie?.value) {
+          return tenantCookie.value;
+        }
+      } catch (e) {}
+      
+      // Try headers
+      try {
+        const headersList = await headers();
+        
+        // x-tenant-slug header
+        const tenantHeader = headersList.get('x-tenant-slug');
+        if (tenantHeader) {
+          return tenantHeader;
+        }
+        
+        // Extract from host
+        const host = headersList.get('host');
+        if (host) {
+          if (host.endsWith('.crmplus.trioto.tech') && !host.includes('.bo.')) {
+            const slug = host.replace('.crmplus.trioto.tech', '').split(':')[0];
+            if (slug) return slug;
+          }
+          if (host.includes('imoveismais')) return 'imoveismais';
+          if (host.includes('luiscarlosgaspar')) return 'luiscarlosgaspar';
+        }
+      } catch (e) {}
+    } catch (e) {
+      // Dynamic import failed
+    }
+  }
+  
+  // Client-side: read from cookie
   if (typeof document !== 'undefined') {
     const match = document.cookie.match(/tenant_slug=([^;]+)/);
     if (match) {
       return decodeURIComponent(match[1]);
     }
   }
-  return 'imoveismais';
-}
-
-/**
- * Build headers for API requests
- * On client-side, include tenant header (proxy will also add it server-side)
- */
-function buildHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
   
-  // Client-side: add tenant header
-  if (typeof window !== 'undefined') {
-    headers['X-Tenant-Slug'] = getTenantSlugFromCookie();
-  }
-  
-  return headers;
+  // Fallback
+  return process.env.NEXT_PUBLIC_TENANT_SLUG || 'imoveismais';
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-  // For SSR, we need to use the proxy route with full URL
-  const baseUrl = typeof window !== 'undefined' 
-    ? '/api/proxy' 
-    : `${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/api/proxy`;
+  const tenantSlug = await getTenantSlug();
+  const url = `${BACKEND_URL}${path}`;
   
-  const url = `${baseUrl}${path}`;
+  console.log(`[publicApi] Fetching ${path} for tenant: ${tenantSlug}`);
   
   const res = await fetch(url, { 
-    next: { revalidate: 30 },
-    headers: buildHeaders(),
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Tenant-Slug': tenantSlug,
+    },
   });
   
   if (!res.ok) {
@@ -167,7 +191,6 @@ export async function getProperties(limit = 500): Promise<Property[]> {
       skip += pageSize;
     }
 
-    console.log(`[API] Successfully fetched ${results.length} published properties`);
     return results;
   } catch (error) {
     console.error("[API] Backend connection failed:", error);
@@ -229,4 +252,4 @@ export async function getAgentProperties(agentId: number, limit = 200): Promise<
   return all.filter((p) => p.agent_id === agentId);
 }
 
-export { API_BASE };
+export const API_BASE = BACKEND_URL;
