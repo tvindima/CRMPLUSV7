@@ -1101,6 +1101,49 @@ def get_available_sectors():
     return schemas.AvailableSectorsResponse(sectors=sectors)
 
 
+@router.get("/terminology/{sector}")
+def get_sector_terminology_endpoint(sector: str):
+    """
+    Obter terminologia específica para um setor.
+    
+    PÚBLICO - Para adaptação da UI por setor.
+    
+    Exemplo: GET /platform/terminology/automotive
+    Retorna: {"item": "Veículo", "items": "Veículos", "visit": "Test Drive", ...}
+    """
+    from app.platform.seeds import get_sector_terminology, get_available_sectors
+    
+    available = get_available_sectors()
+    if sector not in available:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Setor '{sector}' não encontrado. Disponíveis: {list(available.keys())}"
+        )
+    
+    terminology = get_sector_terminology(sector)
+    return {
+        "sector": sector,
+        "sector_name": available[sector],
+        "terminology": terminology
+    }
+
+
+@router.get("/terminology")
+def get_all_terminology():
+    """
+    Obter terminologia de todos os setores.
+    
+    PÚBLICO - Para cache no frontend.
+    """
+    from app.platform.seeds import SECTOR_TERMINOLOGY, get_available_sectors
+    
+    available = get_available_sectors()
+    return {
+        "sectors": available,
+        "terminology": SECTOR_TERMINOLOGY
+    }
+
+
 @router.get("/plans", response_model=schemas.AvailablePlansResponse)
 def get_available_plans():
     """

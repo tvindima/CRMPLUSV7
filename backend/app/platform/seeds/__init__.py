@@ -286,3 +286,294 @@ def get_available_sectors() -> Dict[str, str]:
         "hospitality": "Hotelaria",
         "other": "Outro",
     }
+
+
+# ===========================================
+# TERMINOLOGIA POR SETOR
+# ===========================================
+
+SECTOR_TERMINOLOGY: Dict[str, Dict[str, str]] = {
+    "real_estate": {
+        # Entidades principais
+        "item": "Imóvel",
+        "items": "Imóveis",
+        "item_singular": "imóvel",
+        "item_plural": "imóveis",
+        "inventory": "Carteira",
+        "inventory_description": "Carteira de Imóveis",
+        
+        # Ações e tipos
+        "new_item": "Novo Imóvel",
+        "add_item": "Adicionar Imóvel",
+        "edit_item": "Editar Imóvel",
+        "view_item": "Ver Imóvel",
+        "item_details": "Detalhes do Imóvel",
+        "item_list": "Lista de Imóveis",
+        
+        # Campos específicos
+        "reference": "Referência",
+        "area": "Área",
+        "area_unit": "m²",
+        "price": "Preço",
+        "location": "Localização",
+        "typology": "Tipologia",
+        "condition": "Estado",
+        
+        # Transações
+        "transaction_sale": "Venda",
+        "transaction_rent": "Arrendamento",
+        "transaction_types": "Tipo de Negócio",
+        
+        # Pipeline específico
+        "visit": "Visita",
+        "visits": "Visitas",
+        "schedule_visit": "Agendar Visita",
+        "proposal": "Proposta",
+        "cpcv": "CPCV",
+        "deed": "Escritura",
+        
+        # Atores
+        "client_buyer": "Comprador",
+        "client_seller": "Vendedor",
+        "client_tenant": "Inquilino",
+        "owner": "Proprietário",
+        
+        # Outros
+        "features": "Características",
+        "amenities": "Comodidades",
+        "energy_cert": "Certificado Energético",
+    },
+    
+    "automotive": {
+        # Entidades principais
+        "item": "Veículo",
+        "items": "Veículos",
+        "item_singular": "veículo",
+        "item_plural": "veículos",
+        "inventory": "Stock",
+        "inventory_description": "Stock de Veículos",
+        
+        # Ações e tipos
+        "new_item": "Novo Veículo",
+        "add_item": "Adicionar Veículo",
+        "edit_item": "Editar Veículo",
+        "view_item": "Ver Veículo",
+        "item_details": "Detalhes do Veículo",
+        "item_list": "Lista de Veículos",
+        
+        # Campos específicos
+        "reference": "Matrícula",
+        "area": "Quilometragem",
+        "area_unit": "km",
+        "price": "Preço",
+        "location": "Localização",
+        "typology": "Segmento",
+        "condition": "Estado",
+        "brand": "Marca",
+        "model": "Modelo",
+        "year": "Ano",
+        "fuel": "Combustível",
+        "transmission": "Transmissão",
+        "power": "Potência",
+        "power_unit": "cv",
+        
+        # Transações
+        "transaction_sale": "Venda",
+        "transaction_rent": "Aluguer",
+        "transaction_types": "Tipo de Negócio",
+        "trade_in": "Retoma",
+        "leasing": "Leasing",
+        "renting": "Renting",
+        
+        # Pipeline específico
+        "visit": "Test Drive",
+        "visits": "Test Drives",
+        "schedule_visit": "Agendar Test Drive",
+        "proposal": "Proposta",
+        "financing": "Financiamento",
+        "delivery": "Entrega",
+        
+        # Atores
+        "client_buyer": "Comprador",
+        "client_seller": "Vendedor",
+        "owner": "Proprietário",
+        
+        # Outros
+        "features": "Equipamento",
+        "amenities": "Extras",
+        "energy_cert": "Classe Emissões",
+    },
+    
+    "services": {
+        # Entidades principais
+        "item": "Serviço",
+        "items": "Serviços",
+        "item_singular": "serviço",
+        "item_plural": "serviços",
+        "inventory": "Catálogo",
+        "inventory_description": "Catálogo de Serviços",
+        
+        # Ações e tipos
+        "new_item": "Novo Serviço",
+        "add_item": "Adicionar Serviço",
+        "edit_item": "Editar Serviço",
+        "view_item": "Ver Serviço",
+        "item_details": "Detalhes do Serviço",
+        "item_list": "Lista de Serviços",
+        
+        # Campos específicos
+        "reference": "Referência",
+        "price": "Preço",
+        "duration": "Duração",
+        
+        # Transações
+        "transaction_sale": "Contratação",
+        "transaction_types": "Tipo de Contrato",
+        
+        # Pipeline específico
+        "visit": "Reunião",
+        "visits": "Reuniões",
+        "schedule_visit": "Agendar Reunião",
+        "proposal": "Proposta",
+        
+        # Atores
+        "client_buyer": "Cliente",
+        "owner": "Prestador",
+        
+        # Outros
+        "features": "Características",
+    },
+    
+    "retail": {
+        # Entidades principais
+        "item": "Produto",
+        "items": "Produtos",
+        "item_singular": "produto",
+        "item_plural": "produtos",
+        "inventory": "Stock",
+        "inventory_description": "Stock de Produtos",
+        
+        # Ações e tipos
+        "new_item": "Novo Produto",
+        "add_item": "Adicionar Produto",
+        "edit_item": "Editar Produto",
+        "view_item": "Ver Produto",
+        "item_details": "Detalhes do Produto",
+        "item_list": "Lista de Produtos",
+        
+        # Campos específicos
+        "reference": "SKU",
+        "price": "Preço",
+        "stock_qty": "Quantidade",
+        
+        # Transações
+        "transaction_sale": "Venda",
+        "transaction_types": "Tipo de Venda",
+        
+        # Pipeline específico
+        "visit": "Atendimento",
+        "visits": "Atendimentos",
+        "proposal": "Orçamento",
+        
+        # Atores
+        "client_buyer": "Cliente",
+        
+        # Outros
+        "features": "Características",
+    },
+    
+    "hospitality": {
+        # Entidades principais
+        "item": "Alojamento",
+        "items": "Alojamentos",
+        "item_singular": "alojamento",
+        "item_plural": "alojamentos",
+        "inventory": "Disponibilidade",
+        "inventory_description": "Disponibilidade de Quartos",
+        
+        # Ações e tipos
+        "new_item": "Novo Quarto",
+        "add_item": "Adicionar Quarto",
+        "edit_item": "Editar Quarto",
+        "view_item": "Ver Quarto",
+        "item_details": "Detalhes do Quarto",
+        "item_list": "Lista de Quartos",
+        
+        # Campos específicos
+        "reference": "Número",
+        "price": "Diária",
+        "capacity": "Capacidade",
+        
+        # Transações
+        "transaction_sale": "Reserva",
+        "transaction_types": "Tipo de Reserva",
+        
+        # Pipeline específico
+        "visit": "Check-in",
+        "visits": "Check-ins",
+        "proposal": "Cotação",
+        
+        # Atores
+        "client_buyer": "Hóspede",
+        
+        # Outros
+        "features": "Comodidades",
+    },
+    
+    "other": {
+        # Entidades principais (genérico)
+        "item": "Item",
+        "items": "Itens",
+        "item_singular": "item",
+        "item_plural": "itens",
+        "inventory": "Inventário",
+        "inventory_description": "Inventário",
+        
+        # Ações e tipos
+        "new_item": "Novo Item",
+        "add_item": "Adicionar Item",
+        "edit_item": "Editar Item",
+        "view_item": "Ver Item",
+        "item_details": "Detalhes do Item",
+        "item_list": "Lista de Itens",
+        
+        # Campos específicos
+        "reference": "Referência",
+        "price": "Preço",
+        
+        # Transações
+        "transaction_sale": "Venda",
+        "transaction_types": "Tipo de Transação",
+        
+        # Pipeline específico
+        "visit": "Contacto",
+        "visits": "Contactos",
+        "proposal": "Proposta",
+        
+        # Atores
+        "client_buyer": "Cliente",
+        
+        # Outros
+        "features": "Características",
+    },
+}
+
+
+def get_sector_terminology(sector: str) -> Dict[str, str]:
+    """
+    Retorna a terminologia para um setor específico.
+    Retorna terminologia genérica se o setor não for encontrado.
+    """
+    return SECTOR_TERMINOLOGY.get(sector, SECTOR_TERMINOLOGY["other"])
+
+
+def get_term(sector: str, key: str, default: str = "") -> str:
+    """
+    Retorna um termo específico para um setor.
+    
+    Exemplo:
+        get_term("automotive", "item") -> "Veículo"
+        get_term("real_estate", "items") -> "Imóveis"
+    """
+    terminology = get_sector_terminology(sector)
+    return terminology.get(key, default or key)
