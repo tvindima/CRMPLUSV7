@@ -244,7 +244,7 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
     # Defaults do tema escuro
     defaults = {
         "agency_name": "CRM Plus",
-        "agency_slogan": "Sistema Imobiliário",
+        "agency_slogan": "O seu negócio, simplificado",
         "agency_logo_url": None,
         "primary_color": "#E10600",
         "secondary_color": "#C5C5C5",

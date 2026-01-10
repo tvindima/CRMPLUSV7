@@ -26,7 +26,7 @@ interface BrandingContextType {
 const defaultBranding: Branding = {
   agency_name: 'CRM Plus',
   agency_logo_url: '/brand/logoCRMPLUSS.png',
-  agency_slogan: 'Sistema Imobiliário Profissional',
+  agency_slogan: 'O seu negócio, simplificado',
   primary_color: '#E10600',
   secondary_color: '#C5C5C5',
   background_color: '#0B0B0D',

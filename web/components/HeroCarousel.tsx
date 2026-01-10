@@ -166,7 +166,7 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
           </span>
         )}
         <h1 className="text-xl font-semibold leading-tight md:text-5xl">
-          {currentProperty?.title || "Descobre imóveis que valem o prime time"}
+          {currentProperty?.title || "Descobre os melhores produtos"}
         </h1>
         <p 
           className="text-xs md:text-sm"
@@ -196,12 +196,7 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
               Ver catálogo completo
             </Link>
           )}
-          <Link
-            href="/imoveis?f=arrendar"
-            className="hidden rounded-full border border-white/30 px-4 py-1.5 text-xs font-semibold text-white transition hover:border-white hover:bg-white/10 md:inline-block md:px-6 md:py-3 md:text-sm"
-          >
-            Imóveis para arrendamento
-          </Link>
+          {/* Botão secundário ocultado - específico demais para imobiliário */}
         </div>
       </div>
 

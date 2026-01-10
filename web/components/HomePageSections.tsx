@@ -44,7 +44,7 @@ export function RailSection({
               className="text-sm"
               style={{ color: 'var(--color-text-muted)' }}
             >
-              ({totalItems} imóveis)
+              ({totalItems})
             </span>
           </h3>
         </div>
@@ -91,20 +91,19 @@ export function ContactSection({ children }: ContactSectionProps) {
             className="text-xs uppercase tracking-[0.3em]"
             style={{ color: 'var(--color-primary)' }}
           >
-            Curadoria pessoal
+            Atendimento personalizado
           </p>
           <h2 
             className="text-3xl font-semibold"
             style={{ color: 'var(--color-text)' }}
           >
-            Fala com o nosso studio e recebe sugestões privadas
+            Fala connosco e recebe sugestões à tua medida
           </h2>
           <p 
             className="text-sm"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            Mantemos o espírito "para si" com uma seleção privada enviada via e-mail ou chamada. Sem listas de agentes nesta zona—
-            apenas experiências imersivas focadas em si.
+            Deixa-nos o teu contacto e recebe uma seleção personalizada via e-mail ou chamada. Atendimento dedicado e focado nas tuas necessidades.
           </p>
         </div>
         {children}
