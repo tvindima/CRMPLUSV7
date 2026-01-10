@@ -7,6 +7,7 @@ Create Date: 2026-01-07
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy import inspect
 
 # revision identifiers
 revision = 'add_clients_table'
@@ -15,7 +16,26 @@ branch_labels = None
 depends_on = None
 
 
+def table_exists(table_name):
+    """Check if a table exists"""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
+def index_exists(table_name, index_name):
+    """Check if an index exists"""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    indexes = [idx['name'] for idx in inspector.get_indexes(table_name)]
+    return index_name in indexes
+
+
 def upgrade():
+    if table_exists('clients'):
+        print("⏭️ Table 'clients' already exists, skipping")
+        return
+        
     op.create_table(
         'clients',
         sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
@@ -68,8 +88,10 @@ def upgrade():
     )
     
     # Índices adicionais para pesquisa
-    op.create_index('ix_clients_agent_type', 'clients', ['agent_id', 'client_type'])
-    op.create_index('ix_clients_agency_type', 'clients', ['agency_id', 'client_type'])
+    if not index_exists('clients', 'ix_clients_agent_type'):
+        op.create_index('ix_clients_agent_type', 'clients', ['agent_id', 'client_type'])
+    if not index_exists('clients', 'ix_clients_agency_type'):
+        op.create_index('ix_clients_agency_type', 'clients', ['agency_id', 'client_type'])
 
 
 def downgrade():
