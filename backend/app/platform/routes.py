@@ -1058,6 +1058,7 @@ async def provision_new_tenant(
         db=db,
         name=request.name,
         sector=request.sector,
+        sub_sector=request.sub_sector,
         plan=request.plan,
         admin_email=request.admin_email,
         admin_name=request.admin_name,
@@ -1066,6 +1067,7 @@ async def provision_new_tenant(
         backoffice_domain=request.backoffice_domain,
         logo_url=request.logo_url,
         primary_color=request.primary_color,
+        custom_terminology=request.custom_terminology,
     )
     
     # Converter para schema de resposta

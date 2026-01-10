@@ -119,6 +119,7 @@ class TenantProvisioner:
         self,
         name: str,
         sector: str = "real_estate",
+        sub_sector: Optional[str] = None,
         plan: str = "trial",
         admin_email: Optional[str] = None,
         admin_name: Optional[str] = None,
@@ -127,6 +128,7 @@ class TenantProvisioner:
         backoffice_domain: Optional[str] = None,
         logo_url: Optional[str] = None,
         primary_color: Optional[str] = None,
+        custom_terminology: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Provisiona um novo tenant completo.
@@ -134,6 +136,7 @@ class TenantProvisioner:
         Args:
             name: Nome da empresa
             sector: Setor de atividade
+            sub_sector: Sub-categoria do sector (opcional)
             plan: Plano escolhido
             admin_email: Email do admin inicial
             admin_name: Nome do admin inicial
@@ -142,6 +145,7 @@ class TenantProvisioner:
             backoffice_domain: Domínio do backoffice (opcional)
             logo_url: URL do logo (opcional)
             primary_color: Cor primária (opcional)
+            custom_terminology: Terminologia personalizada (opcional)
         
         Returns:
             Dict com resultado do provisionamento
@@ -161,6 +165,7 @@ class TenantProvisioner:
             slug=slug,
             name=name,
             sector=sector,
+            sub_sector=sub_sector if sub_sector and sub_sector != 'none' else None,
             plan=plan,
             max_agents=plan_config["max_agents"],
             max_properties=plan_config["max_properties"],
@@ -172,12 +177,18 @@ class TenantProvisioner:
             logo_url=logo_url,
             primary_color=primary_color,
             admin_email=admin_email,
+            custom_terminology=custom_terminology,
         )
         
         self.db.add(tenant)
         self.db.commit()
         self.db.refresh(tenant)
         self.log(f"Tenant criado na BD com ID: {tenant.id}")
+        
+        if sub_sector:
+            self.log(f"Sub-sector: {sub_sector}")
+        if custom_terminology:
+            self.log(f"Terminologia personalizada: {len(custom_terminology)} termos")
         
         # 4. Criar schema PostgreSQL
         schema_name = f"tenant_{slug}"
@@ -432,10 +443,12 @@ def provision_new_tenant(
     db: Session,
     name: str,
     sector: str = "real_estate",
+    sub_sector: Optional[str] = None,
     plan: str = "trial",
     admin_email: Optional[str] = None,
     admin_name: Optional[str] = None,
     admin_password: Optional[str] = None,
+    custom_terminology: Optional[Dict[str, str]] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -445,10 +458,12 @@ def provision_new_tenant(
     return provisioner.provision_tenant(
         name=name,
         sector=sector,
+        sub_sector=sub_sector,
         plan=plan,
         admin_email=admin_email,
         admin_name=admin_name,
         admin_password=admin_password,
+        custom_terminology=custom_terminology,
         **kwargs
     )
 

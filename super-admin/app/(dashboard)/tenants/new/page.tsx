@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import {
@@ -45,6 +45,7 @@ interface FormData {
   // Step 1: Empresa
   companyName: string;
   sector: string;
+  subSector: string;
   phone: string;
   
   // Step 2: Plano
@@ -63,6 +64,14 @@ interface FormData {
   // Step 5: Branding (opcional)
   logoUrl: string;
   primaryColor: string;
+  
+  // Step 6: Terminologia personalizada (opcional)
+  customTerminology: {
+    item?: string;
+    items?: string;
+    visit?: string;
+    visits?: string;
+  };
 }
 
 interface ProvisionResult {
@@ -91,10 +100,12 @@ export default function NewTenantPage() {
   const [result, setResult] = useState<ProvisionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [subSectors, setSubSectors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     sector: 'real_estate',
+    subSector: '',
     phone: '',
     plan: 'trial',
     adminEmail: '',
@@ -105,9 +116,23 @@ export default function NewTenantPage() {
     backofficeDomain: '',
     logoUrl: '',
     primaryColor: '#E10600',
+    customTerminology: {},
   });
 
-  const totalSteps = 5;
+  const totalSteps = needsSubSector() ? 7 : 6;
+
+  // Carregar sub-sectores disponíveis
+  useEffect(() => {
+    fetch(`${API_URL}/platform/sub-sectors`)
+      .then(res => res.json())
+      .then(data => setSubSectors(data.sub_sectors || {}))
+      .catch(err => console.error('Error loading sub-sectors:', err));
+  }, []);
+
+  // Verificar se sector precisa de sub-sector
+  function needsSubSector() {
+    return ['services', 'retail', 'other'].includes(formData.sector);
+  }
 
   const updateForm = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -118,11 +143,18 @@ export default function NewTenantPage() {
       case 1:
         return formData.companyName.trim().length >= 2;
       case 2:
+        // Step 2 é sub-sector (se necessário) ou plano
+        if (needsSubSector()) {
+          return !!formData.subSector;
+        }
         return !!formData.plan;
       case 3:
-        return formData.adminEmail.includes('@') && formData.adminName.trim().length >= 2;
+        return needsSubSector() ? !!formData.plan : formData.adminEmail.includes('@') && formData.adminName.trim().length >= 2;
       case 4:
+        return needsSubSector() ? formData.adminEmail.includes('@') && formData.adminName.trim().length >= 2 : true;
       case 5:
+      case 6:
+      case 7:
         return true;
       default:
         return false;
@@ -145,6 +177,7 @@ export default function NewTenantPage() {
         body: JSON.stringify({
           name: formData.companyName,
           sector: formData.sector,
+          sub_sector: formData.subSector || null,
           plan: formData.plan,
           admin_email: formData.adminEmail || null,
           admin_name: formData.adminName || null,
@@ -153,6 +186,7 @@ export default function NewTenantPage() {
           backoffice_domain: formData.backofficeDomain || null,
           logo_url: formData.logoUrl || null,
           primary_color: formData.primaryColor || null,
+          custom_terminology: Object.keys(formData.customTerminology).length > 0 ? formData.customTerminology : null,
         }),
       });
 
@@ -163,7 +197,7 @@ export default function NewTenantPage() {
       }
       
       setResult(data);
-      setCurrentStep(6); // Success step
+      setCurrentStep(totalSteps + 1); // Success step
     } catch (err: any) {
       setError(err.message || 'Erro ao criar tenant');
     } finally {
@@ -230,6 +264,54 @@ export default function NewTenantPage() {
             className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:border-primary"
           />
         </div>
+      </div>
+    </div>
+  );
+
+  const renderStep1_5SubSector = () => (
+    <div className="space-y-6">
+      <p className="text-text-muted mb-2">
+        Para sectores genéricos, escolhe uma sub-categoria para terminologia mais específica.
+      </p>
+
+      <div className="grid gap-3">
+        {Object.entries(subSectors).map(([slug, name]) => (
+          <button
+            key={slug}
+            onClick={() => updateForm('subSector', slug)}
+            className={`p-4 rounded-xl border text-left transition-all ${
+              formData.subSector === slug
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-primary/50'
+            }`}
+          >
+            <p className="font-medium text-white">{name}</p>
+            <p className="text-xs text-text-muted mt-1">
+              {slug === 'training' && 'Para empresas de formação e educação'}
+              {slug === 'law_firm' && 'Para escritórios de advogados'}
+              {slug === 'consulting' && 'Para consultoria e serviços profissionais'}
+              {slug === 'health' && 'Para clínicas e saúde'}
+              {slug === 'accounting' && 'Para contabilidade e finanças'}
+              {slug === 'engineering' && 'Para engenharia e projetos técnicos'}
+              {slug === 'manufacturing' && 'Para fabricação e indústria'}
+              {slug === 'construction' && 'Para construção civil'}
+            </p>
+          </button>
+        ))}
+        
+        <button
+          onClick={() => updateForm('subSector', 'none')}
+          className={`p-4 rounded-xl border text-left transition-all ${
+            formData.subSector === 'none'
+              ? 'border-primary bg-primary/10'
+              : 'border-border hover:border-primary/50'
+          }`}
+        >
+          <p className="font-medium text-white">Não especificar</p>
+          <p className="text-xs text-text-muted mt-1">
+            Usar terminologia genérica (pode personalizar depois)
+          </p>
+        </button>
       </div>
     </div>
   );
@@ -537,6 +619,7 @@ export default function NewTenantPage() {
             setFormData({
               companyName: '',
               sector: 'real_estate',
+              subSector: '',
               phone: '',
               plan: 'trial',
               adminEmail: '',
@@ -547,6 +630,7 @@ export default function NewTenantPage() {
               backofficeDomain: '',
               logoUrl: '',
               primaryColor: '#E10600',
+              customTerminology: {},
             });
           }}
           className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors"
@@ -557,13 +641,77 @@ export default function NewTenantPage() {
     </div>
   );
 
-  const stepTitles = [
-    'Dados da Empresa',
-    'Escolher Plano',
-    'Admin Inicial',
-    'Domínios',
-    'Branding',
-  ];
+  const renderStepCustomTerminology = () => (
+    <div className="space-y-6">
+      <p className="text-text-muted mb-2">
+        Personaliza os termos-chave do sistema (opcional). Se não preencheres, serão usados os termos padrão do sub-sector ou sector.
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-2">
+            Item (singular)
+          </label>
+          <input
+            type="text"
+            value={formData.customTerminology.item || ''}
+            onChange={(e) => updateForm('customTerminology', { ...formData.customTerminology, item: e.target.value })}
+            placeholder="Ex: Curso, Processo, Produto"
+            className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-2">
+            Itens (plural)
+          </label>
+          <input
+            type="text"
+            value={formData.customTerminology.items || ''}
+            onChange={(e) => updateForm('customTerminology', { ...formData.customTerminology, items: e.target.value })}
+            placeholder="Ex: Cursos, Processos, Produtos"
+            className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-2">
+            Visita/Contacto (singular)
+          </label>
+          <input
+            type="text"
+            value={formData.customTerminology.visit || ''}
+            onChange={(e) => updateForm('customTerminology', { ...formData.customTerminology, visit: e.target.value })}
+            placeholder="Ex: Formação, Consulta, Atendimento"
+            className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-2">
+            Visitas/Contactos (plural)
+          </label>
+          <input
+            type="text"
+            value={formData.customTerminology.visits || ''}
+            onChange={(e) => updateForm('customTerminology', { ...formData.customTerminology, visits: e.target.value })}
+            placeholder="Ex: Formações, Consultas, Atendimentos"
+            className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+        <p className="text-blue-400 text-sm">
+          <strong>Dica:</strong> Estes termos aparecerão em toda a interface do sistema. Escolhe nomes que façam sentido para o negócio do cliente.
+        </p>
+      </div>
+    </div>
+  );
+
+  const stepTitles = needsSubSector() 
+    ? ['Dados da Empresa', 'Sub-Categoria', 'Escolher Plano', 'Admin Inicial', 'Domínios', 'Branding', 'Terminologia']
+    : ['Dados da Empresa', 'Escolher Plano', 'Admin Inicial', 'Domínios', 'Branding', 'Terminologia'];
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -627,10 +775,17 @@ export default function NewTenantPage() {
             </h2>
             
             {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
-            {currentStep === 4 && renderStep4()}
-            {currentStep === 5 && renderStep5()}
+            {currentStep === 2 && needsSubSector() && renderStep1_5SubSector()}
+            {currentStep === 2 && !needsSubSector() && renderStep2()}
+            {currentStep === 3 && needsSubSector() && renderStep2()}
+            {currentStep === 3 && !needsSubSector() && renderStep3()}
+            {currentStep === 4 && needsSubSector() && renderStep3()}
+            {currentStep === 4 && !needsSubSector() && renderStep4()}
+            {currentStep === 5 && needsSubSector() && renderStep4()}
+            {currentStep === 5 && !needsSubSector() && renderStep5()}
+            {currentStep === 6 && needsSubSector() && renderStep5()}
+            {currentStep === 6 && !needsSubSector() && renderStepCustomTerminology()}
+            {currentStep === 7 && needsSubSector() && renderStepCustomTerminology()}
           </div>
 
           {/* Error Message */}
@@ -685,7 +840,7 @@ export default function NewTenantPage() {
       )}
 
       {/* Success State */}
-      {currentStep === 6 && result && renderSuccess()}
+      {currentStep > totalSteps && result && renderSuccess()}
     </div>
   );
 }

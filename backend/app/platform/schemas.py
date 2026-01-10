@@ -230,6 +230,7 @@ class TenantProvisionRequest(BaseModel):
     """Request para provisionar novo tenant via super-admin"""
     name: str
     sector: str = "real_estate"
+    sub_sector: Optional[str] = None  # Sub-categoria para sectores genéricos
     plan: str = "trial"
     admin_email: Optional[EmailStr] = None
     admin_name: Optional[str] = None
@@ -238,6 +239,7 @@ class TenantProvisionRequest(BaseModel):
     backoffice_domain: Optional[str] = None
     logo_url: Optional[str] = None
     primary_color: Optional[str] = None
+    custom_terminology: Optional[Dict[str, str]] = None  # Terminologia personalizada
 
 
 class TenantProvisionResponse(BaseModel):
