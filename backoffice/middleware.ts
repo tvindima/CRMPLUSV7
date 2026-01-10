@@ -55,7 +55,7 @@ function extractTenantSlug(host: string): string | null {
   return null;
 }
 
-async function verifyStaffToken(token: string) {
+async function verifyStaffToken(token: string, tenantSlug?: string | null) {
   const secret = process.env.CRMPLUS_AUTH_SECRET;
   // Primeiro tenta validar localmente. Se a secret não estiver definida ou falhar,
   // cai para verificação no backend (/auth/verify) para evitar false negatives de config.
@@ -71,9 +71,18 @@ async function verifyStaffToken(token: string) {
 
   // Fallback: pede verificação ao backend (usa a secret do servidor)
   if (API_BASE) {
+    const headers: Record<string, string> = { 
+      Authorization: `Bearer ${token}` 
+    };
+    
+    // Incluir tenant slug se disponível
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
+    }
+    
     const res = await fetch(`${API_BASE}/auth/verify`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
       cache: "no-store",
     });
     if (res.ok) {
@@ -135,7 +144,8 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    await verifyStaffToken(token);
+    // Passar tenant slug para verificação no backend (se não tiver secret local)
+    await verifyStaffToken(token, tenantSlug);
     return response;
   } catch (err) {
     const url = req.nextUrl.clone();
