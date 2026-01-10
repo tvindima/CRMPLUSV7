@@ -9,8 +9,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
     // Obter tenant slug do cookie (definido pelo middleware) ou env var
-    const cookieStore = cookies();
-    const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || '';
+    // Também tentar extrair do hostname da request
+    const cookieStore = await cookies();
+    let tenantSlug = cookieStore.get('tenant_slug')?.value || '';
+    
+    // Fallback: extrair do header x-tenant-slug se o frontend o enviou
+    if (!tenantSlug) {
+      tenantSlug = req.headers.get('x-tenant-slug') || '';
+    }
+    
+    // Fallback: variável de ambiente para deploys dedicados
+    if (!tenantSlug) {
+      tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || '';
+    }
     
     // Construir headers com tenant
     const headers: Record<string, string> = {
@@ -22,9 +33,8 @@ export async function POST(req: NextRequest) {
       headers['X-Tenant-Slug'] = tenantSlug;
     }
     
-    console.log("[Login API Route] Tenant slug from cookie:", tenantSlug);
+    console.log("[Login API Route] Tenant slug:", tenantSlug || "(empty)");
     console.log("[Login API Route] Calling backend:", `${API_BASE_URL}/auth/login`);
-    console.log("[Login API Route] Headers:", JSON.stringify(headers));
     
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
