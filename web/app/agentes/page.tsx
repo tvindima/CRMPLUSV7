@@ -1,5 +1,6 @@
 import { getAgents, getStaff } from "../../src/services/publicApi";
-import TeamCarousel, { TeamMember } from "../../components/TeamCarousel";
+import { TeamMember } from "../../components/TeamCarousel";
+import { TeamPageClient } from "../../components/TeamPageClient";
 import { optimizeAvatarUrl, optimizeStaffAvatarUrl } from "../../src/lib/cloudinary";
 
 // Revalidar esta página a cada 60 segundos
@@ -26,7 +27,7 @@ export default async function EquipaPage() {
     .map((agent) => ({
       id: agent.id,
       name: agent.name,
-      role: "Consultor Imobiliário",
+      role: "Consultor", // Será ajustado no cliente baseado no sector
       phone: agent.phone,
       avatar: optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeForFilename(agent.name)}.png`,
       email: agent.email,
@@ -46,57 +47,7 @@ export default async function EquipaPage() {
     isAgent: false,
   }));
 
-  return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="text-center">
-        <p className="text-sm uppercase tracking-[0.3em]" style={{ color: 'var(--color-primary)' }}>A Nossa Equipa</p>
-        <h1 className="mt-2 text-2xl font-bold text-white md:text-5xl">
-          Profissionais dedicados ao seu sucesso
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
-          Conheça os consultores e colaboradores que fazem da Imóveis Mais uma referência no mercado imobiliário.
-          Cada membro da nossa equipa está comprometido em proporcionar-lhe a melhor experiência.
-        </p>
-      </section>
-
-      {/* Consultores Carousel */}
-      <TeamCarousel
-        eyebrow="Consultores"
-        title="Os nossos agentes imobiliários"
-        members={agentMembers}
-      />
-
-      {/* Staff Carousel */}
-      <TeamCarousel
-        eyebrow="Backoffice"
-        title="Equipa de suporte"
-        members={staffMembers}
-      />
-
-      {/* CTA Section */}
-      <section 
-        className="rounded-3xl border p-8 text-center md:p-12"
-        style={{ 
-          borderColor: 'var(--color-border)',
-          background: 'linear-gradient(to bottom right, var(--color-background-secondary), var(--color-background))'
-        }}
-      >
-        <h2 className="text-2xl font-semibold text-white md:text-3xl">
-          Quer fazer parte da nossa equipa?
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
-          Estamos sempre à procura de talentos para se juntarem à família Imóveis Mais.
-          Se tem paixão pelo imobiliário, entre em contacto connosco.
-        </p>
-        <a
-          href="/contactos"
-          className="mt-6 inline-block rounded-full px-6 py-2.5 font-semibold text-white transition hover:brightness-85 md:px-8 md:py-3"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          Contacte-nos
-        </a>
-      </section>
-    </div>
+  return <TeamPageClient agentMembers={agentMembers} staffMembers={staffMembers} />;
+}
   );
 }

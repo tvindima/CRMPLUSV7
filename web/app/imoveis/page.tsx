@@ -6,11 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { getProperties, Property } from "../../src/services/publicApi";
 import { SafeImage } from "../../components/SafeImage";
 import { getPropertyCover } from "../../src/utils/placeholders";
+import { useTerminology } from "@/contexts/TerminologyContext";
 
 const ITEMS_PER_PAGE = 12;
 
 function ImoveisContent() {
   const searchParams = useSearchParams();
+  const { terms } = useTerminology();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,8 +112,8 @@ function ImoveisContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>Portefólio</p>
-          <h1 className="text-xl font-semibold md:text-3xl" style={{ color: 'var(--color-text)' }}>Imóveis em destaque</h1>
+          <p className="text-sm uppercase tracking-[0.2em]" style={{ color: 'var(--color-primary)' }}>{terms.portfolio}</p>
+          <h1 className="text-xl font-semibold md:text-3xl" style={{ color: 'var(--color-text)' }}>{terms.featuredItems}</h1>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Explora a montra visual ao estilo catálogo Netflix.</p>
         </div>
       </div>
@@ -120,7 +122,7 @@ function ImoveisContent() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar por referência ou localização"
+          placeholder={terms.searchPlaceholder}
           className="w-full max-w-sm rounded border px-3 py-2 text-sm outline-none"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         />
@@ -140,7 +142,7 @@ function ImoveisContent() {
           className="rounded border px-3 py-2 text-sm outline-none"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
-          <option value="">Compra / Arrendamento</option>
+          <option value="">{terms.saleOrRental}</option>
           {businessTypes.map(type => (
             <option key={type} value={type || ''}>{type}</option>
           ))}
@@ -151,7 +153,7 @@ function ImoveisContent() {
           className="rounded border px-3 py-2 text-sm outline-none"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
-          <option value="">Todos os tipos</option>
+          <option value="">{terms.allTypes}</option>
           {propertyTypes.map(type => (
             <option key={type} value={type || ''}>{type}</option>
           ))}
@@ -162,7 +164,7 @@ function ImoveisContent() {
           className="rounded border px-3 py-2 text-sm outline-none"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)', color: 'var(--color-text)' }}
         >
-          <option value="">Todas tipologias</option>
+          <option value="">{terms.allCategories}</option>
           {typologies.map(typ => (
             <option key={typ} value={typ || ''}>{typ}</option>
           ))}
@@ -197,14 +199,14 @@ function ImoveisContent() {
       </div>
 
       <div className="flex items-center justify-between text-sm" style={{ color: 'var(--color-text-muted)' }}>
-        <p>{filtered.length} imóveis encontrados</p>
+        <p>{filtered.length} {terms.items} encontrados</p>
         {totalPages > 1 && <p>Página {currentPage} de {totalPages}</p>}
       </div>
 
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-4" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }}></div>
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>A carregar imóveis…</p>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>A carregar {terms.items}…</p>
         </div>
       )}
       
@@ -212,7 +214,7 @@ function ImoveisContent() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-red-900/30 bg-red-950/20 p-8">
           <div className="text-4xl">⚠️</div>
           <div className="text-center">
-            <p className="text-lg font-semibold text-red-400">Erro ao carregar imóveis</p>
+            <p className="text-lg font-semibold text-red-400">Erro ao carregar {terms.items}</p>
             <p className="text-sm text-red-300/70">{error}</p>
             <p className="mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>Verifique a sua ligação à internet</p>
           </div>
@@ -264,7 +266,7 @@ function ImoveisContent() {
                     {p.reference}
                   </p>
                 )}
-                <h3 className="text-lg font-semibold transition" style={{ color: 'var(--color-text)' }}>{p.title || "Imóvel"}</h3>
+                <h3 className="text-lg font-semibold transition" style={{ color: 'var(--color-text)' }}>{p.title || terms.itemCapitalized}</h3>
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                   {p.location || [p.municipality, p.parish].filter(Boolean).join(", ") || "Localização não disponível"}
                 </p>
@@ -323,7 +325,7 @@ function ImoveisContent() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-xl border p-12" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background-secondary)' }}>
           <div className="text-6xl opacity-30">🔍</div>
           <div className="text-center">
-            <p className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Nenhum imóvel encontrado</p>
+            <p className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{terms.noItemsFound}</p>
             <p className="mt-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Experimente ajustar os filtros ou limpar a pesquisa
             </p>
@@ -351,7 +353,7 @@ function ImoveisContent() {
 
 export default function ImoveisPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-white">A carregar imóveis...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-white">A carregar...</div>}>
       <ImoveisContent />
     </Suspense>
   );

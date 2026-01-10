@@ -2,20 +2,23 @@
 
 import Link from 'next/link';
 import { useBranding } from '@/contexts/BrandingContext';
+import { useTerminology } from '@/contexts/TerminologyContext';
 import { BrandImage } from './BrandImage';
 import UserMenuWrapper from './UserMenuWrapper';
 import MobileMenu from './MobileMenu';
 
-const navLinks = [
-  { href: "/", label: "Início" },
-  { href: "/imoveis", label: "Imóveis" },
-  { href: "/empreendimentos", label: "Empreendimentos" },
-  { href: "/agentes", label: "Equipa" },
-  { href: "/contactos", label: "Contactos" },
-];
-
 export function ClientHeader() {
   const { branding, loading } = useBranding();
+  const { terms } = useTerminology();
+
+  // Links de navegação dinâmicos baseados no sector
+  const navLinks = [
+    { href: "/", label: "Início" },
+    { href: "/imoveis", label: terms.menuItems },
+    { href: "/empreendimentos", label: terms.menuDevelopments },
+    { href: "/agentes", label: terms.menuTeam },
+    { href: "/contactos", label: terms.menuContact },
+  ];
 
   return (
     <header 
