@@ -467,7 +467,7 @@ export default function TenantDetailPage() {
                 <div>
                   <p className="text-sm text-text-muted mb-1">Backoffice</p>
                   <p className="text-white font-medium">
-                    {tenant.backoffice_domain || `${tenant.slug}-backoffice.crmplus.trioto.tech`}
+                    {tenant.backoffice_domain || `bo-${tenant.slug}.crmplus.trioto.tech`}
                   </p>
                   {tenant.backoffice_domain && (
                     <p className="text-xs text-text-muted mt-1">Domínio próprio configurado</p>
@@ -475,7 +475,7 @@ export default function TenantDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <a
-                    href={`https://${tenant.backoffice_domain || `${tenant.slug}-backoffice.crmplus.trioto.tech`}`}
+                    href={`https://${tenant.backoffice_domain || `bo-${tenant.slug}.crmplus.trioto.tech`}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 hover:bg-background rounded-lg text-text-muted hover:text-white"
@@ -483,7 +483,7 @@ export default function TenantDetailPage() {
                     <Globe className="w-4 h-4" />
                   </a>
                   <button
-                    onClick={() => copyToClipboard(tenant.backoffice_domain || `${tenant.slug}-backoffice.crmplus.trioto.tech`)}
+                    onClick={() => copyToClipboard(tenant.backoffice_domain || `bo-${tenant.slug}.crmplus.trioto.tech`)}
                     className="p-2 hover:bg-background rounded-lg"
                   >
                     <Copy className="w-4 h-4 text-text-muted" />
