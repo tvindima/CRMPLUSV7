@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useTerminology } from '@/contexts/TerminologyContext';
 import { useBranding } from '@/contexts/BrandingContext';
 import TeamCarousel, { TeamMember } from './TeamCarousel';
@@ -11,6 +12,11 @@ interface TeamPageClientProps {
 
 export function TeamPageClient({ agentMembers, staffMembers }: TeamPageClientProps) {
   const { terms, sector } = useTerminology();
+
+  // Atualizar título da página baseado na terminologia
+  useEffect(() => {
+    document.title = terms.teamTitle;
+  }, [terms]);
   const { branding } = useBranding();
 
   // Ajustar roles dos agentes baseado no sector

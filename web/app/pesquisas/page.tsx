@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTerminology } from "@/contexts/TerminologyContext";
 
 interface SavedSearch {
   id: string;
@@ -21,6 +22,12 @@ interface SavedSearch {
 export default function PesquisasPage() {
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const { terms } = useTerminology();
+
+  // Atualizar título da página
+  useEffect(() => {
+    document.title = "Pesquisas Guardadas";
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
@@ -58,7 +65,7 @@ export default function PesquisasPage() {
       const max = filters.precoMax ? `${filters.precoMax.toLocaleString("pt-PT")}€` : "∞";
       parts.push(`${min} - ${max}`);
     }
-    return parts.length > 0 ? parts.join(" • ") : "Todos os imóveis";
+    return parts.length > 0 ? parts.join(" • ") : `Todos os ${terms.items}`;
   };
 
   if (!isClient) {
@@ -74,7 +81,7 @@ export default function PesquisasPage() {
       <div>
         <h1 className="text-3xl font-bold">Pesquisas Guardadas</h1>
         <p style={{ color: 'var(--color-text-muted)' }}>
-          Guarde as suas pesquisas para aceder rapidamente aos imóveis que lhe interessam.
+          Guarde as suas pesquisas para aceder rapidamente aos {terms.items} que lhe interessam.
         </p>
       </div>
 

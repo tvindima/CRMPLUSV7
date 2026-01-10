@@ -4,10 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { getProperties, Property } from "../../../src/services/publicApi";
 import { PropertyCard } from "../../../components/PropertyCard";
 import { SectionHeader } from "../../../components/SectionHeader";
+import { useTerminology } from "@/contexts/TerminologyContext";
 
 export default function VendaPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
+  const { terms } = useTerminology();
+
+  // Atualizar título da página
+  useEffect(() => {
+    document.title = `${terms.itemsCapitalized} para Venda`;
+  }, [terms]);
 
   useEffect(() => {
     getProperties(500).then(setProperties).finally(() => setLoading(false));
@@ -26,7 +33,7 @@ export default function VendaPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader eyebrow="Imóveis" title="Imóveis para Venda" subtitle="Filtrados por negócio: venda." />
+      <SectionHeader eyebrow={terms.itemsCapitalized} title={`${terms.itemsCapitalized} para Venda`} subtitle="Filtrados por negócio: venda." />
       {loading && <p style={{ color: 'var(--color-text-muted)' }}>A carregar…</p>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (

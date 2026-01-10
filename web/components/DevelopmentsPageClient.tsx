@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { SectionHeader } from "./SectionHeader";
 import Link from "next/link";
 import { useTerminology } from "@/contexts/TerminologyContext";
@@ -11,7 +12,7 @@ interface DevelopmentsClientProps {
 export function DevelopmentsPageClient({ items }: DevelopmentsClientProps) {
   const { terms, sector } = useTerminology();
 
-  // Título e subtítulo baseados no sector
+  // Título baseado no sector
   const getTitle = () => {
     switch (sector) {
       case 'automotive':
@@ -21,9 +22,14 @@ export function DevelopmentsPageClient({ items }: DevelopmentsClientProps) {
       case 'machinery':
         return 'Novos Equipamentos';
       default:
-        return 'Catálogo de empreendimentos';
+        return 'Empreendimentos';
     }
   };
+
+  // Atualizar título da página
+  useEffect(() => {
+    document.title = getTitle();
+  }, [sector]);
 
   const getSubtitle = () => {
     switch (sector) {

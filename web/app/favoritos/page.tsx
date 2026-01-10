@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getPlaceholderImage } from "../../src/utils/placeholders";
+import { useTerminology } from "@/contexts/TerminologyContext";
 
 interface FavoriteProperty {
   reference: string;
@@ -25,6 +26,12 @@ export default function FavoritosPage() {
   const [customLists, setCustomLists] = useState<FavoriteList[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [isClient, setIsClient] = useState(false);
+  const { terms } = useTerminology();
+
+  // Atualizar título da página
+  useEffect(() => {
+    document.title = "Os Meus Favoritos";
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
@@ -98,7 +105,7 @@ export default function FavoritosPage() {
         <div>
           <h1 className="text-3xl font-bold">Os Meus Favoritos</h1>
           <p style={{ color: 'var(--color-text-muted)' }}>
-            {favorites.length} {favorites.length === 1 ? "imóvel guardado" : "imóveis guardados"}
+            {favorites.length} {favorites.length === 1 ? `${terms.item} guardado` : `${terms.items} guardados`}
           </p>
         </div>
         {favorites.length > 0 && (
@@ -124,7 +131,7 @@ export default function FavoritosPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold">Ainda não tem favoritos</h2>
             <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
-              Explore os nossos imóveis e guarde os que mais gostar!
+              Explore os nossos {terms.items} e guarde os que mais gostar!
             </p>
           </div>
           <Link
@@ -132,7 +139,7 @@ export default function FavoritosPage() {
             className="rounded-full px-6 py-3 text-sm font-semibold text-white transition"
             style={{ backgroundColor: 'var(--color-primary)' }}
           >
-            Explorar imóveis
+            Explorar {terms.items}
           </Link>
         </div>
       ) : (

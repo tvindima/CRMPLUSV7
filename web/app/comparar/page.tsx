@@ -2,9 +2,10 @@
 
 import { useCompare } from "@/contexts/CompareContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTerminology } from "@/contexts/TerminologyContext";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MortgageSimulator } from "@/components/MortgageSimulator";
 import { TaxCalculator } from "@/components/TaxCalculator";
 import { AddExternalPropertyModal } from "@/components/AddExternalPropertyModal";
@@ -18,6 +19,18 @@ const getExternalUrl = (imagem?: string) => imagem?.replace("external:", "") || 
 export default function CompararPage() {
   const { compareList, removeFromCompare, clearCompare, canAddMore } = useCompare();
   const { isAuthenticated } = useAuth();
+  const { terms } = useTerminology();
+  const [showSimulator, setShowSimulator] = useState<number | null>(null);
+  const [showTaxCalc, setShowTaxCalc] = useState<number | null>(null);
+  const [showExternalModal, setShowExternalModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [pendingTool, setPendingTool] = useState<string>("");
+  const [pendingPrice, setPendingPrice] = useState<number>(0);
+
+  // Atualizar título da página baseado na terminologia
+  useEffect(() => {
+    document.title = `Comparar ${terms.itemsCapitalized}`;
+  }, [terms]);
   const [showSimulator, setShowSimulator] = useState<number | null>(null);
   const [showTaxCalc, setShowTaxCalc] = useState<number | null>(null);
   const [showExternalModal, setShowExternalModal] = useState(false);
@@ -48,15 +61,15 @@ export default function CompararPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
         </div>
-        <h1 className="mb-2 text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Nenhum imóvel para comparar</h1>
-        <p className="mb-6" style={{ color: 'var(--color-text-muted)' }}>Adicione até 5 imóveis para comparar as suas características.</p>
+        <h1 className="mb-2 text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Nenhum {terms.item} para comparar</h1>
+        <p className="mb-6" style={{ color: 'var(--color-text-muted)' }}>Adicione até 5 {terms.items} para comparar as suas características.</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href="/imoveis"
             className="rounded-full px-6 py-3 font-semibold text-white transition"
             style={{ backgroundColor: 'var(--color-primary)' }}
           >
-            Explorar Imóveis
+            Explorar {terms.itemsCapitalized}
           </Link>
           <button
             onClick={() => setShowExternalModal(true)}
@@ -112,8 +125,8 @@ export default function CompararPage() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: 'var(--color-text)' }}>Comparar Imóveis</h1>
-          <p style={{ color: 'var(--color-text-muted)' }}>{compareList.length} de 5 imóveis selecionados</p>
+          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: 'var(--color-text)' }}>Comparar {terms.itemsCapitalized}</h1>
+          <p style={{ color: 'var(--color-text-muted)' }}>{compareList.length} de 5 {terms.items} selecionados</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {canAddMore && (
