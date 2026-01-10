@@ -238,8 +238,8 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
     Usado pelos frontends (web, backoffice) para exibir logo, nome e cores do tema.
     Respeita o X-Tenant-Slug header para multi-tenant.
     """
-    from app.database import set_tenant_schema
     from app.platform.models import Tenant
+    from sqlalchemy import text
     
     # Defaults do tema escuro
     defaults = {
@@ -262,7 +262,8 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
         # Verificar se tenant existe e definir schema
         tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
         if tenant and tenant.schema_name:
-            set_tenant_schema(tenant.schema_name)
+            # CRITICAL: Definir search_path DIRETAMENTE na sessão antes de queries
+            db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
             print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
         else:
             print(f"[BRANDING] Tenant {tenant_slug} not found or has no schema, using defaults")
