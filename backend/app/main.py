@@ -258,23 +258,33 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
     
     # Obter tenant do header
     tenant_slug = request.headers.get("X-Tenant-Slug")
-    if tenant_slug:
-        # Verificar se tenant existe e definir schema
-        tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
-        if tenant and tenant.schema_name:
-            # CRITICAL: Definir search_path DIRETAMENTE na sessão antes de queries
-            db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
-            print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
-        else:
-            print(f"[BRANDING] Tenant {tenant_slug} not found or has no schema, using defaults")
-            return defaults
+    if not tenant_slug:
+        print(f"[BRANDING] No X-Tenant-Slug header, returning defaults")
+        return defaults
+    
+    # Verificar se tenant existe e definir schema
+    tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+    if not tenant:
+        print(f"[BRANDING] Tenant {tenant_slug} not found in database, using defaults")
+        return defaults
+    
+    if not tenant.schema_name:
+        print(f"[BRANDING] Tenant {tenant_slug} has no schema_name, using defaults")
+        return defaults
+    
+    # CRITICAL: Definir search_path DIRETAMENTE na sessão antes de queries
+    db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+    print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
     
     try:
         from app.models.crm_settings import CRMSettings
         settings = db.query(CRMSettings).first()
         
         if not settings:
+            print(f"[BRANDING] No CRMSettings found in schema {tenant.schema_name}, using defaults")
             return defaults
+        
+        print(f"[BRANDING] Found settings for tenant {tenant_slug}: agency_name={settings.agency_name}")
         
         # Usar getattr com try/except para colunas que podem não existir
         def safe_get(obj, attr, default):
