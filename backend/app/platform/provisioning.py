@@ -345,7 +345,7 @@ class TenantProvisioner:
         """
         password_hash = hash_password(password)
         
-        # Mudar para o schema do tenant
+        # Mudar para o schema do tenant (usar aspas para schemas com hífen)
         self.db.execute(text(f'SET search_path TO "{schema_name}", public'))
         
         try:
@@ -361,9 +361,9 @@ class TenantProvisioner:
                 self.log("Tabela users não existe no schema")
                 return False
             
-            # Criar user admin
+            # Criar user admin (full_name e hashed_password são os nomes corretos das colunas)
             self.db.execute(text("""
-                INSERT INTO users (email, password_hash, name, role, is_active)
+                INSERT INTO users (email, hashed_password, full_name, role, is_active)
                 VALUES (:email, :password_hash, :name, 'admin', true)
                 ON CONFLICT (email) DO NOTHING
             """), {
