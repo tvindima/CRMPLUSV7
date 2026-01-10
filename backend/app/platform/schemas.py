@@ -147,15 +147,22 @@ class SuperAdminUpdate(BaseModel):
     permissions: Optional[Dict[str, Any]] = None
 
 
-class SuperAdminOut(SuperAdminBase):
+class SuperAdminOut(BaseModel):
     """Schema de resposta para SuperAdmin"""
     id: int
+    email: EmailStr
+    name: Optional[str] = None
     is_active: bool
     permissions: Optional[Dict[str, Any]] = None
+    last_login: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
+    
+    @property
+    def last_login_compat(self):
+        return self.last_login_at or self.last_login
 
 
 class SuperAdminLogin(BaseModel):
