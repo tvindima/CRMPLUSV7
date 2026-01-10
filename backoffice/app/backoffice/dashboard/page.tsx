@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   SparklesIcon,
   BoltIcon,
@@ -25,6 +25,7 @@ import {
   EyeIcon,
   ArrowDownTrayIcon,
   Cog6ToothIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import clsx from "clsx";
@@ -45,6 +46,8 @@ import {
   assignLeadToAgent,
 } from "@/src/services/dashboardApi";
 import Image from "next/image";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
 
 type KPI = {
   title: string;
@@ -128,11 +131,19 @@ const GlowCard = ({ children, className = "", onClick, tooltip }: { children: Re
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { sector, isAutomotive, isRealEstate } = useTenant();
+  const { term } = useTerminology();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Coordenadora");
   const [userRole, setUserRole] = useState<'agent' | 'coordinator' | 'admin'>('coordinator');
+  
+  // Labels dinâmicos baseados no sector
+  const itemsLabel = term('items', 'Propriedades');
+  const itemsActiveLabel = `${itemsLabel} ${sector === 'automotive' ? 'em Stock' : 'Ativas'}`;
+  const itemIcon = isAutomotive ? TruckIcon : HomeIcon;
+  
   const [kpis, setKpis] = useState<KPI[]>([
-    { title: "Propriedades Ativas", value: "0", icon: HomeIcon, iconColor: "text-purple-400", bgGradient: "from-purple-500/20 to-pink-500/20", trend: "+12%", trendUp: true },
+    { title: itemsActiveLabel, value: "0", icon: itemIcon, iconColor: "text-purple-400", bgGradient: "from-purple-500/20 to-pink-500/20", trend: "+12%", trendUp: true },
     { title: "Novas Leads (7d)", value: "0", icon: SparklesIcon, iconColor: "text-blue-400", bgGradient: "from-blue-500/20 to-cyan-500/20", trend: "+8%", trendUp: true },
     { title: "Propostas em Aberto", value: "0", icon: DocumentTextIcon, iconColor: "text-orange-400", bgGradient: "from-orange-500/20 to-red-500/20", trend: "+5%", trendUp: true },
     { title: "Agentes Ativos", value: "0", icon: UserGroupIcon, iconColor: "text-green-400", bgGradient: "from-green-500/20 to-emerald-500/20" },
@@ -185,9 +196,9 @@ export default function DashboardPage() {
         const kpisData = await getDashboardKPIs();
         setKpis([
           { 
-            title: "Propriedades Ativas", 
+            title: itemsActiveLabel, 
             value: kpisData.propriedades_ativas.toString(), 
-            icon: HomeIcon, 
+            icon: itemIcon, 
             iconColor: "text-purple-400", 
             bgGradient: "from-purple-500/20 to-pink-500/20",
             trend: kpisData.trends.propriedades,
@@ -380,7 +391,8 @@ export default function DashboardPage() {
   };
 
   const handleKpiClick = (kpiTitle: string) => {
-    if (kpiTitle.includes('Propriedades')) {
+    // Navegar baseado no título do KPI (considera terminologia dinâmica)
+    if (kpiTitle.includes(itemsLabel) || kpiTitle.includes('Stock') || kpiTitle.includes('Ativ')) {
       router.push('/backoffice/properties');
     } else if (kpiTitle.includes('Leads')) {
       router.push('/backoffice/leads');
@@ -581,8 +593,8 @@ export default function DashboardPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
             >
-              {/* Propriedades por Concelho */}
-              <GlowCard tooltip="Distribuição de propriedades por concelho">
+              {/* Items por Concelho */}
+              <GlowCard tooltip={`Distribuição de ${term('item_plural', 'propriedades')} por concelho`}>
                 <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                   <MapPinIcon className="w-4 h-4 text-purple-400" />
                   Por Concelho
@@ -595,7 +607,7 @@ export default function DashboardPage() {
                       const maxValue = Math.max(...barChartData.map((d) => d.value));
                       const percentage = (item.value / maxValue) * 100;
                       return (
-                        <div key={index} title={`${item.label}: ${item.value} propriedades`}>
+                        <div key={index} title={`${item.label}: ${item.value} ${term('item_plural', 'propriedades')}`}>
                           <div className="flex justify-between mb-1 text-xs">
                             <span className="text-neutral-300">{item.label}</span>
                             <span className="text-neutral-400">{item.value}</span>
@@ -616,9 +628,9 @@ export default function DashboardPage() {
               </GlowCard>
 
               {/* Distribuição por Tipologia */}
-              <GlowCard tooltip="Distribuição de propriedades por tipologia">
+              <GlowCard tooltip={`Distribuição de ${term('item_plural', 'propriedades')} por ${isAutomotive ? 'segmento' : 'tipologia'}`}>
                 <h3 className="text-sm font-semibold text-white mb-4">
-                  Por Tipologia
+                  Por {isAutomotive ? 'Segmento' : 'Tipologia'}
                 </h3>
                 <div className="space-y-2">
                   {pieChartData.length === 0 ? (
@@ -638,7 +650,7 @@ export default function DashboardPage() {
               </GlowCard>
 
               {/* Distribuição por Estado */}
-              <GlowCard tooltip="Distribuição de propriedades por estado (Disponível, Reservado, Vendido)">
+              <GlowCard tooltip={`Distribuição de ${term('item_plural', 'propriedades')} por estado (Disponível, Reservado, ${isAutomotive ? 'Vendido' : 'Vendido'})`}>
                 <h3 className="text-sm font-semibold text-white mb-4">
                   Por Estado
                 </h3>
@@ -962,10 +974,14 @@ export default function DashboardPage() {
                   <button
                     onClick={() => router.push('/backoffice/properties/new')}
                     className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/20 transition-all group"
-                    title="Criar nova propriedade"
+                    title={term('new_item', 'Criar novo item')}
                   >
-                    <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-                    <span className="text-xs sm:text-sm font-medium text-white">Nova Propriedade</span>
+                    {isAutomotive ? (
+                      <TruckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+                    ) : (
+                      <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+                    )}
+                    <span className="text-xs sm:text-sm font-medium text-white">{term('new_item', 'Nova Propriedade')}</span>
                   </button>
                   <button
                     onClick={() => router.push('/backoffice/leads/new')}

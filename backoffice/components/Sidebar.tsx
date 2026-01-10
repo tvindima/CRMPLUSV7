@@ -3,30 +3,46 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "../context/roleContext";
+import { useTenant } from "../context/TenantContext";
+import { useTerminology } from "../context/TerminologyContext";
 import { BrandImage } from "@/components/BrandImage";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
-const links = [
-  { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/properties", label: "Propriedades", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/clients", label: "Clientes", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/website-clients", label: "Clientes Website", roles: ["leader", "admin", "staff"] },
-  { href: "/backoffice/opportunities", label: "Oportunidades", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/visits", label: "Visitas", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/proposals", label: "Propostas", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/pre-angariacoes", label: "Pré-Angariações", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/escrituras", label: "📜 Escrituras", roles: ["agent", "leader", "admin", "staff"] },
-  { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff"] },
-  // Secção GESTÃO
-  { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
-  { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
-  { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
-  { href: "/backoffice/config/branding", label: "🎨 Branding Site", roles: ["admin", "staff"], isManagement: true },
-  { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true },
-  { href: "/backoffice/config", label: "⚙️ Configurações", roles: ["admin", "staff"], isManagement: true },
-];
+// Função para obter links com terminologia dinâmica
+function getLinks(term: (key: string, fallback?: string) => string, sector: string) {
+  // Label para "Visitas" varia por sector
+  const visitLabel = sector === 'automotive' ? 'Test Drives' : 
+                     sector === 'services' ? 'Reuniões' : 
+                     sector === 'retail' ? 'Atendimentos' : 
+                     sector === 'hospitality' ? 'Reservas' : 'Visitas';
+  
+  // Label para "Pré-Angariações" varia por sector                   
+  const preAngLabel = sector === 'automotive' ? 'Pré-Avaliações' : 
+                      sector === 'real_estate' ? 'Pré-Angariações' : 
+                      'Pré-Registos';
+  
+  return [
+    { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/properties", label: term('items', 'Propriedades'), roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/clients", label: "Clientes", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/website-clients", label: "Clientes Website", roles: ["leader", "admin", "staff"] },
+    { href: "/backoffice/opportunities", label: "Oportunidades", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/visits", label: visitLabel, roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/proposals", label: "Propostas", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/agenda", label: "Agenda", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/pre-angariacoes", label: preAngLabel, roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/escrituras", label: "📜 Escrituras", roles: ["agent", "leader", "admin", "staff"] },
+    { href: "/backoffice/reports", label: "Relatórios", roles: ["leader", "admin", "staff"] },
+    // Secção GESTÃO
+    { href: "/backoffice/agents", label: "Agentes", roles: ["leader", "admin", "staff"], isManagement: true },
+    { href: "/backoffice/teams", label: "Equipas", roles: ["leader", "admin", "staff"], isManagement: true },
+    { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
+    { href: "/backoffice/config/branding", label: "🎨 Branding Site", roles: ["admin", "staff"], isManagement: true },
+    { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true },
+    { href: "/backoffice/config", label: "⚙️ Configurações", roles: ["admin", "staff"], isManagement: true },
+  ];
+}
 
 const iconCircle = (
   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0F0F10] text-xs text-[#E10600]">•</span>
@@ -34,9 +50,14 @@ const iconCircle = (
 
 export function Sidebar() {
   const { role, isAuthenticated } = useRole();
+  const { sector } = useTenant();
+  const { term } = useTerminology();
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Memoizar links para evitar recalcular em cada render
+  const links = useMemo(() => getLinks(term, sector), [term, sector]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
