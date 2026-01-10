@@ -46,6 +46,7 @@ export default function TenantsPage() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -152,14 +153,14 @@ export default function TenantsPage() {
 
   const handleToggleActive = async (tenant: Tenant) => {
     const token = Cookies.get('platform_token');
-    const endpoint = tenant.is_active
-      ? `${API_URL}/platform/tenants/${tenant.id}`
-      : `${API_URL}/platform/tenants/${tenant.id}/activate`;
-
     try {
-      const res = await fetch(endpoint, {
-        method: tenant.is_active ? 'DELETE' : 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_URL}/platform/tenants/${tenant.id}`, {
+        method: 'PUT',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_active: !tenant.is_active })
       });
 
       if (res.ok) {
@@ -169,6 +170,27 @@ export default function TenantsPage() {
       console.error('Error toggling tenant:', error);
     }
     setMenuOpen(null);
+  };
+
+  const handleDelete = async (tenant: Tenant) => {
+    const token = Cookies.get('platform_token');
+    try {
+      const res = await fetch(`${API_URL}/platform/tenants/${tenant.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setDeletingTenant(null);
+        fetchTenants();
+      } else {
+        const error = await res.json();
+        alert(error.detail || 'Erro ao eliminar tenant');
+      }
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      alert('Erro ao eliminar tenant');
+    }
   };
 
   const filteredTenants = tenants.filter(
@@ -247,7 +269,7 @@ export default function TenantsPage() {
                         onClick={() => handleToggleActive(tenant)}
                         className={`w-full flex items-center gap-2 px-4 py-2 transition-colors ${
                           tenant.is_active
-                            ? 'text-danger hover:bg-danger/10'
+                            ? 'text-warning hover:bg-warning/10'
                             : 'text-success hover:bg-success/10'
                         }`}
                       >
@@ -262,6 +284,16 @@ export default function TenantsPage() {
                             Activar
                           </>
                         )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeletingTenant(tenant);
+                          setMenuOpen(null);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-danger hover:bg-danger/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
                       </button>
                     </div>
                   )}
@@ -484,6 +516,40 @@ export default function TenantsPage() {
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingTenant ? 'Guardar' : 'Criar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingTenant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background-secondary rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-danger/20 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-danger" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Eliminar Tenant</h3>
+                <p className="text-sm text-text-muted">{deletingTenant.name}</p>
+              </div>
+            </div>
+            <p className="text-text-muted mb-6">
+              Tem a certeza que deseja eliminar este tenant? Esta ação é <span className="text-danger font-semibold">irreversível</span> e todos os dados serão perdidos permanentemente.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingTenant(null)}
+                className="flex-1 px-4 py-2 bg-background border border-border text-white rounded-lg hover:bg-background/80 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(deletingTenant)}
+                className="flex-1 px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors"
+              >
+                Eliminar
               </button>
             </div>
           </div>
