@@ -1,6 +1,13 @@
-import { cookies, headers } from "next/headers";
+/**
+ * Public API service for fetching tenant-specific data
+ * Uses internal proxy route to handle tenant headers server-side
+ */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
+// Use internal proxy in production, direct API in development
+const API_BASE = typeof window !== 'undefined' 
+  ? '/api/proxy'  // Client-side: use internal proxy
+  : (process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app');
+
 const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
 export type Property = {
@@ -52,43 +59,46 @@ export type Agent = {
 };
 
 /**
- * Get tenant slug - works in both server and client contexts
+ * Get tenant slug from cookie (client-side only)
  */
-async function getTenantSlug(): Promise<string> {
-  // Server-side: try to get from cookies (set by middleware)
-  try {
-    const cookieStore = await cookies();
-    const tenantCookie = cookieStore.get('tenant_slug');
-    if (tenantCookie?.value) {
-      return tenantCookie.value;
+function getTenantSlugFromCookie(): string {
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/tenant_slug=([^;]+)/);
+    if (match) {
+      return decodeURIComponent(match[1]);
     }
-  } catch (e) {
-    // cookies() throws in client components, ignore
   }
+  return 'imoveismais';
+}
+
+/**
+ * Build headers for API requests
+ * On client-side, include tenant header (proxy will also add it server-side)
+ */
+function buildHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
   
-  // Client-side fallback
+  // Client-side: add tenant header
   if (typeof window !== 'undefined') {
-    const cookieMatch = document.cookie.match(/tenant_slug=([^;]+)/);
-    if (cookieMatch) {
-      return decodeURIComponent(cookieMatch[1]);
-    }
+    headers['X-Tenant-Slug'] = getTenantSlugFromCookie();
   }
   
-  // Final fallback
-  return process.env.NEXT_PUBLIC_TENANT_SLUG || 'imoveismais';
+  return headers;
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const tenantSlug = await getTenantSlug();
+  // For SSR, we need to use the proxy route with full URL
+  const baseUrl = typeof window !== 'undefined' 
+    ? '/api/proxy' 
+    : `${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/api/proxy`;
   
-  console.log(`[publicApi] Fetching ${path} for tenant: ${tenantSlug}`);
+  const url = `${baseUrl}${path}`;
   
-  const res = await fetch(`${API_BASE}${path}`, { 
+  const res = await fetch(url, { 
     next: { revalidate: 30 },
-    headers: {
-      'X-Tenant-Slug': tenantSlug,
-      'Content-Type': 'application/json',
-    },
+    headers: buildHeaders(),
   });
   
   if (!res.ok) {
