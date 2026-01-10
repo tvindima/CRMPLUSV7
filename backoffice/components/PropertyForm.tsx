@@ -409,6 +409,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Secção: Localização */}
       <div className="space-y-3">

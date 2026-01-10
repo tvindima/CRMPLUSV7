@@ -15,6 +15,9 @@ interface Branding {
   text_muted: string;
   border_color: string;
   accent_color: string;
+  phone?: string;
+  email?: string;
+  address?: string;
 }
 
 interface BrandingContextType {

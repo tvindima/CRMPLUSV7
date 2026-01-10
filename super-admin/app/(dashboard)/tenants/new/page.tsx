@@ -134,7 +134,7 @@ export default function NewTenantPage() {
     return ['services', 'retail', 'other'].includes(formData.sector);
   }
 
-  const updateForm = (field: keyof FormData, value: string | boolean) => {
+  const updateForm = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
