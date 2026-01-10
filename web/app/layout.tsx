@@ -21,10 +21,10 @@ export const viewport: Viewport = {
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Imobiliária",
+    default: "A carregar...",
     template: "%s"
   },
-  description: "Encontre a casa perfeita ou o investimento ideal em Portugal.",
+  description: "Encontre o que procura connosco.",
   keywords: ["imóveis", "casas", "apartamentos", "moradias", "venda", "arrendamento", "Portugal", "investimento imobiliário"],
   robots: {
     index: false,
