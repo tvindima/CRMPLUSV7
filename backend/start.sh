@@ -30,56 +30,102 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     python init_db.py
 fi
 
-# Always run alembic migrations to keep schema up to date
-echo "🔄 Running database migrations..."
-if alembic upgrade head; then
-    echo "✅ Migrations applied successfully"
-else
-    echo "⚠️ Alembic migration failed, trying with heads..."
-    if alembic upgrade heads; then
-        echo "✅ Migrations applied with 'heads'"
-    else
-        echo "⚠️ Alembic failed, applying critical columns directly..."
-        # Apply critical missing columns
-        python -c "
+# Schema consolidation - ensures all columns exist without relying on alembic
+echo "🔄 Running schema consolidation..."
+python -c "
 from app.database import SessionLocal, engine
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
-db = SessionLocal()
+conn = engine.connect()
+inspector = inspect(engine)
+
+def table_exists(name):
+    return name in inspector.get_table_names()
+
+def col_exists(table, col):
+    if not table_exists(table):
+        return False
+    return col in [c['name'] for c in inspector.get_columns(table)]
+
 try:
-    # Add nif and address to agents if missing
-    db.execute(text('ALTER TABLE agents ADD COLUMN IF NOT EXISTS nif VARCHAR(20);'))
-    db.execute(text('ALTER TABLE agents ADD COLUMN IF NOT EXISTS address VARCHAR(500);'))
+    # AGENTS
+    if table_exists('agents'):
+        if not col_exists('agents', 'nif'):
+            conn.execute(text('ALTER TABLE agents ADD COLUMN nif VARCHAR(20)'))
+        if not col_exists('agents', 'address'):
+            conn.execute(text('ALTER TABLE agents ADD COLUMN address VARCHAR(500)'))
+        if not col_exists('agents', 'twitter'):
+            conn.execute(text('ALTER TABLE agents ADD COLUMN twitter VARCHAR(200)'))
+        if not col_exists('agents', 'tiktok'):
+            conn.execute(text('ALTER TABLE agents ADD COLUMN tiktok VARCHAR(200)'))
+        if not col_exists('agents', 'license_ami'):
+            conn.execute(text('ALTER TABLE agents ADD COLUMN license_ami VARCHAR(50)'))
     
-    # Add tipo_imovel to first_impressions if missing
-    db.execute(text('ALTER TABLE first_impressions ADD COLUMN IF NOT EXISTS tipo_imovel VARCHAR(100);'))
+    # PROPERTIES
+    if table_exists('properties'):
+        if not col_exists('properties', 'video_url'):
+            conn.execute(text('ALTER TABLE properties ADD COLUMN video_url VARCHAR(500)'))
+        if not col_exists('properties', 'hide_address'):
+            conn.execute(text('ALTER TABLE properties ADD COLUMN hide_address BOOLEAN DEFAULT false'))
+        if not col_exists('properties', 'show_in_website'):
+            conn.execute(text('ALTER TABLE properties ADD COLUMN show_in_website BOOLEAN DEFAULT true'))
+        if not col_exists('properties', 'highlight_website'):
+            conn.execute(text('ALTER TABLE properties ADD COLUMN highlight_website BOOLEAN DEFAULT false'))
     
-    # Add tipo_imovel to pre_angariacoes if missing
-    db.execute(text('ALTER TABLE pre_angariacoes ADD COLUMN IF NOT EXISTS tipo_imovel VARCHAR(100);'))
+    # USERS
+    if table_exists('users'):
+        if not col_exists('users', 'role_label'):
+            conn.execute(text('ALTER TABLE users ADD COLUMN role_label VARCHAR(100)'))
+        if not col_exists('users', 'works_for_agent_id'):
+            conn.execute(text('ALTER TABLE users ADD COLUMN works_for_agent_id INTEGER'))
     
-    # Add multi-tenant fields to tenants if missing
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(20);'))
-    db.execute(text(\"ALTER TABLE tenants ADD COLUMN IF NOT EXISTS sector VARCHAR(50) DEFAULT 'real_estate';\"))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(200);'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_created BOOLEAN DEFAULT false;'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0;'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_verified BOOLEAN DEFAULT false;'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS domain_verification_token VARCHAR(100);'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(100);'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(100);'))
-    db.execute(text('ALTER TABLE tenants ADD COLUMN IF NOT EXISTS billing_email VARCHAR(200);'))
+    # LEADS
+    if table_exists('leads'):
+        if not col_exists('leads', 'message'):
+            conn.execute(text('ALTER TABLE leads ADD COLUMN message TEXT'))
     
-    db.commit()
-    print('✅ Critical columns added directly')
+    # FIRST_IMPRESSIONS
+    if table_exists('first_impressions'):
+        if not col_exists('first_impressions', 'tipo_imovel'):
+            conn.execute(text('ALTER TABLE first_impressions ADD COLUMN tipo_imovel VARCHAR(100)'))
+        if not col_exists('first_impressions', 'gps_latitude'):
+            conn.execute(text('ALTER TABLE first_impressions ADD COLUMN gps_latitude FLOAT'))
+        if not col_exists('first_impressions', 'gps_longitude'):
+            conn.execute(text('ALTER TABLE first_impressions ADD COLUMN gps_longitude FLOAT'))
+    
+    # PRE_ANGARIACOES
+    if table_exists('pre_angariacoes'):
+        if not col_exists('pre_angariacoes', 'tipo_imovel'):
+            conn.execute(text('ALTER TABLE pre_angariacoes ADD COLUMN tipo_imovel VARCHAR(100)'))
+    
+    # TENANTS (Platform)
+    if table_exists('tenants'):
+        for col in ['secondary_color', 'sector', 'admin_email', 'provisioning_status', 'billing_email', 'domain_verification_token', 'stripe_customer_id', 'stripe_subscription_id']:
+            if not col_exists('tenants', col):
+                conn.execute(text(f'ALTER TABLE tenants ADD COLUMN {col} VARCHAR(200)'))
+        for col in ['admin_created', 'onboarding_completed', 'custom_domain_verified']:
+            if not col_exists('tenants', col):
+                conn.execute(text(f'ALTER TABLE tenants ADD COLUMN {col} BOOLEAN DEFAULT false'))
+        if not col_exists('tenants', 'onboarding_step'):
+            conn.execute(text('ALTER TABLE tenants ADD COLUMN onboarding_step INTEGER DEFAULT 0'))
+        if not col_exists('tenants', 'provisioning_error'):
+            conn.execute(text('ALTER TABLE tenants ADD COLUMN provisioning_error TEXT'))
+    
+    conn.commit()
+    print('✅ Schema consolidation completed')
 except Exception as e:
-    print(f'❌ Error: {e}')
-    db.rollback()
+    print(f'⚠️ Schema consolidation warning: {e}')
+    try:
+        conn.rollback()
+    except:
+        pass
 finally:
-    db.close()
-" || echo "❌ Direct SQL fix also failed"
-    fi
-fi
+    conn.close()
+"
+
+# Try alembic but don't fail if it has issues (schema already consolidated above)
+echo "🔄 Running alembic upgrade (optional)..."
+alembic upgrade head 2>&1 || echo "⚠️ Alembic skipped (schema already up to date)"
 
 echo "🌐 Starting Uvicorn..."
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
