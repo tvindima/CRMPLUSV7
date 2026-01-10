@@ -230,13 +230,17 @@ app.add_middleware(TenantMiddleware)
 # obter o branding da agência sem necessidade de login
 
 @app.get("/public/branding")
-def get_public_branding(db: Session = Depends(get_db)):
+def get_public_branding(request: Request, db: Session = Depends(get_db)):
     """
     Obter configurações de branding e tema da agência.
     
     PÚBLICO - Não requer autenticação.
     Usado pelos frontends (web, backoffice) para exibir logo, nome e cores do tema.
+    Respeita o X-Tenant-Slug header para multi-tenant.
     """
+    from app.database import set_tenant_schema
+    from app.platform.models import Tenant
+    
     # Defaults do tema escuro
     defaults = {
         "agency_name": "CRM Plus",
@@ -251,6 +255,18 @@ def get_public_branding(db: Session = Depends(get_db)):
         "border_color": "#2A2A2E",
         "accent_color": "#E10600"
     }
+    
+    # Obter tenant do header
+    tenant_slug = request.headers.get("X-Tenant-Slug")
+    if tenant_slug:
+        # Verificar se tenant existe e definir schema
+        tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+        if tenant and tenant.schema_name:
+            set_tenant_schema(tenant.schema_name)
+            print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
+        else:
+            print(f"[BRANDING] Tenant {tenant_slug} not found or has no schema, using defaults")
+            return defaults
     
     try:
         from app.models.crm_settings import CRMSettings
