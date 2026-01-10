@@ -1,53 +1,34 @@
-import { getTenantSlugFromCookie, getApiUrl } from "@/lib/tenant";
+import { cookies, headers } from "next/headers";
 
-const API_BASE = getApiUrl();
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
 
-// ✅ REMOVER MOCKS - usar apenas dados reais do backend
-// import { mockProperties } from "../mocks/properties";
-// import { mockAgents } from "../mocks/agents";
-
 export type Property = {
-  // ✅ Campos obrigatórios (conforme API backend)
   id: number;
   title: string;
   price: number | null;
   location: string | null;
-  status: string | null; // AVAILABLE | RESERVED | SOLD
-  agent_id: number | null; // ✅ SEMPRE presente em produção
-  
-  // Campos principais
+  status: string | null;
+  agent_id: number | null;
   area: number | null;
   reference?: string | null;
-  business_type?: string | null; // VENDA | ARRENDAMENTO
-  property_type?: string | null; // APARTAMENTO | MORADIA | TERRENO | LOJA | ARMAZÉM | PRÉDIO
-  typology?: string | null; // T0, T1, T2, T3, T4+
+  business_type?: string | null;
+  property_type?: string | null;
+  typology?: string | null;
   usable_area?: number | null;
   condition?: string | null;
   description?: string | null;
   observations?: string | null;
-  
-  // ✅ Imagens (com watermark automático no backend)
   images?: string[] | null;
-  
-  // ✅ Vídeo promocional (adicionado pela dev team backoffice)
   video_url?: string | null;
-  
-  // Localização
   municipality?: string | null;
   parish?: string | null;
-  
-  // Detalhes adicionais
   energy_certificate?: string | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
   parking_spaces?: number | null;
-  
-  // ✅ Controle de publicação (já filtrado no endpoint)
   is_published?: boolean;
   is_featured?: boolean;
-  
-  // ✅ Timestamps (para ordenação por data de criação)
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -58,32 +39,58 @@ export type Agent = {
   email: string;
   phone?: string | null;
   team?: string | null;
-  avatar?: string | null; // ⚠️ DEPRECATED - usar photo
-  photo?: string | null;  // ✅ Cloudinary URL
-  // Novos campos de perfil
+  avatar?: string | null;
+  photo?: string | null;
   license_ami?: string | null;
   bio?: string | null;
   instagram?: string | null;
   facebook?: string | null;
   linkedin?: string | null;
-  twitter?: string | null;  // X.com
+  twitter?: string | null;
   tiktok?: string | null;
   whatsapp?: string | null;
 };
 
-// Helper to get tenant header
-function getTenantHeader(): Record<string, string> {
-  if (typeof window !== 'undefined') {
-    return { 'X-Tenant-Slug': getTenantSlugFromCookie() };
+/**
+ * Get tenant slug - works in both server and client contexts
+ */
+async function getTenantSlug(): Promise<string> {
+  // Server-side: try to get from cookies (set by middleware)
+  try {
+    const cookieStore = await cookies();
+    const tenantCookie = cookieStore.get('tenant_slug');
+    if (tenantCookie?.value) {
+      return tenantCookie.value;
+    }
+  } catch (e) {
+    // cookies() throws in client components, ignore
   }
-  return {};
+  
+  // Client-side fallback
+  if (typeof window !== 'undefined') {
+    const cookieMatch = document.cookie.match(/tenant_slug=([^;]+)/);
+    if (cookieMatch) {
+      return decodeURIComponent(cookieMatch[1]);
+    }
+  }
+  
+  // Final fallback
+  return process.env.NEXT_PUBLIC_TENANT_SLUG || 'imoveismais';
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
+  const tenantSlug = await getTenantSlug();
+  
+  console.log(`[publicApi] Fetching ${path} for tenant: ${tenantSlug}`);
+  
   const res = await fetch(`${API_BASE}${path}`, { 
     next: { revalidate: 30 },
-    headers: getTenantHeader(),
+    headers: {
+      'X-Tenant-Slug': tenantSlug,
+      'Content-Type': 'application/json',
+    },
   });
+  
   if (!res.ok) {
     throw new Error(`Erro ao chamar ${path}: ${res.status}`);
   }
@@ -94,30 +101,17 @@ const resolveImageUrl = (url?: string | null): string | null => {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   if (url.startsWith("/media")) {
-    const base = PUBLIC_MEDIA_BASE || "";
-    return `${base}${url}`;
+    return `${PUBLIC_MEDIA_BASE}${url}`;
   }
   return url;
 };
 
-// ✅ Converter YouTube Studio URLs para URLs de visualização
 const normalizeVideoUrl = (url?: string | null): string | null => {
   if (!url) return null;
   
-  // Se for YouTube Studio URL: https://studio.youtube.com/video/VIDEO_ID/edit
   const studioMatch = url.match(/studio\.youtube\.com\/video\/([a-zA-Z0-9_-]+)/);
   if (studioMatch) {
-    const videoId = studioMatch[1];
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    console.log(`[🔄 normalizeVideoUrl] Studio → Watch URL`);
-    console.log(`   De: ${url}`);
-    console.log(`   Para: ${watchUrl}`);
-    return watchUrl;
-  }
-  
-  // Se já for uma URL válida (youtube.com, youtu.be, vimeo, mp4, etc), retornar como está
-  if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com') || url.match(/\.(mp4|webm|ogg)$/i)) {
-    console.log(`[✅ normalizeVideoUrl] URL de vídeo válida: ${url}`);
+    return `https://www.youtube.com/watch?v=${studioMatch[1]}`;
   }
   
   return resolveImageUrl(url);
@@ -128,10 +122,8 @@ const normalizeProperty = (property: Property): Property => {
     ?.map((img) => resolveImageUrl(img))
     .filter((img): img is string => Boolean(img));
   
-  // ✅ Normalizar video_url (converter YouTube Studio → YouTube Watch)
   const video_url = normalizeVideoUrl(property.video_url);
   
-  // Derive bedrooms from typology if missing (T0=0, T1=1, T2=2, T3=3, etc)
   let bedrooms = property.bedrooms;
   if (bedrooms === undefined && property.typology) {
     const match = property.typology.match(/T(\d+)/);
@@ -140,7 +132,6 @@ const normalizeProperty = (property: Property): Property => {
     }
   }
   
-  // Set 'area' to usable_area for backward compatibility
   const area = property.area ?? property.usable_area ?? null;
   
   return { 
@@ -159,7 +150,6 @@ export async function getProperties(limit = 500): Promise<Property[]> {
     let skip = 0;
 
     while (true) {
-      // ✅ USAR ENDPOINT PÚBLICO: apenas propriedades publicadas
       const data = await fetchJson<Property[]>(`/properties/?is_published=1&skip=${skip}&limit=${pageSize}`);
       if (!Array.isArray(data) || data.length === 0) break;
       results.push(...data.map(normalizeProperty));
@@ -167,13 +157,10 @@ export async function getProperties(limit = 500): Promise<Property[]> {
       skip += pageSize;
     }
 
-    console.log(`[API] Successfully fetched ${results.length} published properties from backend`);
-    
-    // ✅ SEMPRE retornar apenas dados reais do backend - SEM FALLBACK
+    console.log(`[API] Successfully fetched ${results.length} published properties`);
     return results;
   } catch (error) {
     console.error("[API] Backend connection failed:", error);
-    // ✅ Retornar array vazio em caso de erro - frontend deve tratar
     return [];
   }
 }
@@ -184,7 +171,6 @@ export async function getPropertyByReference(reference: string): Promise<Propert
     (p.reference?.toLowerCase() === reference.toLowerCase()) ||
     (p.title?.toLowerCase() === reference.toLowerCase())
   );
-  // assignAgentByReference já foi aplicado em getProperties(), então apenas retornar
   return match || null;
 }
 
@@ -194,7 +180,7 @@ export async function getAgents(limit = 50): Promise<Agent[]> {
     return data;
   } catch (error) {
     console.error("[API] Failed to fetch agents:", error);
-    return []; // ✅ Retornar array vazio - sem fallback
+    return [];
   }
 }
 
@@ -214,7 +200,7 @@ export async function getStaff(): Promise<StaffMember[]> {
     return data;
   } catch (error) {
     console.error("[API] Failed to fetch staff:", error);
-    return []; // ✅ Retornar array vazio em caso de erro
+    return [];
   }
 }
 
@@ -223,12 +209,11 @@ export async function getAgentById(id: number): Promise<Agent | null> {
     const data = await fetchJson<Agent>(`/agents/${id}`);
     return data;
   } catch (error) {
-    console.error(`[getAgentById] Agent ${id} not found in backend:`, error);
-    return null; // ✅ Retornar null - sem fallback
+    console.error(`[getAgentById] Agent ${id} not found:`, error);
+    return null;
   }
 }
 
-// Helper para obter propriedades de um agente específico
 export async function getAgentProperties(agentId: number, limit = 200): Promise<Property[]> {
   const all = await getProperties(limit);
   return all.filter((p) => p.agent_id === agentId);
