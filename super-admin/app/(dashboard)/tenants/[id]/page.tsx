@@ -71,7 +71,7 @@ export default function TenantDetailPage() {
 
   const fetchTenant = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -86,7 +86,7 @@ export default function TenantDetailPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}/stats`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -108,7 +108,7 @@ export default function TenantDetailPage() {
   const handleToggleActive = async () => {
     setActionLoading('toggle');
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -129,7 +129,7 @@ export default function TenantDetailPage() {
   const handleDelete = async () => {
     setActionLoading('delete');
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -147,7 +147,7 @@ export default function TenantDetailPage() {
   const handleRetryProvisioning = async () => {
     setActionLoading('retry');
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}/retry-provisioning`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}/retry-provisioning`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -165,7 +165,7 @@ export default function TenantDetailPage() {
     if (!adminEmail || !adminPassword || !adminName) return;
     setActionLoading('admin');
     try {
-      const response = await fetch(`${API_URL}/api/v1/platform/tenants/${tenantId}/create-admin`, {
+      const response = await fetch(`${API_URL}/platform/tenants/${tenantId}/create-admin`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -182,6 +182,9 @@ export default function TenantDetailPage() {
         setShowCreateAdmin(false);
         setAdminPassword('');
         setAdminName('');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Erro ao criar admin');
       }
     } catch (error) {
       console.error('Error creating admin:', error);
