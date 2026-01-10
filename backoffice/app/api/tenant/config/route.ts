@@ -21,18 +21,15 @@ export async function GET(request: NextRequest) {
       tenantSlug = process.env.TENANT_SLUG || '';
     }
     
-    // 4. Fallback: extrair do hostname (padrão bo-slug.crmplus.trioto.tech)
+    // 4. Fallback: extrair do hostname (padrão slug.bo.crmplus.trioto.tech)
     if (!tenantSlug) {
       const headersList = await headers();
       const host = headersList.get('host') || '';
       const hostname = host.split(':')[0];
       
-      // bo-pg-auto.crmplus.trioto.tech → pg-auto
-      if (hostname.endsWith('.crmplus.trioto.tech')) {
-        const subdomain = hostname.replace('.crmplus.trioto.tech', '');
-        if (subdomain.startsWith('bo-')) {
-          tenantSlug = subdomain.substring(3);
-        }
+      // pg-auto.bo.crmplus.trioto.tech → pg-auto
+      if (hostname.endsWith('.bo.crmplus.trioto.tech')) {
+        tenantSlug = hostname.replace('.bo.crmplus.trioto.tech', '');
       }
     }
     
