@@ -285,6 +285,72 @@ def get_public_branding(db: Session = Depends(get_db)):
         return defaults
 
 
+@app.get("/api/v1/tenant/config")
+def get_tenant_config(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Obter configuração completa do tenant atual.
+    
+    PÚBLICO - Não requer autenticação.
+    Usado pelos frontends para adaptar UI ao sector do tenant.
+    """
+    from app.platform.models import Tenant
+    
+    # Tentar obter tenant do middleware ou header
+    tenant_slug = getattr(request.state, 'tenant_slug', None)
+    if not tenant_slug:
+        tenant_slug = request.headers.get('X-Tenant-Slug', '')
+    
+    # Se não tem slug, tentar extrair do host
+    if not tenant_slug:
+        host = request.headers.get('host', '')
+        parts = host.split('.')
+        if len(parts) >= 3:
+            tenant_slug = parts[0]
+    
+    # Default config
+    default_config = {
+        "id": 0,
+        "slug": tenant_slug or "default",
+        "name": "CRM Plus",
+        "sector": "real_estate",
+        "plan": "basic",
+        "primary_color": "#E10600",
+        "secondary_color": "#C5C5C5",
+        "logo_url": None,
+        "features": [],
+        "max_agents": 10,
+        "max_properties": 100,
+    }
+    
+    if not tenant_slug:
+        return default_config
+    
+    try:
+        tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+        if not tenant:
+            return default_config
+        
+        return {
+            "id": tenant.id,
+            "slug": tenant.slug,
+            "name": tenant.name,
+            "sector": tenant.sector or "real_estate",
+            "plan": tenant.plan or "basic",
+            "primary_color": tenant.primary_color or "#E10600",
+            "secondary_color": tenant.secondary_color or "#C5C5C5",
+            "logo_url": tenant.logo_url,
+            "features": tenant.features or [],
+            "max_agents": tenant.max_agents or 10,
+            "max_properties": tenant.max_properties or 100,
+        }
+    except Exception as e:
+        print(f"[TENANT CONFIG] Error: {e}")
+        return default_config
+
+
 app.include_router(leads_router)
 
 

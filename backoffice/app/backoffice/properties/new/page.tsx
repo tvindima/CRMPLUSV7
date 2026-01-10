@@ -4,14 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { PropertyForm, PropertyFormSubmit } from "@/backoffice/components/PropertyForm";
+import { ItemForm } from "@/components/ItemForm";
 import { createBackofficeProperty } from "@/src/services/backofficeApi";
+import { useTenant } from "@/context/TenantContext";
+import { useTerminology } from "@/context/TerminologyContext";
+import { Loader2 } from "lucide-react";
 
 export default function NewPropertyPage() {
   const router = useRouter();
+  const { sector, isRealEstate, loading: tenantLoading } = useTenant();
+  const { term } = useTerminology();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(data: PropertyFormSubmit) {
+  // Handler para PropertyForm (imobiliário)
+  async function handleRealEstateSubmit(data: PropertyFormSubmit) {
     try {
       setLoading(true);
       setError("");
@@ -27,12 +34,27 @@ export default function NewPropertyPage() {
     }
   }
 
+  // Loading state
+  if (tenantLoading) {
+    return (
+      <BackofficeLayout title={term('new_item', 'Novo Item')}>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </BackofficeLayout>
+    );
+  }
+
+  // Título e descrição baseados no sector
+  const title = term('new_item', 'Novo Item');
+  const description = `Preencha os dados ${sector === 'real_estate' ? 'do imóvel para angariação' : `do ${term('item_singular', 'item')}`}`;
+
   return (
-    <BackofficeLayout title="Novo Imóvel">
+    <BackofficeLayout title={title}>
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-white">Adicionar Novo Imóvel</h1>
-          <p className="text-sm text-[#999]">Preencha os dados do imóvel para angariação</p>
+          <h1 className="text-2xl font-semibold text-white">{title}</h1>
+          <p className="text-sm text-[#999]">{description}</p>
         </div>
 
         {error && (
@@ -41,7 +63,12 @@ export default function NewPropertyPage() {
           </div>
         )}
 
-        <PropertyForm onSubmit={handleSubmit} loading={loading} />
+        {/* Usar PropertyForm para imobiliário, ItemForm para outros sectores */}
+        {isRealEstate ? (
+          <PropertyForm onSubmit={handleRealEstateSubmit} loading={loading} />
+        ) : (
+          <ItemForm mode="create" />
+        )}
       </div>
     </BackofficeLayout>
   );

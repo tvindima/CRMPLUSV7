@@ -104,14 +104,21 @@ const terminologyCache: Record<string, Terminology> = {};
 
 export function TerminologyProvider({ 
   children,
-  initialSector = 'real_estate'
+  sector: propSector,
 }: { 
   children: ReactNode;
-  initialSector?: string;
+  sector?: string;
 }) {
-  const [sector, setSector] = useState(initialSector);
+  const [sector, setSector] = useState(propSector || 'real_estate');
   const [terminology, setTerminology] = useState<Terminology>(DEFAULT_TERMINOLOGY);
   const [loading, setLoading] = useState(false);
+
+  // Atualizar sector quando a prop mudar
+  useEffect(() => {
+    if (propSector && propSector !== sector) {
+      setSector(propSector);
+    }
+  }, [propSector]);
 
   useEffect(() => {
     const loadTerminology = async () => {
