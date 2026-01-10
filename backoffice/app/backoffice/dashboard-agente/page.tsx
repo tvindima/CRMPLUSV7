@@ -76,6 +76,7 @@ export default function DashboardAgentePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { term } = useTerminology();
 
   useEffect(() => {
     async function checkAuth() {
