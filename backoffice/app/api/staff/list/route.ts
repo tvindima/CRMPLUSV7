@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL, SESSION_COOKIE, TENANT_SLUG } from '@/lib/api'
+import { NextResponse } from 'next/server'
+import { API_BASE_URL, SESSION_COOKIE } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +10,7 @@ export async function GET() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get(SESSION_COOKIE)
+    const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || ''
 
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -18,8 +19,8 @@ export async function GET() {
     const headers: Record<string, string> = {
       'X-Admin-Key': ADMIN_SETUP_KEY,
     }
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug
     }
 
     const res = await fetch(`${API_BASE_URL}/admin/setup/list-staff`, {

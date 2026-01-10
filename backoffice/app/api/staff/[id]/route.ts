@@ -1,17 +1,19 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL, SESSION_COOKIE, TENANT_SLUG } from '@/lib/api'
+import { API_BASE_URL, SESSION_COOKIE } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
 
 const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || 'dev_admin_key_change_in_production'
 
-function getAdminHeaders(): Record<string, string> {
+async function getAdminHeaders(): Promise<Record<string, string>> {
+  const cookieStore = await cookies()
+  const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || ''
   const headers: Record<string, string> = {
     'X-Admin-Key': ADMIN_SETUP_KEY,
   }
-  if (TENANT_SLUG) {
-    headers['X-Tenant-Slug'] = TENANT_SLUG
+  if (tenantSlug) {
+    headers['X-Tenant-Slug'] = tenantSlug
   }
   return headers
 }
@@ -31,7 +33,7 @@ export async function GET(
     const { id } = await params
 
     const res = await fetch(`${API_BASE_URL}/admin/setup/get-user/${id}`, {
-      headers: getAdminHeaders(),
+      headers: await getAdminHeaders(),
     })
 
     const data = await res.json()
@@ -65,7 +67,7 @@ export async function PUT(
     const res = await fetch(`${API_BASE_URL}/admin/setup/update-user/${id}`, {
       method: 'PUT',
       headers: {
-        ...getAdminHeaders(),
+        ...await getAdminHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -100,7 +102,7 @@ export async function DELETE(
 
     const res = await fetch(`${API_BASE_URL}/admin/setup/delete-user/${id}`, {
       method: 'DELETE',
-      headers: getAdminHeaders(),
+      headers: await getAdminHeaders(),
     })
 
     const data = await res.json()

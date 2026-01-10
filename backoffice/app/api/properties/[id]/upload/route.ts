@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { API_BASE_URL, SESSION_COOKIE, TENANT_SLUG } from '@/lib/api';
+import { API_BASE_URL, SESSION_COOKIE } from '@/lib/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ export async function POST(
 ) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE);
+  const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || '';
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,8 +25,8 @@ export async function POST(
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token.value}`,
     };
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
     }
     
     const res = await fetch(`${API_BASE_URL}/properties/${id}/upload`, {
