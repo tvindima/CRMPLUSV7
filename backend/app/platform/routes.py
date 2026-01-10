@@ -897,6 +897,51 @@ def get_tenant_stats(tenant_id: int, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/tenants/{tenant_id}/users")
+def get_tenant_users(tenant_id: int, db: Session = Depends(get_db)):
+    """
+    Listar utilizadores de um tenant específico.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    schema_name = f"tenant_{tenant.slug}"
+    users = []
+    
+    try:
+        # Verificar se o schema existe
+        schema_exists = db.execute(
+            text("SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema"),
+            {"schema": schema_name}
+        ).fetchone()
+        
+        if schema_exists:
+            # Buscar utilizadores do schema do tenant
+            result = db.execute(
+                text(f'''
+                    SELECT id, email, full_name, role, is_active, created_at, last_login
+                    FROM "{schema_name}".users
+                    ORDER BY created_at DESC
+                ''')
+            ).fetchall()
+            
+            for row in result:
+                users.append({
+                    "id": row[0],
+                    "email": row[1],
+                    "name": row[2] or row[1].split('@')[0],
+                    "role": row[3] or "user",
+                    "is_active": row[4] if row[4] is not None else True,
+                    "created_at": row[5].isoformat() if row[5] else None,
+                    "last_login": row[6].isoformat() if row[6] else None
+                })
+    except Exception as e:
+        print(f"Error fetching users for tenant {tenant.slug}: {e}")
+    
+    return users
+
+
 # ===========================================
 # SUPER ADMIN MANAGEMENT
 # ===========================================
