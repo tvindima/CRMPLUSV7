@@ -10,22 +10,37 @@ import type { ApiError } from '../types';
 import { Platform } from 'react-native';
 
 // CRITICAL: Detectar tenant a partir do domínio (web) ou env var (nativo)
+// Esta função é chamada em cada request para garantir detecção correta em runtime
 export function getTenantSlug(): string {
-  // Em web, detectar pelo hostname
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
+  // Em web, detectar pelo hostname - DEVE ser em runtime
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname.toLowerCase();
+    console.log('[TENANT] Hostname detectado:', hostname);
     
     // Mapear domínios para tenant slugs
-    if (hostname.includes('imoveismais')) {
+    if (hostname.includes('imoveismais') || hostname.includes('app.imoveismais')) {
+      console.log('[TENANT] Matched: imoveismais');
       return 'imoveismais';
     }
     if (hostname.includes('luiscarlosgaspar') || hostname.includes('luisgaspar')) {
+      console.log('[TENANT] Matched: luisgaspar');
       return 'luisgaspar';
     }
+    if (hostname.includes('petala') || hostname.includes('pétala')) {
+      console.log('[TENANT] Matched: petala-dourada');
+      return 'petala-dourada';
+    }
+    if (hostname.includes('lenitronik')) {
+      console.log('[TENANT] Matched: lenitronik');
+      return 'lenitronik';
+    }
+    
+    console.log('[TENANT] No hostname match, checking env');
   }
   
   // Fallback para env var (apps nativas ou desenvolvimento)
   const envSlug = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+  console.log('[TENANT] Env slug:', envSlug);
   // Corrigir slug se necessário (luis-gaspar -> luisgaspar)
   if (envSlug === 'luis-gaspar') {
     return 'luisgaspar';
@@ -33,7 +48,8 @@ export function getTenantSlug(): string {
   return envSlug;
 }
 
-const TENANT_SLUG = getTenantSlug();
+// REMOVIDO: const TENANT_SLUG = getTenantSlug(); - era calculado em build time
+// Agora chamamos getTenantSlug() em cada request para garantir detecção correta em runtime
 
 class ApiService {
   private baseURL: string;
@@ -70,10 +86,11 @@ class ApiService {
       throw new Error('No refresh token');
     }
 
-    // FIXED: Incluir X-Tenant-Slug no refresh
+    // FIXED: Incluir X-Tenant-Slug no refresh - chamar em runtime
+    const tenantSlug = getTenantSlug();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
     }
 
     const response = await fetch(`${this.baseURL}/auth/refresh`, {
@@ -116,8 +133,10 @@ class ApiService {
     }
 
     // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    // Chamar em runtime para garantir detecção correta no Safari iOS
+    const tenantSlug = getTenantSlug();
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
     }
 
     try {
@@ -305,8 +324,10 @@ class ApiService {
     }
 
     // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    // Chamar em runtime para garantir detecção correta no Safari iOS
+    const tenantSlugUpload = getTenantSlug();
+    if (tenantSlugUpload) {
+      headers['X-Tenant-Slug'] = tenantSlugUpload;
     }
 
     try {
@@ -351,8 +372,10 @@ class ApiService {
     }
 
     // CRITICAL: Sempre incluir X-Tenant-Slug para isolamento multi-tenant
-    if (TENANT_SLUG) {
-      headers['X-Tenant-Slug'] = TENANT_SLUG;
+    // Chamar em runtime para garantir detecção correta no Safari iOS
+    const tenantSlugDownload = getTenantSlug();
+    if (tenantSlugDownload) {
+      headers['X-Tenant-Slug'] = tenantSlugDownload;
     }
 
     const doFetch = async (isRetry: boolean = false): Promise<Blob> => {
