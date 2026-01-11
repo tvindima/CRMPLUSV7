@@ -254,9 +254,8 @@ def setup_luisgaspar_data(
             check = conn.execute(text(f'SELECT COUNT(*) FROM "{schema}".users WHERE email = :email'),
                                 {"email": "Luis.carlos@zome.pt"})
             if check.scalar() == 0:
-                from passlib.context import CryptContext
-                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-                hashed = pwd_context.hash("LuisGaspar2026!")
+                from app.users.services import hash_password
+                hashed = hash_password("LuisGaspar2026!")
                 
                 conn.execute(text(f'''
                     INSERT INTO "{schema}".users (email, hashed_password, role, agent_id, is_active)
