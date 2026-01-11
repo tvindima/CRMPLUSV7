@@ -31,8 +31,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
-// CRITICAL: Tenant slug para isolamento multi-tenant
-const TENANT_SLUG = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+
+// CRITICAL: Detectar tenant a partir do domínio (web) ou env var (nativo)
+function getTenantSlug(): string {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('imoveismais')) return 'imoveismais';
+    if (hostname.includes('luiscarlosgaspar') || hostname.includes('luisgaspar')) return 'luisgaspar';
+  }
+  const envSlug = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+  return envSlug === 'luis-gaspar' ? 'luisgaspar' : envSlug;
+}
+const TENANT_SLUG = getTenantSlug();
 
 // Helper para obter headers com tenant
 const getHeaders = (token?: string): Record<string, string> => {

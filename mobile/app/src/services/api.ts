@@ -7,9 +7,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG, STORAGE_KEYS } from '../constants/config';
 import type { ApiError } from '../types';
+import { Platform } from 'react-native';
 
-// CRITICAL: Tenant slug para isolamento multi-tenant
-const TENANT_SLUG = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+// CRITICAL: Detectar tenant a partir do domínio (web) ou env var (nativo)
+function getTenantSlug(): string {
+  // Em web, detectar pelo hostname
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Mapear domínios para tenant slugs
+    if (hostname.includes('imoveismais')) {
+      return 'imoveismais';
+    }
+    if (hostname.includes('luiscarlosgaspar') || hostname.includes('luisgaspar')) {
+      return 'luisgaspar';
+    }
+  }
+  
+  // Fallback para env var (apps nativas ou desenvolvimento)
+  const envSlug = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+  // Corrigir slug se necessário (luis-gaspar -> luisgaspar)
+  if (envSlug === 'luis-gaspar') {
+    return 'luisgaspar';
+  }
+  return envSlug;
+}
+
+const TENANT_SLUG = getTenantSlug();
 
 class ApiService {
   private baseURL: string;
