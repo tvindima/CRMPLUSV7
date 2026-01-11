@@ -12,6 +12,13 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 // Novo padrão: slug.bo.crmplus.trioto.tech
 const WILDCARD_PATTERN = ".bo.crmplus.trioto.tech";
 
+// Mapeamento de domínios dedicados para tenant slugs
+const DEDICATED_DOMAIN_MAPPING: Record<string, string> = {
+  "backoffice.luisgaspar.pt": "luisgaspar",
+  "backoffice.luiscarlosgaspar.com": "luisgaspar",
+  "backoffice.imoveismais.com": "imoveismais",
+};
+
 // Domínios que NÃO são multi-tenant (deploys dedicados)
 const DEDICATED_DOMAINS = [
   "backoffice.luisgaspar.pt",
@@ -33,11 +40,9 @@ function extractTenantSlug(host: string): string | null {
   // Remove porta se existir
   const hostname = host.split(":")[0];
   
-  // Verificar se é domínio dedicado
-  for (const dedicated of DEDICATED_DOMAINS) {
-    if (hostname === dedicated || hostname.endsWith(dedicated)) {
-      return null; // Usar configuração de ambiente
-    }
+  // Verificar se é domínio dedicado COM mapeamento
+  if (DEDICATED_DOMAIN_MAPPING[hostname]) {
+    return DEDICATED_DOMAIN_MAPPING[hostname];
   }
   
   // Verificar padrão: slug.bo.crmplus.trioto.tech
@@ -47,6 +52,11 @@ function extractTenantSlug(host: string): string | null {
     if (slug && slug.length > 0) {
       return slug;
     }
+  }
+  
+  // Localhost usa variável de ambiente
+  if (hostname === "localhost") {
+    return process.env.NEXT_PUBLIC_TENANT_SLUG || null;
   }
   
   return null;
