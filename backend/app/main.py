@@ -274,41 +274,44 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
         print(f"[BRANDING] Tenant '{tenant_slug}' has no schema_name, returning defaults")
         return defaults
     
-    # CRITICAL: Definir search_path DIRETAMENTE na sessão antes de queries
-    db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
-    print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
-    
     try:
-        from app.models.crm_settings import CRMSettings
-        settings = db.query(CRMSettings).first()
-        
-        if not settings:
-            print(f"[BRANDING] No CRMSettings in schema {tenant.schema_name}, returning defaults")
-            return defaults
-        
-        print(f"[BRANDING] Found settings for {tenant_slug}: {settings.agency_name}")
-        
-        # Usar getattr com try/except para colunas que podem não existir
-        def safe_get(obj, attr, default):
-            try:
-                val = getattr(obj, attr, None)
-                return val if val is not None else default
-            except:
-                return default
-        
-        return {
-            "agency_name": safe_get(settings, 'agency_name', defaults["agency_name"]),
-            "agency_slogan": safe_get(settings, 'agency_slogan', defaults["agency_slogan"]),
-            "agency_logo_url": safe_get(settings, 'agency_logo_url', None),
-            "primary_color": safe_get(settings, 'primary_color', defaults["primary_color"]),
-            "secondary_color": safe_get(settings, 'secondary_color', defaults["secondary_color"]),
-            "background_color": safe_get(settings, 'background_color', defaults["background_color"]),
-            "background_secondary": safe_get(settings, 'background_secondary', defaults["background_secondary"]),
-            "text_color": safe_get(settings, 'text_color', defaults["text_color"]),
-            "text_muted": safe_get(settings, 'text_muted', defaults["text_muted"]),
-            "border_color": safe_get(settings, 'border_color', defaults["border_color"]),
-            "accent_color": safe_get(settings, 'accent_color', defaults["accent_color"])
-        }
+        # Usar uma conexão isolada para garantir que search_path não afeta outras requests
+        from app.database import engine
+        with engine.connect() as conn:
+            # Definir search_path nesta conexão isolada
+            conn.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+            print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
+            
+            # Buscar settings directamente com SQL para evitar problemas de ORM
+            result = conn.execute(text("""
+                SELECT agency_name, agency_slogan, agency_logo_url, 
+                       primary_color, secondary_color, background_color,
+                       background_secondary, text_color, text_muted,
+                       border_color, accent_color
+                FROM crm_settings 
+                LIMIT 1
+            """))
+            row = result.first()
+            
+            if not row:
+                print(f"[BRANDING] No CRMSettings in schema {tenant.schema_name}, returning defaults")
+                return defaults
+            
+            print(f"[BRANDING] Found settings for {tenant_slug}: {row[0]}")
+            
+            return {
+                "agency_name": row[0] or defaults["agency_name"],
+                "agency_slogan": row[1] or defaults["agency_slogan"],
+                "agency_logo_url": row[2],
+                "primary_color": row[3] or defaults["primary_color"],
+                "secondary_color": row[4] or defaults["secondary_color"],
+                "background_color": row[5] or defaults["background_color"],
+                "background_secondary": row[6] or defaults["background_secondary"],
+                "text_color": row[7] or defaults["text_color"],
+                "text_muted": row[8] or defaults["text_muted"],
+                "border_color": row[9] or defaults["border_color"],
+                "accent_color": row[10] or defaults["accent_color"]
+            }
     except Exception as e:
         print(f"[BRANDING] Error fetching settings: {e}")
         return defaults
