@@ -258,11 +258,12 @@ def setup_luisgaspar_data(
                 hashed = hash_password("LuisGaspar2026!")
                 
                 conn.execute(text(f'''
-                    INSERT INTO "{schema}".users (email, hashed_password, role, agent_id, is_active)
-                    VALUES (:email, :password, :role, :agent_id, :is_active)
+                    INSERT INTO "{schema}".users (email, hashed_password, full_name, role, agent_id, is_active)
+                    VALUES (:email, :password, :full_name, :role, :agent_id, :is_active)
                 '''), {
                     "email": "Luis.carlos@zome.pt",
                     "password": hashed,
+                    "full_name": "Luis Gaspar",
                     "role": "agent",
                     "agent_id": agent_id,
                     "is_active": True
