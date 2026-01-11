@@ -153,6 +153,7 @@ def fix_tenant_branding(
     PROTEGIDO - Requer header: X-Admin-Key
     """
     from app.platform.models import Tenant
+    from app.database import engine
     
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
     if not tenant:
@@ -162,42 +163,41 @@ def fix_tenant_branding(
         raise HTTPException(status_code=400, detail="Tenant não tem schema provisionado")
     
     try:
-        # Definir search_path para o schema do tenant
-        db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
-        
-        # Verificar se existe CRMSettings
-        result = db.execute(text("SELECT COUNT(*) FROM crm_settings"))
-        count = result.scalar()
-        
-        if count == 0:
-            # Criar novo
-            db.execute(text(f"""
-                INSERT INTO crm_settings (
-                    agency_name, agency_slogan, primary_color, secondary_color,
-                    background_color, background_secondary, text_color, text_muted,
-                    border_color, accent_color
-                ) VALUES (
-                    :agency_name, :agency_slogan, '#E10600', '#C5C5C5',
-                    '#0B0B0D', '#1A1A1F', '#FFFFFF', '#9CA3AF',
-                    '#2A2A2E', '#E10600'
-                )
-            """), {"agency_name": agency_name, "agency_slogan": agency_slogan})
-        else:
-            # Atualizar existente
-            db.execute(text(f"""
-                UPDATE crm_settings SET
-                    agency_name = :agency_name,
-                    agency_slogan = :agency_slogan
-            """), {"agency_name": agency_name, "agency_slogan": agency_slogan})
-        
-        db.commit()
-        
-        # Verificar resultado
-        result = db.execute(text("SELECT agency_name, agency_slogan FROM crm_settings"))
-        row = result.first()
-        
-        # Voltar ao schema public
-        db.execute(text('SET search_path TO public'))
+        # Usar conexão isolada para evitar contaminar outras queries
+        with engine.connect() as conn:
+            # Definir search_path para o schema do tenant
+            conn.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+            
+            # Verificar se existe CRMSettings
+            result = conn.execute(text("SELECT COUNT(*) FROM crm_settings"))
+            count = result.scalar()
+            
+            if count == 0:
+                # Criar novo
+                conn.execute(text("""
+                    INSERT INTO crm_settings (
+                        agency_name, agency_slogan, primary_color, secondary_color,
+                        background_color, background_secondary, text_color, text_muted,
+                        border_color, accent_color
+                    ) VALUES (
+                        :agency_name, :agency_slogan, '#E10600', '#C5C5C5',
+                        '#0B0B0D', '#1A1A1F', '#FFFFFF', '#9CA3AF',
+                        '#2A2A2E', '#E10600'
+                    )
+                """), {"agency_name": agency_name, "agency_slogan": agency_slogan})
+            else:
+                # Atualizar existente
+                conn.execute(text("""
+                    UPDATE crm_settings SET
+                        agency_name = :agency_name,
+                        agency_slogan = :agency_slogan
+                """), {"agency_name": agency_name, "agency_slogan": agency_slogan})
+            
+            conn.commit()
+            
+            # Verificar resultado
+            result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings"))
+            row = result.first()
         
         return {
             "success": True,
@@ -208,5 +208,4 @@ def fix_tenant_branding(
             "message": f"Branding atualizado para '{agency_name}'"
         }
     except Exception as e:
-        db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar branding: {str(e)}")
