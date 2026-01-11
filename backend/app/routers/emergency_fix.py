@@ -409,6 +409,82 @@ def reset_password(
             return {"error": str(e)}
 
 
+@router.post("/cleanup-public-schema")
+def cleanup_public_schema(
+    confirm: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Limpar dados de negócio duplicados do schema public.
+    Mantém tabelas de sistema (tenants, super_admins, platform_settings, alembic_version).
+    PROTEGIDO - Requer header: X-Admin-Key e confirm=YES_DELETE_DATA
+    """
+    if confirm != "YES_DELETE_DATA":
+        return {"error": "Confirmação necessária. Use confirm=YES_DELETE_DATA"}
+    
+    import os
+    from sqlalchemy import create_engine
+    
+    # Tabelas a LIMPAR (dados de negócio duplicados)
+    TABLES_TO_TRUNCATE = [
+        "properties", "agents", "users", "leads", "teams", "agencies",
+        "calendar_events", "notifications", "first_impressions", 
+        "pre_angariacoes", "contratos_mediacao", "clients", "client_transacoes",
+        "escrituras", "feed_items", "crm_settings", "draft_properties",
+        "events", "tasks", "visits", "website_clients", "refresh_tokens",
+        "agent_site_preferences", "billing_records", "ingestion_files",
+        "lead_distribution_counters", "lead_property_matches"
+    ]
+    
+    # Tabelas a MANTER (sistema multi-tenant)
+    KEEP_TABLES = ["tenants", "super_admins", "platform_settings", "alembic_version", "billing_plans"]
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    results = []
+    
+    with engine.connect() as conn:
+        for table in TABLES_TO_TRUNCATE:
+            try:
+                # Verificar se tabela existe
+                check = conn.execute(text("""
+                    SELECT EXISTS(
+                        SELECT 1 FROM information_schema.tables 
+                        WHERE table_schema = 'public' AND table_name = :table
+                    )
+                """), {"table": table})
+                if not check.scalar():
+                    results.append({"table": table, "status": "skipped", "reason": "não existe"})
+                    continue
+                
+                # Contar registos antes
+                count_before = conn.execute(text(f'SELECT COUNT(*) FROM public."{table}"')).scalar()
+                
+                # Truncar tabela
+                conn.execute(text(f'TRUNCATE TABLE public."{table}" CASCADE'))
+                conn.commit()
+                
+                results.append({"table": table, "status": "truncated", "records_deleted": count_before})
+            except Exception as e:
+                results.append({"table": table, "status": "error", "error": str(e)})
+    
+    engine.dispose()
+    
+    success_count = len([r for r in results if r["status"] == "truncated"])
+    total_deleted = sum([r.get("records_deleted", 0) for r in results])
+    
+    return {
+        "success": True,
+        "tables_cleaned": success_count,
+        "total_records_deleted": total_deleted,
+        "tables_kept": KEEP_TABLES,
+        "results": results
+    }
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
