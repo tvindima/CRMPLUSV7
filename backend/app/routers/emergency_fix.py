@@ -155,7 +155,7 @@ def init_tenant_schema(
     _: bool = Depends(verify_admin_key)
 ):
     """
-    Inicializar schema de um tenant: criar tabela crm_settings e inserir dados.
+    Inicializar schema de um tenant: criar schema se não existir, criar tabela crm_settings e inserir dados.
     PROTEGIDO - Requer header: X-Admin-Key
     """
     import os
@@ -180,11 +180,20 @@ def init_tenant_schema(
     
     with engine.connect() as conn:
         try:
-            conn.execute(text(f'SET search_path TO "{schema}", public'))
+            # Verificar se schema existe
+            result = conn.execute(text("""
+                SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = :schema)
+            """), {"schema": schema})
+            schema_exists = result.scalar()
             
-            # Criar tabela crm_settings se não existir
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS crm_settings (
+            if not schema_exists:
+                # Criar schema
+                conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema}"'))
+                conn.commit()
+            
+            # Criar tabela crm_settings no schema específico (com schema qualificado)
+            conn.execute(text(f'''
+                CREATE TABLE IF NOT EXISTS "{schema}".crm_settings (
                     id SERIAL PRIMARY KEY,
                     agency_name VARCHAR(255) DEFAULT 'CRM Plus',
                     agency_slogan VARCHAR(500),
@@ -207,29 +216,31 @@ def init_tenant_schema(
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
-            """))
+            '''))
             
-            # Verificar se já tem dados
-            result = conn.execute(text("SELECT COUNT(*) FROM crm_settings"))
+            conn.commit()
+            
+            # Verificar se já tem dados (usando schema qualificado)
+            result = conn.execute(text(f'SELECT COUNT(*) FROM "{schema}".crm_settings'))
             count = result.scalar()
             
             if count == 0:
                 # Inserir dados
-                conn.execute(text("""
-                    INSERT INTO crm_settings (agency_name, agency_slogan, primary_color, secondary_color,
+                conn.execute(text(f'''
+                    INSERT INTO "{schema}".crm_settings (agency_name, agency_slogan, primary_color, secondary_color,
                         background_color, background_secondary, text_color, text_muted, border_color, accent_color)
                     VALUES (:name, :slogan, '#E10600', '#C5C5C5', '#0B0B0D', '#1A1A1F', '#FFFFFF', '#9CA3AF', '#2A2A2E', '#E10600')
-                """), {"name": agency_name, "slogan": agency_slogan})
+                '''), {"name": agency_name, "slogan": agency_slogan})
             else:
                 # Atualizar dados existentes
-                conn.execute(text("""
-                    UPDATE crm_settings SET agency_name = :name, agency_slogan = :slogan
-                """), {"name": agency_name, "slogan": agency_slogan})
+                conn.execute(text(f'''
+                    UPDATE "{schema}".crm_settings SET agency_name = :name, agency_slogan = :slogan
+                '''), {"name": agency_name, "slogan": agency_slogan})
             
             conn.commit()
             
             # Verificar resultado
-            result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings LIMIT 1"))
+            result = conn.execute(text(f'SELECT agency_name, agency_slogan FROM "{schema}".crm_settings LIMIT 1'))
             row = result.first()
             
         except Exception as e:
