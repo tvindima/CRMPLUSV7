@@ -239,7 +239,8 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
     Respeita o X-Tenant-Slug header para multi-tenant.
     """
     from app.platform.models import Tenant
-    from sqlalchemy import text
+    from sqlalchemy import text, create_engine as sa_create_engine
+    import os
     
     # Defaults do tema escuro
     defaults = {
@@ -264,7 +265,7 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
         print(f"[BRANDING] No X-Tenant-Slug header, returning CRM Plus defaults")
         return defaults
     
-    # Verificar se tenant existe
+    # Verificar se tenant existe (usando DB normal para lookup)
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
     if not tenant:
         print(f"[BRANDING] Tenant '{tenant_slug}' not found in database, returning defaults")
@@ -275,9 +276,14 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
         return defaults
     
     try:
-        # Usar uma conexão isolada para garantir que search_path não afeta outras requests
-        from app.database import engine
-        with engine.connect() as conn:
+        # Criar engine completamente isolado sem event listeners
+        db_url = os.environ.get("DATABASE_URL", "")
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+        isolated_engine = sa_create_engine(db_url, pool_pre_ping=True)
+        
+        with isolated_engine.connect() as conn:
             # Definir search_path nesta conexão isolada
             conn.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
             print(f"[BRANDING] Using schema {tenant.schema_name} for tenant {tenant_slug}")
@@ -295,11 +301,12 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
             
             if not row:
                 print(f"[BRANDING] No CRMSettings in schema {tenant.schema_name}, returning defaults")
+                isolated_engine.dispose()
                 return defaults
             
             print(f"[BRANDING] Found settings for {tenant_slug}: {row[0]}")
             
-            return {
+            result_data = {
                 "agency_name": row[0] or defaults["agency_name"],
                 "agency_slogan": row[1] or defaults["agency_slogan"],
                 "agency_logo_url": row[2],
@@ -312,6 +319,9 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
                 "border_color": row[9] or defaults["border_color"],
                 "accent_color": row[10] or defaults["accent_color"]
             }
+            
+        isolated_engine.dispose()
+        return result_data
     except Exception as e:
         print(f"[BRANDING] Error fetching settings: {e}")
         return defaults
