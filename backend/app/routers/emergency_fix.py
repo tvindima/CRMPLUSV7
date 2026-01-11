@@ -119,7 +119,15 @@ def debug_schemas(
     for schema in ["tenant_imoveismais", "tenant_luisgaspar", "public"]:
         with engine.connect() as conn:
             try:
-                conn.execute(text(f'SET search_path TO "{schema}"'))
+                # Verificar se o schema existe
+                schema_check = conn.execute(text("""
+                    SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = :schema)
+                """), {"schema": schema})
+                schema_exists = schema_check.scalar()
+                
+                if not schema_exists:
+                    results[schema] = {"error": "schema does not exist", "schema_exists": False}
+                    continue
                 
                 # Verificar se tabela existe
                 check = conn.execute(text("""
@@ -131,15 +139,15 @@ def debug_schemas(
                 table_exists = check.scalar()
                 
                 if not table_exists:
-                    results[schema] = {"error": "table crm_settings does not exist", "table_exists": False}
+                    results[schema] = {"error": "table crm_settings does not exist", "schema_exists": True, "table_exists": False}
                     continue
                 
-                result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings LIMIT 1"))
+                result = conn.execute(text(f'SELECT agency_name, agency_slogan FROM "{schema}".crm_settings LIMIT 1'))
                 row = result.first()
                 if row:
-                    results[schema] = {"agency_name": row[0], "agency_slogan": row[1], "table_exists": True}
+                    results[schema] = {"agency_name": row[0], "agency_slogan": row[1], "schema_exists": True, "table_exists": True}
                 else:
-                    results[schema] = {"error": "no data in crm_settings", "table_exists": True}
+                    results[schema] = {"error": "no data in crm_settings", "schema_exists": True, "table_exists": True}
             except Exception as e:
                 results[schema] = {"error": str(e)}
     
