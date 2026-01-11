@@ -1,6 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { useTerminology } from "@/contexts/TerminologyContext";
 
 interface LoginPromptModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface LoginPromptModalProps {
 }
 
 export function LoginPromptModal({ isOpen, onClose, toolName }: LoginPromptModalProps) {
+  const { terms } = useTerminology();
+  
   if (!isOpen) return null;
 
   const handleLogin = () => {
@@ -100,7 +103,7 @@ export function LoginPromptModal({ isOpen, onClose, toolName }: LoginPromptModal
               <svg className="h-4 w-4 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Comparador de Imóveis (até 5)
+              Comparador de {terms.itemsCapitalized} (até 5)
             </li>
             <li className="flex items-center gap-2">
               <svg className="h-4 w-4 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -112,7 +115,7 @@ export function LoginPromptModal({ isOpen, onClose, toolName }: LoginPromptModal
               <svg className="h-4 w-4 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Alertas de novos imóveis
+              Alertas de novos {terms.items}
             </li>
           </ul>
         </div>

@@ -25,6 +25,8 @@ export function TeamPageClient({ agentMembers, staffMembers }: TeamPageClientPro
     role: sector === 'real_estate' ? 'Consultor Imobiliário' : 
           sector === 'automotive' ? 'Comercial' :
           sector === 'boats' ? 'Consultor Náutico' :
+          sector === 'machinery' ? 'Técnico Comercial' :
+          sector === 'equipment' ? 'Técnico Comercial' :
           'Comercial',
   }));
 
@@ -68,7 +70,7 @@ export function TeamPageClient({ agentMembers, staffMembers }: TeamPageClientPro
         </h2>
         <p className="mx-auto mt-4 max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
           Estamos sempre à procura de talentos para se juntarem à família {branding.agency_name}.
-          Se tem paixão pelo {sector === 'real_estate' ? 'imobiliário' : sector === 'automotive' ? 'automóvel' : 'nosso sector'}, entre em contacto connosco.
+          Se tem paixão pelo nosso sector, entre em contacto connosco.
         </p>
         <a
           href="/contactos"

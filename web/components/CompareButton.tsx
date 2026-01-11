@@ -2,6 +2,7 @@
 
 import { useCompare, CompareProperty } from "@/contexts/CompareContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTerminology } from "@/contexts/TerminologyContext";
 import { useState } from "react";
 import { LoginPromptModal } from "./LoginPromptModal";
 
@@ -14,6 +15,7 @@ interface CompareButtonProps {
 export function CompareButton({ property, size = "sm", className = "" }: CompareButtonProps) {
   const { addToCompare, removeFromCompare, isInCompare, canAddMore } = useCompare();
   const { isAuthenticated } = useAuth();
+  const { terms } = useTerminology();
   const [showTooltip, setShowTooltip] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   
@@ -86,7 +88,7 @@ export function CompareButton({ property, size = "sm", className = "" }: Compare
       {/* Tooltip de erro */}
       {showTooltip && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-red-500 px-3 py-1.5 text-xs text-white shadow-lg">
-          Máximo 5 imóveis
+          Máximo 5 {terms.items}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-red-500" />
         </div>
       )}
@@ -95,7 +97,7 @@ export function CompareButton({ property, size = "sm", className = "" }: Compare
       <LoginPromptModal
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
-        toolName="Comparador de Imóveis"
+        toolName={`Comparador de ${terms.itemsCapitalized}`}
       />
     </div>
   );

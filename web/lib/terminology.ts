@@ -6,9 +6,10 @@
  * - automotive (automóvel)
  * - boats (náutico)
  * - machinery (maquinaria)
+ * - equipment (equipamentos/produtos técnicos)
  */
 
-export type Sector = 'real_estate' | 'automotive' | 'boats' | 'machinery';
+export type Sector = 'real_estate' | 'automotive' | 'boats' | 'machinery' | 'equipment' | 'other';
 
 export interface Terminology {
   // Entidade principal
@@ -272,15 +273,67 @@ const machineryTerms: Terminology = {
   menuContact: 'Contactos',
 };
 
+const equipmentTerms: Terminology = {
+  item: 'produto',
+  items: 'produtos',
+  itemCapitalized: 'Produto',
+  itemsCapitalized: 'Produtos',
+  
+  findItem: 'Encontre o produto perfeito',
+  viewItems: 'Ver produtos',
+  viewAllItems: 'Ver todos os produtos',
+  
+  sale: 'Venda',
+  rental: 'Aluguer',
+  saleOrRental: 'Venda / Aluguer',
+  
+  newItems: 'Novidades',
+  featuredItems: 'Produtos em destaque',
+  premiumItems: 'Produtos Premium',
+  popularItems: 'Mais Vistos da Semana',
+  
+  itemDetails: 'Detalhes do produto',
+  itemGallery: 'Galeria de fotos',
+  similarItems: 'Produtos semelhantes',
+  
+  categories: 'Categorias',
+  allCategories: 'Todas as categorias',
+  
+  allTypes: 'Todos os tipos',
+  priceRange: 'Faixa de preço',
+  
+  portfolio: 'Catálogo',
+  catalog: 'Catálogo de produtos',
+  
+  agents: 'Comerciais',
+  agentsDescription: 'A nossa equipa comercial',
+  teamTitle: 'Profissionais dedicados ao seu sucesso',
+  teamSubtitle: 'Conheça os comerciais e colaboradores que fazem da {agency_name} uma referência no sector. Cada membro da nossa equipa está comprometido em proporcionar-lhe a melhor experiência.',
+  
+  contactAboutItem: 'Contactar sobre este produto',
+  requestInfo: 'Pedir informação',
+  scheduleVisit: 'Agendar demonstração',
+  
+  noItemsFound: 'Nenhum produto encontrado',
+  searchPlaceholder: 'Pesquisar por referência ou nome',
+  
+  menuItems: 'Produtos',
+  menuDevelopments: 'Soluções',
+  menuTeam: 'Equipa',
+  menuContact: 'Contactos',
+};
+
 const terminologyMap: Record<Sector, Terminology> = {
   real_estate: realEstateTerms,
   automotive: automotiveTerms,
   boats: boatsTerms,
   machinery: machineryTerms,
+  equipment: equipmentTerms,
+  other: equipmentTerms, // 'other' usa terminologia genérica de equipamentos
 };
 
 export function getTerminology(sector: Sector = 'real_estate'): Terminology {
-  return terminologyMap[sector] || realEstateTerms;
+  return terminologyMap[sector] || equipmentTerms;
 }
 
 export function replaceAgencyName(text: string, agencyName: string): string {
