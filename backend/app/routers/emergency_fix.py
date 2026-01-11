@@ -21,6 +21,139 @@ def verify_admin_key(x_admin_key: str = Header(..., description="Chave de admini
     return True
 
 
+@router.get("/list-tables/{schema_name}")
+def list_tables(
+    schema_name: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Listar todas as tabelas num schema.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = :schema 
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        """), {"schema": schema_name})
+        tables = [row[0] for row in result]
+    
+    engine.dispose()
+    return {"schema": schema_name, "tables": tables, "count": len(tables)}
+
+
+@router.post("/migrate-schema")
+def migrate_schema(
+    source_schema: str,
+    target_schema: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Migrar/copiar tabelas de um schema para outro.
+    COPIA os dados (não move) - seguro para produção.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    
+    # Tabelas a migrar (excluindo tabelas de sistema e multi-tenant)
+    TABLES_TO_MIGRATE = [
+        "properties", "agents", "users", "leads", "teams", "agencies",
+        "calendar_events", "notifications", "first_impressions", 
+        "pre_angariacoes", "contratos_mediacao", "clients", "client_transacoes",
+        "escrituras", "feed_items", "match_plus_configs", "match_plus_results"
+    ]
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    results = []
+    
+    with engine.connect() as conn:
+        # Verificar schemas existem
+        for schema in [source_schema, target_schema]:
+            check = conn.execute(text("""
+                SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = :schema)
+            """), {"schema": schema})
+            if not check.scalar():
+                engine.dispose()
+                raise HTTPException(status_code=400, detail=f"Schema '{schema}' não existe")
+        
+        # Listar tabelas disponíveis no source
+        result = conn.execute(text("""
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_schema = :schema AND table_type = 'BASE TABLE'
+        """), {"schema": source_schema})
+        available_tables = [row[0] for row in result]
+        
+        for table in TABLES_TO_MIGRATE:
+            if table not in available_tables:
+                results.append({"table": table, "status": "skipped", "reason": "não existe no source"})
+                continue
+            
+            try:
+                # Verificar se tabela já existe no target
+                check = conn.execute(text("""
+                    SELECT EXISTS(
+                        SELECT 1 FROM information_schema.tables 
+                        WHERE table_schema = :schema AND table_name = :table
+                    )
+                """), {"schema": target_schema, "table": table})
+                
+                if check.scalar():
+                    # Tabela existe - verificar se tem dados
+                    count_result = conn.execute(text(f'SELECT COUNT(*) FROM "{target_schema}"."{table}"'))
+                    target_count = count_result.scalar()
+                    if target_count > 0:
+                        results.append({"table": table, "status": "skipped", "reason": f"já tem {target_count} registos no target"})
+                        continue
+                else:
+                    # Criar tabela no target (cópia da estrutura)
+                    conn.execute(text(f'''
+                        CREATE TABLE "{target_schema}"."{table}" (LIKE "{source_schema}"."{table}" INCLUDING ALL)
+                    '''))
+                    conn.commit()
+                
+                # Copiar dados
+                conn.execute(text(f'''
+                    INSERT INTO "{target_schema}"."{table}" 
+                    SELECT * FROM "{source_schema}"."{table}"
+                '''))
+                conn.commit()
+                
+                # Contar registos copiados
+                count_result = conn.execute(text(f'SELECT COUNT(*) FROM "{target_schema}"."{table}"'))
+                copied = count_result.scalar()
+                results.append({"table": table, "status": "success", "records_copied": copied})
+                
+            except Exception as e:
+                results.append({"table": table, "status": "error", "error": str(e)})
+    
+    engine.dispose()
+    
+    success_count = len([r for r in results if r["status"] == "success"])
+    return {
+        "source_schema": source_schema,
+        "target_schema": target_schema,
+        "total_tables": len(results),
+        "success": success_count,
+        "results": results
+    }
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
