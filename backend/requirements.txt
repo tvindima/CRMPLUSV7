@@ -18,6 +18,7 @@ cloudinary>=1.36.0  # Storage persistente de imagens
 websockets>=12.0  # FASE 2: WebSocket real-time notifications
 python-json-logger>=2.0.7  # FASE 2: Structured JSON logging
 requests>=2.31.0  # HTTP requests para integrações externas
+resend>=0.7.0  # Email service (Resend.com)
 google-cloud-vision>=3.7.0  # OCR com Google Vision
 reportlab>=4.1.0  # Geração de PDF
 # Trigger redeploy Sat Dec 27 02:40:37 WET 2025

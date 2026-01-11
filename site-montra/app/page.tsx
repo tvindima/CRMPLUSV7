@@ -138,7 +138,7 @@ export default function Page() {
         <p className="mb-10 max-w-2xl text-[clamp(1.125rem,3vw,1.375rem)] leading-relaxed text-gray-300">{t.hero.subtitle}</p>
 
         <Link
-          href="#features"
+          href="/comecar"
           className="group mb-16 inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#FF0080] to-[#C026D3] px-10 py-4 text-lg font-semibold text-white shadow-[0_0_40px_rgba(255,0,128,0.6)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_rgba(255,0,128,0.9)] active:scale-95"
         >
           {t.hero.cta}

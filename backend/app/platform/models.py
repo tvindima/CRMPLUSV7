@@ -174,3 +174,57 @@ class PlatformSettings(Base):
     
     # Metadata
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class EmailVerification(Base):
+    """
+    Tokens de verificação de email para novos tenants.
+    
+    Fluxo:
+    1. User regista-se -> cria token
+    2. Email enviado com código/link
+    3. User verifica -> token marcado como usado
+    4. Tenant ativado
+    """
+    __tablename__ = "email_verifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Dados do registo pendente
+    email = Column(String(200), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    company_name = Column(String(200), nullable=False)
+    hashed_password = Column(String(200), nullable=False)
+    
+    # Configurações do tenant
+    sector = Column(String(50), default='real_estate')
+    phone = Column(String(50), nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    primary_color = Column(String(20), nullable=True)
+    
+    # Verificação
+    verification_code = Column(String(6), nullable=False, index=True)  # Código de 6 dígitos
+    verification_token = Column(String(100), nullable=False, unique=True, index=True)  # Token para URL
+    
+    # Estado
+    is_verified = Column(Boolean, default=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Tenant criado após verificação
+    tenant_id = Column(Integer, nullable=True)
+    
+    # Expiração (24 horas)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    
+    @property
+    def is_expired(self) -> bool:
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc) > self.expires_at if self.expires_at else True
+    
+    def __repr__(self):
+        return f"<EmailVerification {self.email} ({'verified' if self.is_verified else 'pending'})>"

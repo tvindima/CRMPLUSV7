@@ -1089,18 +1089,34 @@ async def provision_new_tenant(
     )
 
 
-@router.post("/register", response_model=schemas.TenantProvisionResponse)
+# ===========================================
+# REGISTO SELF-SERVICE COM VERIFICAÇÃO EMAIL
+# ===========================================
+
+@router.post("/register")
 async def register_tenant_self_service(
     request: schemas.TenantRegister,
     db: Session = Depends(get_db)
 ):
     """
-    Registo self-service de novo tenant.
+    Registo self-service de novo tenant - PASSO 1.
     
-    PÚBLICO - Não requer autenticação (para página de registo).
+    PÚBLICO - Não requer autenticação.
     
-    Nota: Em produção, adicionar rate limiting e verificação de email.
+    Fluxo:
+    1. Recebe dados do formulário
+    2. Valida email não está em uso
+    3. Cria registo de verificação pendente
+    4. Envia email com código de verificação
+    5. Retorna sucesso (aguarda verificação)
+    
+    O tenant só é criado após verificação do email.
     """
+    import secrets
+    import random
+    
+    from app.platform.models import EmailVerification
+    
     # Verificar se registo está ativado
     settings = db.query(PlatformSettings).first()
     if settings and not settings.registration_enabled:
@@ -1109,47 +1125,272 @@ async def register_tenant_self_service(
             detail="Registo de novos tenants está temporariamente desativado"
         )
     
-    # Verificar se email já existe
-    existing = db.query(Tenant).filter(Tenant.admin_email == request.admin_email).first()
-    if existing:
+    # Verificar se email já existe como tenant
+    existing_tenant = db.query(Tenant).filter(Tenant.admin_email == request.admin_email).first()
+    if existing_tenant:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Este email já está associado a uma conta"
         )
     
-    from app.platform.provisioning import provision_new_tenant as do_provision
+    # Verificar se há verificação pendente não expirada
+    existing_verification = db.query(EmailVerification).filter(
+        EmailVerification.email == request.admin_email,
+        EmailVerification.is_verified == False
+    ).first()
     
-    result = do_provision(
-        db=db,
-        name=request.company_name,
+    if existing_verification:
+        # Se expirou, remover
+        if existing_verification.is_expired:
+            db.delete(existing_verification)
+            db.commit()
+        else:
+            # Reenviar código existente
+            try:
+                from app.services.email import send_verification_email
+                verification_url = f"{os.environ.get('PLATFORM_URL', 'https://crmplus.trioto.tech')}/verificar?token={existing_verification.verification_token}"
+                send_verification_email(
+                    to=request.admin_email,
+                    name=request.admin_name,
+                    code=existing_verification.verification_code,
+                    url=verification_url
+                )
+            except Exception as e:
+                print(f"[REGISTER] Erro ao reenviar email: {e}")
+            
+            return {
+                "success": True,
+                "message": "Já existe um registo pendente. Reenviámos o email de verificação.",
+                "email": request.admin_email,
+                "requires_verification": True
+            }
+    
+    # Gerar código de 6 dígitos e token único
+    verification_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    verification_token = secrets.token_urlsafe(32)
+    
+    # Hash da password
+    password_hash = bcrypt.hashpw(request.admin_password.encode(), bcrypt.gensalt()).decode()
+    
+    # Criar registo de verificação
+    verification = EmailVerification(
+        email=request.admin_email,
+        name=request.admin_name,
+        company_name=request.company_name,
+        hashed_password=password_hash,
         sector=request.sector,
-        plan="trial",  # Self-service sempre começa com trial
-        admin_email=request.admin_email,
-        admin_name=request.admin_name,
-        admin_password=request.admin_password,
+        phone=request.phone,
         logo_url=request.logo_url,
         primary_color=request.primary_color,
+        verification_code=verification_code,
+        verification_token=verification_token,
+        expires_at=datetime.utcnow() + timedelta(hours=24),
     )
     
-    # Converter para schema de resposta
+    db.add(verification)
+    db.commit()
+    db.refresh(verification)
+    
+    # Enviar email de verificação
+    try:
+        from app.services.email import send_verification_email
+        verification_url = f"{os.environ.get('PLATFORM_URL', 'https://crmplus.trioto.tech')}/verificar?token={verification_token}"
+        email_result = send_verification_email(
+            to=request.admin_email,
+            name=request.admin_name,
+            code=verification_code,
+            url=verification_url
+        )
+        print(f"[REGISTER] Email de verificação enviado: {email_result}")
+    except Exception as e:
+        print(f"[REGISTER] Erro ao enviar email: {e}")
+        # Não falha o registo, user pode pedir reenvio
+    
+    return {
+        "success": True,
+        "message": "Registo iniciado! Verifica o teu email para ativar a conta.",
+        "email": request.admin_email,
+        "requires_verification": True,
+        # Em dev, retornar código para testes (remover em produção)
+        "debug_code": verification_code if not os.environ.get("RAILWAY_ENVIRONMENT") else None
+    }
+
+
+@router.post("/verify-email")
+async def verify_email_and_create_tenant(
+    code: str = None,
+    token: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Verificar email e criar tenant - PASSO 2.
+    
+    PÚBLICO - Aceita código de 6 dígitos OU token da URL.
+    
+    Após verificação:
+    1. Cria tenant completo com schema
+    2. Cria admin user
+    3. Envia email de boas-vindas
+    4. Retorna URLs de acesso
+    """
+    from app.platform.models import EmailVerification
+    from app.platform.provisioning import provision_new_tenant as do_provision
+    
+    if not code and not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Forneça o código de verificação ou token"
+        )
+    
+    # Buscar verificação por código ou token
+    verification = None
+    if token:
+        verification = db.query(EmailVerification).filter(
+            EmailVerification.verification_token == token,
+            EmailVerification.is_verified == False
+        ).first()
+    elif code:
+        verification = db.query(EmailVerification).filter(
+            EmailVerification.verification_code == code,
+            EmailVerification.is_verified == False
+        ).first()
+    
+    if not verification:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código inválido ou expirado"
+        )
+    
+    if verification.is_expired:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código expirado. Por favor, registe-se novamente."
+        )
+    
+    # Marcar como verificado
+    verification.is_verified = True
+    verification.verified_at = datetime.utcnow()
+    db.commit()
+    
+    # Provisionar tenant completo
+    result = do_provision(
+        db=db,
+        name=verification.company_name,
+        sector=verification.sector,
+        plan="trial",
+        admin_email=verification.email,
+        admin_name=verification.name,
+        admin_password=None,  # Usamos o hash guardado
+        logo_url=verification.logo_url,
+        primary_color=verification.primary_color,
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao criar conta: {result.get('errors', ['Erro desconhecido'])}"
+        )
+    
+    # Guardar tenant_id na verificação
+    if result.get("tenant"):
+        verification.tenant_id = result["tenant"]["id"]
+        
+        # Atualizar password do admin com o hash guardado
+        tenant = db.query(Tenant).filter(Tenant.id == result["tenant"]["id"]).first()
+        if tenant and tenant.schema_name:
+            try:
+                db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+                db.execute(text("""
+                    UPDATE users 
+                    SET hashed_password = :pwd 
+                    WHERE email = :email
+                """), {"pwd": verification.hashed_password, "email": verification.email})
+                db.commit()
+                db.execute(text('SET search_path TO public'))
+            except Exception as e:
+                print(f"[VERIFY] Erro ao atualizar password: {e}")
+        
+        db.commit()
+    
+    # Enviar email de boas-vindas
+    try:
+        from app.services.email import send_welcome_email
+        backoffice_url = result.get("urls", {}).get("backoffice", "")
+        send_welcome_email(
+            to=verification.email,
+            name=verification.name,
+            company=verification.company_name,
+            url=backoffice_url,
+            trial_days=14
+        )
+    except Exception as e:
+        print(f"[VERIFY] Erro ao enviar welcome email: {e}")
+    
+    # Retornar dados para redirect
     tenant_data = None
     if result.get("tenant"):
         tenant = db.query(Tenant).filter(Tenant.id == result["tenant"]["id"]).first()
         if tenant:
             tenant_data = schemas.TenantOut.model_validate(tenant)
     
-    # TODO: Enviar email de boas-vindas
+    return {
+        "success": True,
+        "message": "Conta verificada e criada com sucesso!",
+        "tenant": tenant_data,
+        "urls": result.get("urls", {}),
+        "admin_email": verification.email
+    }
+
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    email: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Reenviar email de verificação.
     
-    return schemas.TenantProvisionResponse(
-        success=result["success"],
-        tenant=tenant_data,
-        admin_email=result.get("admin", {}).get("email") if result.get("admin") else None,
-        admin_password=None,  # Não retornar password em self-service
-        admin_created=result.get("admin", {}).get("created", False) if result.get("admin") else False,
-        urls=result.get("urls", {}),
-        logs=[],  # Não expor logs em self-service
-        errors=result.get("errors", []) if not result["success"] else [],
-    )
+    PÚBLICO - Útil se user não recebeu ou perdeu o email.
+    """
+    from app.platform.models import EmailVerification
+    
+    verification = db.query(EmailVerification).filter(
+        EmailVerification.email == email,
+        EmailVerification.is_verified == False
+    ).first()
+    
+    if not verification:
+        # Não revelar se email existe ou não (segurança)
+        return {
+            "success": True,
+            "message": "Se existir um registo pendente, o email será reenviado."
+        }
+    
+    if verification.is_expired:
+        db.delete(verification)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registo expirado. Por favor, registe-se novamente."
+        )
+    
+    # Reenviar email
+    try:
+        from app.services.email import send_verification_email
+        verification_url = f"{os.environ.get('PLATFORM_URL', 'https://crmplus.trioto.tech')}/verificar?token={verification.verification_token}"
+        send_verification_email(
+            to=verification.email,
+            name=verification.name,
+            code=verification.verification_code,
+            url=verification_url
+        )
+    except Exception as e:
+        print(f"[RESEND] Erro ao enviar email: {e}")
+    
+    return {
+        "success": True,
+        "message": "Email de verificação reenviado!"
+    }
 
 
 @router.get("/sectors", response_model=schemas.AvailableSectorsResponse)
