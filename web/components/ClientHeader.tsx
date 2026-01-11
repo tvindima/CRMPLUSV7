@@ -32,7 +32,7 @@ export function ClientHeader() {
         {/* Logo - Simplificado em mobile */}
         <Link href="/" className="flex items-center gap-2 md:gap-3">
           <BrandImage 
-            src={branding.agency_logo_url || "/brand/agency-logo.svg"}
+            src={branding.agency_logo_url || "/brand/agency-logo-default.svg"}
             alt={branding.agency_name}
             width={180} 
             height={60} 

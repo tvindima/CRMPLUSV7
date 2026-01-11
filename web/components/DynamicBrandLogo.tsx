@@ -10,7 +10,7 @@ export function DynamicBrandLogo() {
   return (
     <Link href="/" className="flex items-center gap-2 md:gap-3">
       <BrandImage 
-        src={branding.agency_logo_url || "/brand/agency-logo.svg"}
+        src={branding.agency_logo_url || "/brand/agency-logo-default.svg"}
         alt={branding.agency_name}
         width={32} 
         height={32}
@@ -46,7 +46,7 @@ export function DynamicBrandFooterLogo() {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       <BrandImage 
-        src={branding.agency_logo_url || "/brand/agency-logo.svg"}
+        src={branding.agency_logo_url || "/brand/agency-logo-default.svg"}
         alt={branding.agency_name}
         width={120} 
         height={32}
