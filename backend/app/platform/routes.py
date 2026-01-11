@@ -138,6 +138,49 @@ def ensure_platform_tables(db: Session):
             
             db.commit()
             print("[PLATFORM] Tables created successfully!")
+        
+        # SEMPRE garantir que email_verifications existe (mesmo se tenants já existia)
+        email_verif_exists = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'email_verifications'
+            )
+        """)).scalar()
+        
+        if not email_verif_exists:
+            print("[PLATFORM] Creating email_verifications table...")
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS email_verifications (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR(200) NOT NULL,
+                    name VARCHAR(200) NOT NULL,
+                    company_name VARCHAR(200) NOT NULL,
+                    hashed_password VARCHAR(200) NOT NULL,
+                    sector VARCHAR(50) DEFAULT 'real_estate',
+                    phone VARCHAR(50),
+                    logo_url VARCHAR(500),
+                    primary_color VARCHAR(20),
+                    verification_code VARCHAR(6) NOT NULL,
+                    verification_token VARCHAR(100) UNIQUE NOT NULL,
+                    is_verified BOOLEAN DEFAULT false,
+                    verified_at TIMESTAMP WITH TIME ZONE,
+                    tenant_id INTEGER,
+                    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    ip_address VARCHAR(50),
+                    user_agent VARCHAR(500)
+                )
+            """))
+            
+            # Criar índices
+            db.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email);
+                CREATE INDEX IF NOT EXISTS idx_email_verifications_code ON email_verifications(verification_code);
+                CREATE INDEX IF NOT EXISTS idx_email_verifications_token ON email_verifications(verification_token);
+            """))
+            
+            db.commit()
+            print("[PLATFORM] email_verifications table created!")
             
     except Exception as e:
         print(f"[PLATFORM] Error ensuring tables: {e}")
