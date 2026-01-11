@@ -116,21 +116,134 @@ def debug_schemas(
     engine = create_engine(db_url)
     results = {}
     
-    with engine.connect() as conn:
-        for schema in ["tenant_imoveismais", "tenant_luisgaspar", "public"]:
+    for schema in ["tenant_imoveismais", "tenant_luisgaspar", "public"]:
+        with engine.connect() as conn:
             try:
                 conn.execute(text(f'SET search_path TO "{schema}"'))
+                
+                # Verificar se tabela existe
+                check = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = :schema AND table_name = 'crm_settings'
+                    )
+                """), {"schema": schema})
+                table_exists = check.scalar()
+                
+                if not table_exists:
+                    results[schema] = {"error": "table crm_settings does not exist", "table_exists": False}
+                    continue
+                
                 result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings LIMIT 1"))
                 row = result.first()
                 if row:
-                    results[schema] = {"agency_name": row[0], "agency_slogan": row[1]}
+                    results[schema] = {"agency_name": row[0], "agency_slogan": row[1], "table_exists": True}
                 else:
-                    results[schema] = {"error": "no data"}
+                    results[schema] = {"error": "no data in crm_settings", "table_exists": True}
             except Exception as e:
                 results[schema] = {"error": str(e)}
     
     engine.dispose()
     return results
+
+
+@router.post("/init-tenant-schema/{tenant_slug}")
+def init_tenant_schema(
+    tenant_slug: str,
+    agency_name: str,
+    agency_slogan: str = "A sua agência de confiança",
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Inicializar schema de um tenant: criar tabela crm_settings e inserir dados.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    from app.platform.models import Tenant
+    from app.database import get_db
+    
+    db = next(get_db())
+    tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail=f"Tenant '{tenant_slug}' não encontrado")
+    
+    schema = tenant.schema_name
+    if not schema:
+        raise HTTPException(status_code=400, detail="Tenant não tem schema")
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    
+    with engine.connect() as conn:
+        try:
+            conn.execute(text(f'SET search_path TO "{schema}", public'))
+            
+            # Criar tabela crm_settings se não existir
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS crm_settings (
+                    id SERIAL PRIMARY KEY,
+                    agency_name VARCHAR(255) DEFAULT 'CRM Plus',
+                    agency_slogan VARCHAR(500),
+                    agency_logo_url VARCHAR(500),
+                    agency_watermark_url VARCHAR(500),
+                    primary_color VARCHAR(20) DEFAULT '#E10600',
+                    secondary_color VARCHAR(20) DEFAULT '#C5C5C5',
+                    background_color VARCHAR(20) DEFAULT '#0B0B0D',
+                    background_secondary VARCHAR(20) DEFAULT '#1A1A1F',
+                    text_color VARCHAR(20) DEFAULT '#FFFFFF',
+                    text_muted VARCHAR(20) DEFAULT '#9CA3AF',
+                    border_color VARCHAR(20) DEFAULT '#2A2A2E',
+                    accent_color VARCHAR(20) DEFAULT '#E10600',
+                    contact_email VARCHAR(255),
+                    contact_phone VARCHAR(50),
+                    contact_address TEXT,
+                    social_facebook VARCHAR(255),
+                    social_instagram VARCHAR(255),
+                    social_linkedin VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            
+            # Verificar se já tem dados
+            result = conn.execute(text("SELECT COUNT(*) FROM crm_settings"))
+            count = result.scalar()
+            
+            if count == 0:
+                # Inserir dados
+                conn.execute(text("""
+                    INSERT INTO crm_settings (agency_name, agency_slogan, primary_color, secondary_color,
+                        background_color, background_secondary, text_color, text_muted, border_color, accent_color)
+                    VALUES (:name, :slogan, '#E10600', '#C5C5C5', '#0B0B0D', '#1A1A1F', '#FFFFFF', '#9CA3AF', '#2A2A2E', '#E10600')
+                """), {"name": agency_name, "slogan": agency_slogan})
+            else:
+                # Atualizar dados existentes
+                conn.execute(text("""
+                    UPDATE crm_settings SET agency_name = :name, agency_slogan = :slogan
+                """), {"name": agency_name, "slogan": agency_slogan})
+            
+            conn.commit()
+            
+            # Verificar resultado
+            result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings LIMIT 1"))
+            row = result.first()
+            
+        except Exception as e:
+            engine.dispose()
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    engine.dispose()
+    return {
+        "success": True,
+        "tenant": tenant_slug,
+        "schema": schema,
+        "agency_name": row[0] if row else agency_name,
+        "agency_slogan": row[1] if row else agency_slogan
+    }
 
 
 @router.post("/add-missing-columns")
