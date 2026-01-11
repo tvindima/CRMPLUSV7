@@ -154,6 +154,137 @@ def migrate_schema(
     }
 
 
+@router.post("/setup-luisgaspar-data")
+def setup_luisgaspar_data(
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Inserir dados do Luis Gaspar no schema tenant_luisgaspar.
+    Dados migrados do backend antigo.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    from datetime import datetime
+    
+    schema = "tenant_luisgaspar"
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    results = []
+    
+    with engine.connect() as conn:
+        try:
+            # 1. Inserir agente Luis Gaspar
+            check = conn.execute(text(f'SELECT COUNT(*) FROM "{schema}".agents WHERE email = :email'), 
+                                {"email": "Luis.carlos@zome.pt"})
+            if check.scalar() == 0:
+                conn.execute(text(f'''
+                    INSERT INTO "{schema}".agents (name, email, phone, nif, whatsapp)
+                    VALUES (:name, :email, :phone, :nif, :whatsapp)
+                '''), {
+                    "name": "Luis Gaspar",
+                    "email": "Luis.carlos@zome.pt", 
+                    "phone": "+351 917 339 778",
+                    "nif": "222947837",
+                    "whatsapp": "+351 917 339 778"
+                })
+                conn.commit()
+                results.append({"item": "agent", "status": "created", "name": "Luis Gaspar"})
+            else:
+                results.append({"item": "agent", "status": "already_exists", "name": "Luis Gaspar"})
+            
+            # Obter ID do agente
+            agent_result = conn.execute(text(f'SELECT id FROM "{schema}".agents WHERE email = :email'), 
+                                       {"email": "Luis.carlos@zome.pt"})
+            agent_id = agent_result.scalar()
+            
+            # 2. Inserir propriedade T3 O Menino
+            check = conn.execute(text(f'SELECT COUNT(*) FROM "{schema}".properties WHERE reference = :ref'),
+                                {"ref": "LG1"})
+            if check.scalar() == 0:
+                images = [
+                    "https://res.cloudinary.com/dtpk4oqoa/image/upload/v1767889711/crm-plus/properties/1/WhatsApp%20Image%202026-01-08%20at%2016.26.30%20%282%29_large.webp",
+                    "https://res.cloudinary.com/dtpk4oqoa/image/upload/v1767889714/crm-plus/properties/1/WhatsApp%20Image%202026-01-08%20at%2016.26.31%20%283%29_large.webp"
+                ]
+                import json
+                conn.execute(text(f'''
+                    INSERT INTO "{schema}".properties (
+                        reference, title, business_type, property_type, typology,
+                        description, price, usable_area, location, municipality, parish,
+                        condition, energy_certificate, images, is_published, is_featured,
+                        status, agent_id, created_at, updated_at
+                    ) VALUES (
+                        :reference, :title, :business_type, :property_type, :typology,
+                        :description, :price, :usable_area, :location, :municipality, :parish,
+                        :condition, :energy_certificate, :images, :is_published, :is_featured,
+                        :status, :agent_id, :created_at, :updated_at
+                    )
+                '''), {
+                    "reference": "LG1",
+                    "title": "T3 O Menino",
+                    "business_type": "Venda",
+                    "property_type": "Apartamento",
+                    "typology": "T3",
+                    "description": "T3 Renovado a 5 minutos do centro da cidade de Leiria",
+                    "price": 225000.0,
+                    "usable_area": 100.0,
+                    "location": "Leiria (Marrazes e Barosa), Leiria, Leiria",
+                    "municipality": "Leiria",
+                    "parish": "Leiria (Marrazes e Barosa)",
+                    "condition": "Renovado",
+                    "energy_certificate": "Em curso",
+                    "images": json.dumps(images),
+                    "is_published": 1,
+                    "is_featured": 1,
+                    "status": "AVAILABLE",
+                    "agent_id": agent_id,
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now()
+                })
+                conn.commit()
+                results.append({"item": "property", "status": "created", "reference": "LG1", "title": "T3 O Menino"})
+            else:
+                results.append({"item": "property", "status": "already_exists", "reference": "LG1"})
+            
+            # 3. Criar user para o agente (se não existir)
+            check = conn.execute(text(f'SELECT COUNT(*) FROM "{schema}".users WHERE email = :email'),
+                                {"email": "Luis.carlos@zome.pt"})
+            if check.scalar() == 0:
+                from passlib.context import CryptContext
+                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+                hashed = pwd_context.hash("LuisGaspar2026!")
+                
+                conn.execute(text(f'''
+                    INSERT INTO "{schema}".users (email, hashed_password, role, agent_id, is_active)
+                    VALUES (:email, :password, :role, :agent_id, :is_active)
+                '''), {
+                    "email": "Luis.carlos@zome.pt",
+                    "password": hashed,
+                    "role": "agent",
+                    "agent_id": agent_id,
+                    "is_active": True
+                })
+                conn.commit()
+                results.append({"item": "user", "status": "created", "email": "Luis.carlos@zome.pt", "temp_password": "LuisGaspar2026!"})
+            else:
+                results.append({"item": "user", "status": "already_exists", "email": "Luis.carlos@zome.pt"})
+            
+        except Exception as e:
+            engine.dispose()
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    engine.dispose()
+    return {
+        "success": True,
+        "schema": schema,
+        "results": results
+    }
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
