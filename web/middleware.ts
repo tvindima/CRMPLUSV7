@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  * Padrões de tenant suportados:
  * - {slug}.crmplus.trioto.tech → tenant = slug (trial domains)
  * - www.imoveismais.com → tenant = imoveismais (custom domain)
- * - luiscarlosgaspar.com → tenant = luiscarlosgaspar (custom domain)
+ * - luiscarlosgaspar.com → tenant = luisgaspar (custom domain)
  * - localhost:3002 → usa NEXT_PUBLIC_TENANT_SLUG ou 'imoveismais'
  */
 
@@ -17,8 +17,10 @@ import { NextResponse } from "next/server";
 const DOMAIN_TO_TENANT: Record<string, string> = {
   'www.imoveismais.com': 'imoveismais',
   'imoveismais.com': 'imoveismais',
-  'www.luiscarlosgaspar.com': 'luiscarlosgaspar',
-  'luiscarlosgaspar.com': 'luiscarlosgaspar',
+  'www.luiscarlosgaspar.com': 'luisgaspar',
+  'luiscarlosgaspar.com': 'luisgaspar',
+  'www.luisgaspar.pt': 'luisgaspar',
+  'luisgaspar.pt': 'luisgaspar',
   // Adicionar novos domínios custom aqui
 };
 
