@@ -257,7 +257,8 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
         "text_color": "#FFFFFF",
         "text_muted": "#9CA3AF",
         "border_color": "#2A2A2E",
-        "accent_color": "#E10600"
+        "accent_color": "#E10600",
+        "sector": "real_estate"
     }
     
     # Obter tenant do header
@@ -320,7 +321,8 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
                 "text_color": row[7] or defaults["text_color"],
                 "text_muted": row[8] or defaults["text_muted"],
                 "border_color": row[9] or defaults["border_color"],
-                "accent_color": row[10] or defaults["accent_color"]
+                "accent_color": row[10] or defaults["accent_color"],
+                "sector": tenant.sector or "real_estate"
             }
             
         isolated_engine.dispose()

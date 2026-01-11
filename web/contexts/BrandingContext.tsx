@@ -15,6 +15,7 @@ interface Branding {
   text_muted: string;
   border_color: string;
   accent_color: string;
+  sector: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -38,6 +39,7 @@ const defaultBranding: Branding = {
   text_muted: '#9CA3AF',
   border_color: '#2A2A2E',
   accent_color: '#E10600',
+  sector: 'real_estate',
 };
 
 const BrandingContext = createContext<BrandingContextType>({
@@ -97,6 +99,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
             text_muted: data.text_muted || defaultBranding.text_muted,
             border_color: data.border_color || defaultBranding.border_color,
             accent_color: data.accent_color || defaultBranding.accent_color,
+            sector: data.sector || defaultBranding.sector,
           };
           setBranding(newBranding);
           applyThemeColors(newBranding);
