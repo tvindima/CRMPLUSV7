@@ -285,6 +285,39 @@ def setup_luisgaspar_data(
     }
 
 
+@router.get("/list-users/{schema_name}")
+def list_users(
+    schema_name: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Listar users de um schema específico.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    
+    with engine.connect() as conn:
+        try:
+            result = conn.execute(text(f'''
+                SELECT id, email, full_name, role, is_active, agent_id 
+                FROM "{schema_name}".users
+            '''))
+            users = [{"id": r[0], "email": r[1], "full_name": r[2], "role": r[3], "is_active": r[4], "agent_id": r[5]} for r in result]
+        except Exception as e:
+            engine.dispose()
+            return {"error": str(e)}
+    
+    engine.dispose()
+    return {"schema": schema_name, "users": users, "count": len(users)}
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
