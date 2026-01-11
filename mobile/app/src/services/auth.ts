@@ -3,7 +3,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiService } from './api';
+import { apiService, getTenantSlug } from './api';
 import { STORAGE_KEYS } from '../constants/config';
 import type { User, AuthTokens } from '../types';
 
@@ -24,13 +24,23 @@ class AuthService {
     console.log('[AUTH] Iniciando login com:', credentials.username);
     console.log('[AUTH] API Base URL:', apiService['baseURL']);
     
+    // CRITICAL: Obter tenant slug para multi-tenant
+    const tenantSlug = getTenantSlug();
+    console.log('[AUTH] Tenant Slug:', tenantSlug);
+    
     try {
       // Mobile App usa /auth/login (mesmo endpoint do backoffice) com JSON
+      // CRITICAL: Incluir X-Tenant-Slug para isolamento multi-tenant
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (tenantSlug) {
+        headers['X-Tenant-Slug'] = tenantSlug;
+      }
+      
       const response = await fetch(`${apiService['baseURL']}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           email: credentials.username, // Converter username → email
           password: credentials.password,

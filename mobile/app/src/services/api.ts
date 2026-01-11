@@ -10,7 +10,7 @@ import type { ApiError } from '../types';
 import { Platform } from 'react-native';
 
 // CRITICAL: Detectar tenant a partir do domínio (web) ou env var (nativo)
-function getTenantSlug(): string {
+export function getTenantSlug(): string {
   // Em web, detectar pelo hostname
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const hostname = window.location.hostname;

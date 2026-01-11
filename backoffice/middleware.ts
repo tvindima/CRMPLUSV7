@@ -17,6 +17,7 @@ const DEDICATED_DOMAIN_MAPPING: Record<string, string> = {
   "backoffice.luisgaspar.pt": "luisgaspar",
   "backoffice.luiscarlosgaspar.com": "luisgaspar",
   "backoffice.imoveismais.com": "imoveismais",
+  "app.imoveismais.com": "imoveismais",
 };
 
 // Domínios que NÃO são multi-tenant (deploys dedicados)
@@ -24,6 +25,7 @@ const DEDICATED_DOMAINS = [
   "backoffice.luisgaspar.pt",
   "backoffice.imoveismais.com",
   "backoffice.luiscarlosgaspar.com",
+  "app.imoveismais.com",
   "localhost",
 ];
 
