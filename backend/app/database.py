@@ -69,8 +69,10 @@ def get_db():
     try:
         # Se temos um tenant definido, garantir que o search_path está correto
         schema = current_tenant_schema.get()
+        print(f"[GET_DB] Schema from ContextVar: {schema}")
         if schema and DATABASE_URL:  # Só para PostgreSQL
             db.execute(text(f'SET search_path TO "{schema}", public'))
+            print(f"[GET_DB] Set search_path to: {schema}")
         yield db
     finally:
         db.close()

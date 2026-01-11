@@ -142,6 +142,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
             # Debug logging para auth routes
             if "/auth/" in path:
                 print(f"[TENANT DEBUG] Setting schema to: {schema_name}")
+                from app.database import current_tenant_schema
+                print(f"[TENANT DEBUG] ContextVar after set: {current_tenant_schema.get()}")
             
             # Adicionar tenant ao request state para uso nos endpoints
             request.state.tenant_slug = tenant_slug
