@@ -1310,22 +1310,33 @@ async def verify_email_and_create_tenant(
             detail="Código expirado. Por favor, registe-se novamente."
         )
     
+    # IMPORTANTE: Guardar valores ANTES de fazer commit para evitar ObjectDeletedError
+    # Após commit, a sessão pode expirar objectos e perder referências
+    verification_email = verification.email
+    verification_name = verification.name
+    verification_company_name = verification.company_name
+    verification_sector = verification.sector or "real_estate"
+    verification_logo_url = verification.logo_url
+    verification_primary_color = verification.primary_color
+    verification_hashed_password = verification.hashed_password
+    verification_id = verification.id
+    
     # Marcar como verificado
     verification.is_verified = True
     verification.verified_at = datetime.utcnow()
     db.commit()
     
-    # Provisionar tenant completo
+    # Provisionar tenant completo (usando variáveis locais para evitar problemas de sessão)
     result = do_provision(
         db=db,
-        name=verification.company_name,
-        sector=verification.sector,
+        name=verification_company_name,
+        sector=verification_sector,
         plan="trial",
-        admin_email=verification.email,
-        admin_name=verification.name,
+        admin_email=verification_email,
+        admin_name=verification_name,
         admin_password=None,  # Usamos o hash guardado
-        logo_url=verification.logo_url,
-        primary_color=verification.primary_color,
+        logo_url=verification_logo_url,
+        primary_color=verification_primary_color,
     )
     
     if not result.get("success"):
@@ -1334,9 +1345,14 @@ async def verify_email_and_create_tenant(
             detail=f"Erro ao criar conta: {result.get('errors', ['Erro desconhecido'])}"
         )
     
-    # Guardar tenant_id na verificação
+    # Guardar tenant_id na verificação (recarregar verificação da BD)
     if result.get("tenant"):
-        verification.tenant_id = result["tenant"]["id"]
+        # Recarregar o registo de verificação para atualizar tenant_id
+        from app.platform.models import EmailVerification
+        verif_record = db.query(EmailVerification).filter(EmailVerification.id == verification_id).first()
+        if verif_record:
+            verif_record.tenant_id = result["tenant"]["id"]
+            db.commit()
         
         # Atualizar password do admin com o hash guardado
         tenant = db.query(Tenant).filter(Tenant.id == result["tenant"]["id"]).first()
@@ -1347,22 +1363,20 @@ async def verify_email_and_create_tenant(
                     UPDATE users 
                     SET hashed_password = :pwd 
                     WHERE email = :email
-                """), {"pwd": verification.hashed_password, "email": verification.email})
+                """), {"pwd": verification_hashed_password, "email": verification_email})
                 db.commit()
                 db.execute(text('SET search_path TO public'))
             except Exception as e:
                 print(f"[VERIFY] Erro ao atualizar password: {e}")
-        
-        db.commit()
     
     # Enviar email de boas-vindas
     try:
         from app.services.email import send_welcome_email
         backoffice_url = result.get("urls", {}).get("backoffice", "")
         send_welcome_email(
-            to=verification.email,
-            name=verification.name,
-            company=verification.company_name,
+            to=verification_email,
+            name=verification_name,
+            company=verification_company_name,
             url=backoffice_url,
             trial_days=14
         )
@@ -1381,7 +1395,7 @@ async def verify_email_and_create_tenant(
         "message": "Conta verificada e criada com sucesso!",
         "tenant": tenant_data,
         "urls": result.get("urls", {}),
-        "admin_email": verification.email
+        "admin_email": verification_email
     }
 
 
