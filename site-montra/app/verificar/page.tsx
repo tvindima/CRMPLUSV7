@@ -178,6 +178,13 @@ function VerificarContent() {
   // Tela de sucesso COMPLETA com todas as credenciais
   if (success && successData) {
     const backofficeUrl = successData.urls?.backoffice || '';
+    const siteUrl = successData.urls?.site || '';
+    const apiUrl = successData.urls?.api || 'https://crmplusv7-production.up.railway.app';
+    const tenantSlug = successData.tenant?.slug || '';
+    
+    // URLs derivados
+    const mobileAppUrl = 'https://apps.apple.com/app/crmplus'; // Placeholder - ajustar quando app estiver na store
+    const androidAppUrl = 'https://play.google.com/store/apps/details?id=com.crmplus'; // Placeholder
     
     return (
       <main className="min-h-screen bg-black text-white p-4 py-10">
@@ -212,7 +219,7 @@ function VerificarContent() {
             <div className="space-y-4">
               {/* URL do Backoffice */}
               <div>
-                <label className="text-white/50 text-sm block mb-1">URL do Backoffice</label>
+                <label className="text-white/50 text-sm block mb-1">🖥️ Backoffice (Gestão)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -221,21 +228,45 @@ function VerificarContent() {
                     className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"
                   />
                   <button
-                    onClick={() => copyToClipboard(backofficeUrl, 'url')}
+                    onClick={() => copyToClipboard(backofficeUrl, 'backoffice')}
                     className={`px-4 py-3 rounded-lg transition ${
-                      copied === 'url' 
+                      copied === 'backoffice' 
                         ? 'bg-green-500/20 text-green-400' 
                         : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                   >
-                    {copied === 'url' ? '✓' : '📋'}
+                    {copied === 'backoffice' ? '✓' : '📋'}
                   </button>
                 </div>
               </div>
 
+              {/* URL do Site */}
+              <div>
+                <label className="text-white/50 text-sm block mb-1">🌐 Site Web (Montra Pública)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={siteUrl}
+                    className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(siteUrl, 'site')}
+                    className={`px-4 py-3 rounded-lg transition ${
+                      copied === 'site' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    {copied === 'site' ? '✓' : '📋'}
+                  </button>
+                </div>
+                <p className="text-white/30 text-xs mt-1">Este é o site público onde os clientes vêem os teus imóveis</p>
+              </div>
+
               {/* Email */}
               <div>
-                <label className="text-white/50 text-sm block mb-1">Email de Acesso</label>
+                <label className="text-white/50 text-sm block mb-1">📧 Email de Acesso</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -324,10 +355,29 @@ function VerificarContent() {
             >
               🚀 Abrir Backoffice
             </a>
+
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-4 bg-white/10 border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition text-center"
+            >
+              🌐 Ver Site Web
+            </a>
             
             <button
               onClick={() => {
-                const text = `CRM Plus - Dados de Acesso\n\nEmpresa: ${successData.tenant?.name}\nURL: ${backofficeUrl}\nEmail: ${successData.admin_email || email}\nPassword: (a que definiste no registo)\nTrial válido até: ${getTrialEndDate()}`;
+                const text = `CRM Plus - Dados de Acesso
+
+Empresa: ${successData.tenant?.name}
+
+🖥️ Backoffice (Gestão): ${backofficeUrl}
+🌐 Site Web (Montra): ${siteUrl}
+
+📧 Email: ${successData.admin_email || email}
+🔐 Password: (a que definiste no registo)
+
+⏰ Trial válido até: ${getTrialEndDate()}`;
                 copyToClipboard(text, 'all');
               }}
               className={`w-full py-4 rounded-xl font-semibold transition text-center ${
