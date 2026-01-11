@@ -1520,3 +1520,67 @@ async def create_tenant_admin(
         "admin_password": generated_password,  # Só retorna se foi gerada
         "message": "Admin criado com sucesso" if success else "Falha ao criar admin"
     }
+
+
+@router.post("/tenants/{tenant_id}/fix-branding")
+async def fix_tenant_branding(
+    tenant_id: int,
+    agency_name: str,
+    agency_slogan: str = "A sua agência de confiança",
+    db: Session = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Corrigir branding de um tenant (quando dados estão errados).
+    
+    PROTEGIDO - Requer autenticação de super admin.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    if not tenant.schema_name:
+        raise HTTPException(status_code=400, detail="Tenant não tem schema provisionado")
+    
+    try:
+        # Definir search_path para o schema do tenant
+        db.execute(text(f'SET search_path TO "{tenant.schema_name}", public'))
+        
+        # Verificar se existe CRMSettings
+        from app.models.crm_settings import CRMSettings
+        settings = db.query(CRMSettings).first()
+        
+        if not settings:
+            # Criar novo
+            db.execute(text(f"""
+                INSERT INTO crm_settings (
+                    agency_name, agency_slogan, primary_color, secondary_color,
+                    background_color, background_secondary, text_color, text_muted,
+                    border_color, accent_color
+                ) VALUES (
+                    '{agency_name}', '{agency_slogan}', '#E10600', '#C5C5C5',
+                    '#0B0B0D', '#1A1A1F', '#FFFFFF', '#9CA3AF',
+                    '#2A2A2E', '#E10600'
+                )
+            """))
+        else:
+            # Atualizar existente
+            db.execute(text(f"""
+                UPDATE crm_settings SET
+                    agency_name = '{agency_name}',
+                    agency_slogan = '{agency_slogan}'
+            """))
+        
+        db.commit()
+        
+        # Voltar ao schema public
+        db.execute(text('SET search_path TO public'))
+        
+        return {
+            "success": True,
+            "message": f"Branding atualizado para '{agency_name}'"
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"[PLATFORM] Erro ao corrigir branding: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar branding: {str(e)}")
