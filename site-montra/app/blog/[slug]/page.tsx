@@ -421,8 +421,8 @@ O **CRM Plus** oferece funcionalidades de automação abrangentes desenhadas esp
 };
 
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const { language } = useLanguage();
-  const isEn = language === 'en';
+  const { locale } = useLanguage();
+  const isEn = locale === 'en';
   
   const post = blogPosts[params.slug];
   

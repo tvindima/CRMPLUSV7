@@ -43,8 +43,8 @@ const blogPosts = [
 ];
 
 export default function BlogPage() {
-  const { language } = useLanguage();
-  const isEn = language === 'en';
+  const { locale } = useLanguage();
+  const isEn = locale === 'en';
 
   return (
     <main className="min-h-screen bg-black text-white">
