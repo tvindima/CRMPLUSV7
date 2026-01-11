@@ -98,6 +98,41 @@ def fix_clients_table(
     }
 
 
+@router.get("/debug-schemas")
+def debug_schemas(
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Debug: Ver dados de crm_settings em cada schema.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    results = {}
+    
+    with engine.connect() as conn:
+        for schema in ["tenant_imoveismais", "tenant_luisgaspar", "public"]:
+            try:
+                conn.execute(text(f'SET search_path TO "{schema}"'))
+                result = conn.execute(text("SELECT agency_name, agency_slogan FROM crm_settings LIMIT 1"))
+                row = result.first()
+                if row:
+                    results[schema] = {"agency_name": row[0], "agency_slogan": row[1]}
+                else:
+                    results[schema] = {"error": "no data"}
+            except Exception as e:
+                results[schema] = {"error": str(e)}
+    
+    engine.dispose()
+    return results
+
+
 @router.post("/add-missing-columns")
 def add_missing_columns(
     db: Session = Depends(get_db),
