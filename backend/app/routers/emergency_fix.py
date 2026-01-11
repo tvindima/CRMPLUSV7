@@ -372,6 +372,43 @@ def test_auth(
             return {"error": str(e)}
 
 
+@router.post("/reset-password/{schema_name}")
+def reset_password(
+    schema_name: str,
+    email: str,
+    new_password: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Resetar password de um user.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    from app.users.services import hash_password
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    
+    with engine.connect() as conn:
+        try:
+            hashed = hash_password(new_password)
+            conn.execute(text(f'''
+                UPDATE "{schema_name}".users 
+                SET hashed_password = :password 
+                WHERE LOWER(email) = LOWER(:email)
+            '''), {"email": email, "password": hashed})
+            conn.commit()
+            engine.dispose()
+            return {"success": True, "email": email, "message": "Password resetada"}
+        except Exception as e:
+            engine.dispose()
+            return {"error": str(e)}
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
