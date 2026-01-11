@@ -159,48 +159,190 @@ function VerificarContent() {
     }
   };
 
-  // Tela de sucesso
+  // Estado para copiar
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(field);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  // Calcular data de expiração do trial (14 dias)
+  const getTrialEndDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 14);
+    return date.toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  // Tela de sucesso COMPLETA com todas as credenciais
   if (success && successData) {
+    const backofficeUrl = successData.urls?.backoffice || '';
+    
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="text-6xl mb-6">🎉</div>
-          <h1 className="text-3xl font-bold mb-4">Conta Criada!</h1>
-          <p className="text-white/60 mb-8">
-            A tua empresa <strong className="text-white">{successData.tenant?.name}</strong> está pronta.
-          </p>
-          
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 text-left">
-            <h3 className="font-semibold mb-4">📋 Próximos passos:</h3>
+      <main className="min-h-screen bg-black text-white p-4 py-10">
+        {/* Background */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,0,128,0.2),transparent_50%)]" />
+        </div>
+
+        <div className="relative max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🎉</div>
+            <h1 className="text-3xl font-bold mb-2">Conta Criada com Sucesso!</h1>
+            <p className="text-white/60">
+              A tua empresa <strong className="text-white">{successData.tenant?.name}</strong> está pronta para usar.
+            </p>
+          </div>
+
+          {/* IMPORTANTE: Aviso para guardar */}
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 mb-6 text-center">
+            <p className="text-yellow-400 font-medium">
+              ⚠️ Guarda estas informações! Faz screenshot ou copia os dados abaixo.
+            </p>
+          </div>
+
+          {/* Credenciais Card */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              🔐 Dados de Acesso
+            </h2>
+            
+            <div className="space-y-4">
+              {/* URL do Backoffice */}
+              <div>
+                <label className="text-white/50 text-sm block mb-1">URL do Backoffice</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={backofficeUrl}
+                    className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(backofficeUrl, 'url')}
+                    className={`px-4 py-3 rounded-lg transition ${
+                      copied === 'url' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    {copied === 'url' ? '✓' : '📋'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="text-white/50 text-sm block mb-1">Email de Acesso</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={successData.admin_email || email}
+                    className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(successData.admin_email || email, 'email')}
+                    className={`px-4 py-3 rounded-lg transition ${
+                      copied === 'email' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    {copied === 'email' ? '✓' : '📋'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Password Info */}
+              <div>
+                <label className="text-white/50 text-sm block mb-1">Password</label>
+                <div className="bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white/70 text-sm">
+                  A password que definiste no registo
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Info do Trial */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              ⏰ Período de Trial
+            </h2>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-black/30 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-pink-400">14</div>
+                <div className="text-white/50 text-sm">dias grátis</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-4 text-center">
+                <div className="text-lg font-bold text-white">{getTrialEndDate()}</div>
+                <div className="text-white/50 text-sm">data de expiração</div>
+              </div>
+            </div>
+            
+            <p className="text-white/50 text-sm mt-4 text-center">
+              Acesso completo a todas as funcionalidades durante o trial.
+            </p>
+          </div>
+
+          {/* Próximos Passos */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              📋 Próximos Passos
+            </h2>
+            
             <ol className="space-y-3 text-white/70">
-              <li className="flex gap-3">
-                <span className="text-pink-500">1.</span>
-                Acede ao backoffice
+              <li className="flex gap-3 items-start">
+                <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm shrink-0">1</span>
+                <span>Acede ao backoffice e faz login com as tuas credenciais</span>
               </li>
-              <li className="flex gap-3">
-                <span className="text-pink-500">2.</span>
-                Personaliza o branding
+              <li className="flex gap-3 items-start">
+                <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm shrink-0">2</span>
+                <span>Personaliza o branding da tua empresa (logo, cores)</span>
               </li>
-              <li className="flex gap-3">
-                <span className="text-pink-500">3.</span>
-                Adiciona os teus agentes
+              <li className="flex gap-3 items-start">
+                <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm shrink-0">3</span>
+                <span>Convida os teus agentes para a plataforma</span>
               </li>
-              <li className="flex gap-3">
-                <span className="text-pink-500">4.</span>
-                Cria os teus imóveis
+              <li className="flex gap-3 items-start">
+                <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm shrink-0">4</span>
+                <span>Adiciona os primeiros imóveis e começa a vender!</span>
               </li>
             </ol>
           </div>
 
-          <a
-            href={successData.urls?.backoffice || '#'}
-            className="inline-block w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl font-semibold hover:opacity-90 transition"
-          >
-            🚀 Ir para o Backoffice
-          </a>
-          
-          <p className="mt-4 text-white/40 text-sm">
-            Email: {successData.admin_email}
+          {/* Botões de Ação */}
+          <div className="space-y-3">
+            <a
+              href={backofficeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl font-semibold hover:opacity-90 transition text-center"
+            >
+              🚀 Abrir Backoffice
+            </a>
+            
+            <button
+              onClick={() => {
+                const text = `CRM Plus - Dados de Acesso\n\nEmpresa: ${successData.tenant?.name}\nURL: ${backofficeUrl}\nEmail: ${successData.admin_email || email}\nPassword: (a que definiste no registo)\nTrial válido até: ${getTrialEndDate()}`;
+                copyToClipboard(text, 'all');
+              }}
+              className={`w-full py-4 rounded-xl font-semibold transition text-center ${
+                copied === 'all'
+                  ? 'bg-green-500/20 border border-green-500/30 text-green-400'
+                  : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+              }`}
+            >
+              {copied === 'all' ? '✓ Copiado!' : '📋 Copiar Todos os Dados'}
+            </button>
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-white/40 text-sm mt-8">
+            Enviámos também um email com estas informações para <strong>{successData.admin_email || email}</strong>
           </p>
         </div>
       </main>
