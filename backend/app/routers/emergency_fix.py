@@ -318,6 +318,60 @@ def list_users(
     return {"schema": schema_name, "users": users, "count": len(users)}
 
 
+@router.post("/test-auth/{schema_name}")
+def test_auth(
+    schema_name: str,
+    email: str,
+    password: str,
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Testar autenticação num schema específico.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    import os
+    from sqlalchemy import create_engine
+    from app.users.services import verify_password
+    
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(db_url)
+    
+    with engine.connect() as conn:
+        try:
+            # Buscar user
+            result = conn.execute(text(f'''
+                SELECT id, email, hashed_password, is_active 
+                FROM "{schema_name}".users 
+                WHERE LOWER(email) = LOWER(:email)
+            '''), {"email": email})
+            row = result.first()
+            
+            if not row:
+                engine.dispose()
+                return {"success": False, "error": "User não encontrado", "email_searched": email.lower()}
+            
+            user_id, user_email, hashed_password, is_active = row
+            
+            # Verificar password
+            password_valid = verify_password(password, hashed_password) if hashed_password else False
+            
+            engine.dispose()
+            return {
+                "success": password_valid and is_active,
+                "user_id": user_id,
+                "email": user_email,
+                "is_active": is_active,
+                "has_password": bool(hashed_password),
+                "password_valid": password_valid
+            }
+        except Exception as e:
+            engine.dispose()
+            return {"error": str(e)}
+
+
 @router.post("/fix-clients-table")
 def fix_clients_table(
     db: Session = Depends(get_db),
