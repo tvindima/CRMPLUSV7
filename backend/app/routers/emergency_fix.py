@@ -307,6 +307,46 @@ def add_missing_columns(
     }
 
 
+@router.put("/update-tenant-domains/{tenant_slug}")
+def update_tenant_domains(
+    tenant_slug: str,
+    primary_domain: str,
+    backoffice_domain: str,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Atualizar domínios de um tenant.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    from app.platform.models import Tenant
+    
+    tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail=f"Tenant '{tenant_slug}' não encontrado")
+    
+    old_primary = tenant.primary_domain
+    old_backoffice = tenant.backoffice_domain
+    
+    tenant.primary_domain = primary_domain
+    tenant.backoffice_domain = backoffice_domain
+    db.commit()
+    db.refresh(tenant)
+    
+    # Limpar cache de domínios
+    from app.middleware.tenant import clear_domain_cache
+    clear_domain_cache()
+    
+    return {
+        "success": True,
+        "tenant": tenant_slug,
+        "old_primary_domain": old_primary,
+        "new_primary_domain": tenant.primary_domain,
+        "old_backoffice_domain": old_backoffice,
+        "new_backoffice_domain": tenant.backoffice_domain
+    }
+
+
 @router.post("/fix-tenant-branding/{tenant_slug}")
 def fix_tenant_branding(
     tenant_slug: str,
