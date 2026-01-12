@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { apiService } from '../services/api';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 type RootStackParamList = {
   PropertyDetail: { id: number };
@@ -71,6 +72,7 @@ const MUNICIPALITIES = ['Todos', 'Lisboa', 'Cascais', 'Leiria', 'Coimbra', 'Alco
 
 export default function PropertiesScreenV4() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { terms } = useTerminology();
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
@@ -252,7 +254,7 @@ export default function PropertiesScreenV4() {
           >
             <Ionicons name="chevron-back" size={24} color="#00d9ff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Imóveis</Text>
+          <Text style={styles.headerTitle}>{terms.menuItems || 'Imóveis'}</Text>
         </View>
         <TouchableOpacity style={styles.avatarContainer}>
           {getAvatarUrl() ? (
@@ -297,7 +299,7 @@ export default function PropertiesScreenV4() {
       {/* Properties Count */}
       <View style={styles.countContainer}>
         <Text style={styles.countText}>
-          {filteredProperties.length} {filteredProperties.length === 1 ? 'imóvel' : 'imóveis'}
+          {filteredProperties.length} {filteredProperties.length === 1 ? terms.item : terms.items}
           {filters.myProperties ? ' (meus)' : ' (agência)'}
         </Text>
       </View>
@@ -329,7 +331,7 @@ export default function PropertiesScreenV4() {
                     onPress={() => setTempFilters({ ...tempFilters, myProperties: true })}
                   >
                     <Text style={[styles.filterChipText, tempFilters.myProperties && styles.filterChipTextActive]}>
-                      Meus Imóveis
+                      Meus {terms.items}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -363,7 +365,7 @@ export default function PropertiesScreenV4() {
 
               {/* Property Type */}
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Tipo de Imóvel</Text>
+                <Text style={styles.filterSectionTitle}>Tipo de {terms.item}</Text>
                 <View style={styles.filterChips}>
                   {PROPERTY_TYPES.map((type) => (
                     <TouchableOpacity
@@ -499,7 +501,7 @@ export default function PropertiesScreenV4() {
         {filteredProperties.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="home-outline" size={64} color="#6b7280" />
-            <Text style={styles.emptyStateText}>Nenhum imóvel encontrado</Text>
+            <Text style={styles.emptyStateText}>Nenhum {terms.item} encontrado</Text>
             <Text style={styles.emptyStateSubtext}>Tente ajustar os filtros</Text>
           </View>
         ) : (

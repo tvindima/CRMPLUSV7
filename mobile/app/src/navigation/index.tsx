@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
+import { useTerminology } from '../contexts/TerminologyContext';
 import { ActivityIndicator, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -171,6 +172,7 @@ function ProfileStackNavigator() {
 
 // Tabs Navigator (após login)
 function TabNavigator() {
+  const { terms } = useTerminology();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -229,7 +231,7 @@ function TabNavigator() {
         name="Propriedades"
         component={PropertiesStackNavigator}
         options={{
-          tabBarLabel: 'Imóveis',
+          tabBarLabel: terms.menuItems || 'Imóveis',
           tabBarIcon: ({ focused }) => (
             <Ionicons 
               name={focused ? "business" : "business-outline"} 

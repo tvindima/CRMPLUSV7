@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import DateTimePickerWrapper from '../components/DateTimePickerWrapper';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 interface Props {
   navigation: any;
@@ -61,6 +62,7 @@ interface Property {
 
 const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
   const { user } = useAuth();
+  const { terms } = useTerminology();
   const editingId = route.params?.escrituraId;
   const isEditing = !!editingId;
   
@@ -253,7 +255,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const validate = () => {
     if (!formData.property_id) {
-      Alert.alert('Erro', 'Selecione o imóvel');
+      Alert.alert('Erro', `Selecione o ${terms.item}`);
       return false;
     }
     if (!formData.local_escritura.trim()) {
@@ -359,7 +361,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* === SECÇÃO: IMÓVEL === */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            <Ionicons name="home" size={18} color="#1a56db" /> Imóvel
+            <Ionicons name="home" size={18} color="#1a56db" /> {terms.item}
           </Text>
           
           <TouchableOpacity 
@@ -381,7 +383,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
             ) : (
               <View style={styles.selectorPlaceholder}>
                 <Ionicons name="add-circle-outline" size={24} color="#6b7280" />
-                <Text style={styles.selectorPlaceholderText}>Selecionar Imóvel</Text>
+                <Text style={styles.selectorPlaceholderText}>Selecionar {terms.item}</Text>
               </View>
             )}
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
@@ -666,7 +668,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Selecionar Imóvel</Text>
+            <Text style={styles.modalTitle}>Selecionar {terms.item}</Text>
             <TouchableOpacity onPress={() => setShowPropertyModal(false)}>
               <Ionicons name="close" size={24} color="#374151" />
             </TouchableOpacity>
@@ -702,7 +704,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
                 </TouchableOpacity>
               ))}
               {properties.length === 0 && (
-                <Text style={styles.emptyText}>Nenhum imóvel disponível</Text>
+                <Text style={styles.emptyText}>Nenhum {terms.item} disponível</Text>
               )}
             </ScrollView>
           )}

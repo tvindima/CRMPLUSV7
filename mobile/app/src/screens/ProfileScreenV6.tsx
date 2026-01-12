@@ -24,6 +24,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 interface AgentProfile {
   id: number;
@@ -59,6 +60,7 @@ const SOCIAL_NETWORKS = [
 export default function ProfileScreenV6() {
   const navigation = useNavigation<NavigationProp<any>>();
   const { signOut, user } = useAuth();
+  const { terms } = useTerminology();
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [stats, setStats] = useState<AgentStats>({ properties: 0, leads: 0, visits_today: 0 });
@@ -426,7 +428,7 @@ export default function ProfileScreenV6() {
           </TouchableOpacity>
           <Text style={styles.avatarHint}>Toque para alterar foto</Text>
           <Text style={styles.userName}>{getDisplayName()}</Text>
-          <Text style={styles.userRole}>Agente Imobiliário</Text>
+          <Text style={styles.userRole}>{terms.agentRole}</Text>
           <TouchableOpacity style={styles.editProfileButton} onPress={openEditModal}>
             <Ionicons name="create-outline" size={16} color="#00d9ff" />
             <Text style={styles.editProfileText}>Editar Perfil</Text>

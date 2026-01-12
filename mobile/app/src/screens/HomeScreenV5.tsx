@@ -3,7 +3,7 @@
  * Contadores de métricas + ações rápidas + grid de atalhos customizáveis
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useAgent } from '../contexts/AgentContext';
+import { useTerminology } from '../contexts/TerminologyContext';
 import { apiService } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -48,11 +49,12 @@ interface Shortcut {
   enabled: boolean;
 }
 
-const ALL_SHORTCUTS: Shortcut[] = [
-  { id: 'leads', label: 'Leads', icon: 'people', color: '#8b5cf6', route: 'Leads', enabled: true },
-  { id: 'clients', label: 'Clientes', icon: 'person-circle', color: '#00d9ff', route: 'Clients', enabled: true },
-  { id: 'properties', label: 'Imóveis', icon: 'home', color: '#d946ef', route: 'Propriedades', enabled: true },
-  { id: 'agenda', label: 'Agenda', icon: 'calendar', color: '#00d9ff', route: 'Agenda', enabled: true },
+// Função para gerar shortcuts com terminologia dinâmica
+const getShortcuts = (terms: any): Shortcut[] => [
+  { id: 'leads', label: terms.menuLeads || 'Leads', icon: 'people', color: '#8b5cf6', route: 'Leads', enabled: true },
+  { id: 'clients', label: terms.menuClients || 'Clientes', icon: 'person-circle', color: '#00d9ff', route: 'Clients', enabled: true },
+  { id: 'properties', label: terms.menuItems || 'Imóveis', icon: 'home', color: '#d946ef', route: 'Propriedades', enabled: true },
+  { id: 'agenda', label: terms.menuAgenda || 'Agenda', icon: 'calendar', color: '#00d9ff', route: 'Agenda', enabled: true },
   { id: 'ai', label: 'Assistente IA', icon: 'sparkles', color: '#f59e0b', route: 'IA', enabled: true },
   { id: 'new-lead', label: 'Novo Lead', icon: 'person-add', color: '#10b981', route: 'NewLead', enabled: true },
   { id: 'escritura', label: 'Nova Escritura', icon: 'document-text', color: '#34C759', route: 'EscrituraForm', enabled: true },
@@ -73,6 +75,8 @@ const STORAGE_KEY = '@crm_plus_shortcuts';
 export default function HomeScreenV5({ navigation }: any) {
   const { user } = useAuth();
   const { agentProfile, stats: agentStats, loadAgentData, refreshAgentData } = useAgent();
+  const { terms } = useTerminology();
+  const allShortcuts = useMemo(() => getShortcuts(terms), [terms]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
@@ -144,17 +148,17 @@ export default function HomeScreenV5({ navigation }: any) {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Merge with ALL_SHORTCUTS to get any new shortcuts
-        const merged = ALL_SHORTCUTS.map(s => {
+        // Merge with allShortcuts to get any new shortcuts
+        const merged = allShortcuts.map(s => {
           const found = parsed.find((p: Shortcut) => p.id === s.id);
           return found ? { ...s, enabled: found.enabled } : s;
         });
         setShortcuts(merged);
       } else {
-        setShortcuts(ALL_SHORTCUTS);
+        setShortcuts(allShortcuts);
       }
     } catch (error) {
-      setShortcuts(ALL_SHORTCUTS);
+      setShortcuts(allShortcuts);
     }
   };
 
@@ -205,7 +209,7 @@ export default function HomeScreenV5({ navigation }: any) {
     if (user?.email) {
       return user.email.split('@')[0];
     }
-    return 'Agente';
+    return terms.agentCapital || 'Agente';
   };
 
   const getAvatarUrl = () => {
@@ -519,7 +523,7 @@ export default function HomeScreenV5({ navigation }: any) {
             </View>
 
             <Text style={styles.modalSubtitle}>
-              Personalize a sua página individual de agente
+              Personalize a sua página individual de {terms.agent || 'agente'}
             </Text>
 
             <ScrollView style={styles.modalScroll}>
@@ -581,9 +585,9 @@ export default function HomeScreenV5({ navigation }: any) {
               </View>
 
               {/* Hero Properties */}
-              <Text style={styles.editorSectionTitle}>Imóveis em Destaque (Hero)</Text>
+              <Text style={styles.editorSectionTitle}>{`${terms.itemsCapital || 'Imóveis'} em Destaque (Hero)`}</Text>
               <Text style={styles.editorSectionDesc}>
-                Selecione até 3 imóveis para aparecer no topo da sua página
+                Selecione até 3 ${terms.items || 'itens'} para aparecer no topo da sua página
               </Text>
               <TouchableOpacity 
                 style={styles.selectPropertiesButton}
@@ -593,7 +597,7 @@ export default function HomeScreenV5({ navigation }: any) {
                 }}
               >
                 <Ionicons name="images-outline" size={20} color="#00d9ff" />
-                <Text style={styles.selectPropertiesText}>Selecionar Imóveis para Hero</Text>
+                <Text style={styles.selectPropertiesText}>{`Selecionar ${terms.itemsCapital || 'Imóveis'} para Hero`}</Text>
                 <Ionicons name="chevron-forward" size={20} color="#6b7280" />
               </TouchableOpacity>
 

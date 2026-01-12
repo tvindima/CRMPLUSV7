@@ -19,6 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
 import mortgageRates from '../config/mortgageRates.json';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 type TipoFinalidade = 'hpp' | 'secundaria';
 
@@ -31,6 +32,8 @@ interface ResultadoSimulacao {
 }
 
 export default function MortgageSimulatorScreen({ navigation }: any) {
+  const { terms } = useTerminology();
+  
   // Estados dos inputs - Card 1
   const [valorImovel, setValorImovel] = useState('');
   const [tipoFinalidade, setTipoFinalidade] = useState<TipoFinalidade | null>(null);
@@ -221,12 +224,12 @@ export default function MortgageSimulatorScreen({ navigation }: any) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="home-outline" size={20} color={colors.brand.cyan} />
-            <Text style={styles.cardTitle}>Dados do Imóvel</Text>
+            <Text style={styles.cardTitle}>Dados do {terms.item}</Text>
           </View>
 
           {/* Campo: Valor do imóvel */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Valor do imóvel (€) *</Text>
+            <Text style={styles.label}>Valor do {terms.item} (€) *</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}

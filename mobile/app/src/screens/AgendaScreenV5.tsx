@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,14 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { apiService } from '../services/api';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Tipos de eventos
-const EVENT_TYPES = [
+// Tipos de eventos - função para obter com terminologia
+const getEventTypes = (terms: any) => [
   { value: 'other', label: 'Outro', icon: 'calendar-outline', color: '#6b7280' },
-  { value: 'visit', label: 'Visita a Imóvel', icon: 'home-outline', color: '#3b82f6' },
+  { value: 'visit', label: `${terms.visit} a ${terms.item}`, icon: 'home-outline', color: '#3b82f6' },
   { value: 'meeting', label: 'Reunião', icon: 'people-outline', color: '#8b5cf6' },
   { value: 'task', label: 'Tarefa', icon: 'checkbox-outline', color: '#10b981' },
   { value: 'call', label: 'Chamada', icon: 'call-outline', color: '#f59e0b' },
@@ -46,6 +47,9 @@ const DURATIONS = [
 const ALL_TIMES = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 
 export default function AgendaScreen() {
+  const { terms } = useTerminology();
+  const EVENT_TYPES = useMemo(() => getEventTypes(terms), [terms]);
+  
   // Calendar state
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [events, setEvents] = useState<any[]>([]);
@@ -170,7 +174,7 @@ export default function AgendaScreen() {
     }
     
     if (eventType === 'visit' && !selectedPropertyId) {
-      Alert.alert('Campo Obrigatório', 'Visitas requerem seleção de imóvel');
+      Alert.alert('Campo Obrigatório', `${terms.visits} requerem seleção de ${terms.item}`);
       return;
     }
     
@@ -611,7 +615,7 @@ export default function AgendaScreen() {
             {/* Imóvel (só se event_type = visit) */}
             {eventType === 'visit' && (
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Imóvel *</Text>
+                <Text style={styles.label}>{terms.item} *</Text>
                 <View style={styles.pickerContainer}>
                   {Platform.OS === 'web' ? (
                     <select
@@ -640,7 +644,7 @@ export default function AgendaScreen() {
                         backgroundSize: '20px',
                       }}
                     >
-                      <option value="" style={{ backgroundColor: '#1a1f2e', color: '#6b7280', fontSize: 16 }}>Selecionar Imóvel...</option>
+                      <option value="" style={{ backgroundColor: '#1a1f2e', color: '#6b7280', fontSize: 16 }}>Selecionar {terms.item}...</option>
                       {properties.map((prop) => (
                         <option 
                           key={prop.id} 
@@ -663,7 +667,7 @@ export default function AgendaScreen() {
                       style={styles.picker}
                       dropdownIconColor="#00d9ff"
                     >
-                      <Picker.Item label="Selecionar Imóvel..." value={null} color="#6b7280" />
+                      <Picker.Item label={`Selecionar ${terms.item}...`} value={null} color="#6b7280" />
                       {properties.map((prop) => (
                         <Picker.Item 
                           key={prop.id} 

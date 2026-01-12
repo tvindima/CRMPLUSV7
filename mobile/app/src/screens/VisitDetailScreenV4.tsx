@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { apiService } from '../services/api';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 interface AgentProfile {
   id: number;
@@ -43,6 +44,7 @@ export default function VisitDetailScreenV4() {
   const navigation = useNavigation();
   const route = useRoute();
   const { id } = (route.params as any) || {};
+  const { terms } = useTerminology();
 
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [visit, setVisit] = useState<VisitDetail | null>(null);
@@ -217,7 +219,7 @@ export default function VisitDetailScreenV4() {
           <View style={styles.detailRow}>
             <View style={styles.detailLeft}>
               <Ionicons name="home-outline" size={18} color="#00d9ff" />
-              <Text style={styles.detailLabel}>Imóvel</Text>
+              <Text style={styles.detailLabel}>{terms.item}</Text>
             </View>
             <View style={styles.detailRight}>
               <Text style={styles.detailValue}>{visit.property_title}</Text>

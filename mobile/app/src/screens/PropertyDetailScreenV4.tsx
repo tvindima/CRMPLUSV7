@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { apiService } from '../services/api';
+import { useTerminology } from '../contexts/TerminologyContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -56,6 +57,7 @@ export default function PropertyDetailScreenV4() {
   const navigation = useNavigation();
   const route = useRoute();
   const { id } = (route.params as any) || {};
+  const { terms } = useTerminology();
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [property, setProperty] = useState<Property | null>(null);
@@ -88,7 +90,7 @@ export default function PropertyDetailScreenV4() {
       }
     } catch (error) {
       console.error('Error loading property:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os detalhes do imóvel');
+      Alert.alert('Erro', `Não foi possível carregar os detalhes do ${terms.item}`);
       navigation.goBack();
     } finally {
       setLoading(false);
