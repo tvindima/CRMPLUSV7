@@ -773,6 +773,84 @@ def add_leads_portal_name(
     }
 
 
+@router.post("/create-events-table/{schema_name}")
+def create_events_table(
+    schema_name: str,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Criar tabela events num schema específico para a Agenda Universal.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    create_table_sql = f"""
+    CREATE TABLE IF NOT EXISTS {schema_name}.events (
+        id SERIAL PRIMARY KEY,
+        agent_id INTEGER NOT NULL REFERENCES {schema_name}.agents(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        event_type VARCHAR(50) NOT NULL DEFAULT 'other',
+        scheduled_date TIMESTAMP WITH TIME ZONE NOT NULL,
+        duration_minutes INTEGER DEFAULT 60,
+        location VARCHAR(500),
+        latitude DECIMAL(10, 8),
+        longitude DECIMAL(11, 8),
+        property_id INTEGER REFERENCES {schema_name}.properties(id) ON DELETE SET NULL,
+        lead_id INTEGER REFERENCES {schema_name}.leads(id) ON DELETE SET NULL,
+        notes TEXT,
+        status VARCHAR(50) DEFAULT 'scheduled',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT check_event_type CHECK (event_type IN ('visit', 'meeting', 'task', 'personal', 'call', 'other')),
+        CONSTRAINT check_status CHECK (status IN ('scheduled', 'completed', 'cancelled', 'no_show'))
+    );
+    """
+    
+    index_statements = [
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_agent_id ON {schema_name}.events(agent_id);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_event_type ON {schema_name}.events(event_type);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_scheduled_date ON {schema_name}.events(scheduled_date);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_status ON {schema_name}.events(status);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_property_id ON {schema_name}.events(property_id);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_events_created_at ON {schema_name}.events(created_at);",
+    ]
+    
+    results = []
+    
+    # Criar tabela
+    try:
+        db.execute(text(create_table_sql))
+        db.commit()
+        results.append("✅ Tabela events criada com sucesso")
+    except Exception as e:
+        results.append(f"⚠️ Erro ao criar tabela: {str(e)}")
+    
+    # Criar índices
+    for i, sql in enumerate(index_statements, 1):
+        try:
+            db.execute(text(sql))
+            db.commit()
+            results.append(f"✅ Índice {i}/{len(index_statements)} criado")
+        except Exception as e:
+            results.append(f"⚠️ Índice {i}: {str(e)}")
+    
+    # Verificar se a tabela existe
+    result = db.execute(text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = :schema
+        AND table_name = 'events'
+    """), {"schema": schema_name})
+    tables = [row[0] for row in result]
+    
+    return {
+        "status": "completed",
+        "schema": schema_name,
+        "results": results,
+        "table_exists": len(tables) > 0,
+        "message": f"Tabela events criada em {schema_name}!"
+    }
+
+
 @router.post("/add-missing-columns")
 def add_missing_columns(
     db: Session = Depends(get_db),
