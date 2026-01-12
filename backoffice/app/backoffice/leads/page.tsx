@@ -32,22 +32,36 @@ function LeadsInner() {
   const [items, setItems] = useState<BackofficeLead[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | LeadStatus>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Labels para sources
+  const sourceLabels: Record<string, string> = {
+    portal: "Portal",
+    website: "Website",
+    manual: "Manual",
+    phone: "Telefone",
+    email: "Email",
+    referral: "Referência",
+    social: "Redes Sociais",
+    other: "Outro",
+  };
+
   useEffect(() => {
     loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter]);
+  }, [search, statusFilter, sourceFilter]);
 
   const loadLeads = async () => {
     setLoading(true);
     try {
       const data = await getBackofficeLeads({
         search: search || undefined,
+        source: sourceFilter !== "all" ? sourceFilter : undefined,
         limit: 100,
       });
       setItems(data);
@@ -64,12 +78,22 @@ function LeadsInner() {
       const matchesSearch =
         !search ||
         lead.name.toLowerCase().includes(search.toLowerCase()) ||
-        lead.email.toLowerCase().includes(search.toLowerCase()) ||
+        (lead.email && lead.email.toLowerCase().includes(search.toLowerCase())) ||
         (lead.phone && lead.phone.includes(search));
       const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSource = sourceFilter === "all" || lead.source === sourceFilter;
+      return matchesSearch && matchesStatus && matchesSource;
     });
-  }, [items, search, statusFilter]);
+  }, [items, search, statusFilter, sourceFilter]);
+
+  // Helper para formatar canal/source da lead
+  const formatSource = (lead: BackofficeLead) => {
+    const label = sourceLabels[lead.source || "other"] || lead.source || "—";
+    if (lead.source === "portal" && lead.portal_name) {
+      return `${label} (${lead.portal_name})`;
+    }
+    return label;
+  };
 
   const current = editingId ? items.find((i) => i.id === editingId) : undefined;
 
@@ -144,6 +168,18 @@ function LeadsInner() {
           <option value="qualified">Qualificada</option>
           <option value="lost">Perdida</option>
         </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+        >
+          <option value="all">Todas as origens</option>
+          <option value="portal">Portal (Idealista, etc.)</option>
+          <option value="website">Website</option>
+          <option value="manual">Manual</option>
+          <option value="phone">Telefone</option>
+          <option value="referral">Referência</option>
+        </select>
         {permissions.canEditAllProperties && (
           <button
             onClick={() => {
@@ -164,12 +200,12 @@ function LeadsInner() {
         <div className="overflow-hidden rounded-2xl border border-[#1F1F22] bg-[#0F0F10]">
           <DataTable
             dense
-            columns={["Nome", "Email", "Telefone", "Origem", "Estado", "Criado", term('agent', 'Agente')]}
+            columns={["Nome", "Email", "Telefone", "Canal", "Estado", "Criado", term('agent', 'Agente')]}
             rows={filtered.map((lead) => [
               lead.name,
-              lead.email,
+              lead.email || "—",
               lead.phone || "—",
-              lead.origin || "—",
+              formatSource(lead),
               statusLabels[lead.status] || lead.status,
               formatDate(lead.created_at),
               lead.assigned_agent_id ? `${term('agent', 'Agente')} #${lead.assigned_agent_id}` : "Não atribuído",
