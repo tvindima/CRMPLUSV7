@@ -364,7 +364,10 @@ export default function HomeScreenV5({ navigation }: any) {
               style={styles.statGradient}
             >
               <Text style={[styles.statValue, { color: '#d946ef' }]}>{stats.properties}</Text>
-              <Text style={styles.statLabel}>activos{stats.pre_angariacoes ? `{"\n"}Pre angariações ${stats.pre_angariacoes}` : ''}</Text>
+              <Text style={styles.statLabel}>
+                activos
+                {stats.pre_angariacoes ? `\nPré-angariações ${stats.pre_angariacoes}` : ''}
+              </Text>
               <TouchableOpacity 
                 style={[styles.quickAction, { borderColor: '#d946ef' }]}
                 onPress={(e) => {
