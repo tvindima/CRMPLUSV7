@@ -139,7 +139,11 @@ const ClientsScreen: React.FC = () => {
 
   // Fetch clients (incluindo leads do site)
   const fetchClients = useCallback(async () => {
-    if (!user?.agent_id || !accessToken) return;
+    console.log('[ClientsScreen] fetchClients called', { agent_id: user?.agent_id, hasToken: !!accessToken });
+    if (!user?.agent_id || !accessToken) {
+      console.log('[ClientsScreen] Skipping fetch - missing agent_id or token');
+      return;
+    }
     
     try {
       const params = new URLSearchParams({
@@ -156,12 +160,15 @@ const ClientsScreen: React.FC = () => {
       
       // Usar endpoint que inclui leads do site
       // FIXED: Usar headers com X-Tenant-Slug e accessToken
+      console.log('[ClientsScreen] Fetching clients from:', `${API_URL}/clients/with-leads?${params}`);
       const response = await fetch(`${API_URL}/clients/with-leads?${params}`, {
         headers: getHeaders(accessToken),
       });
       
+      console.log('[ClientsScreen] Response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[ClientsScreen] Clients received:', data.total, 'items');
         setClients(data.items || []);
       }
     } catch (error) {
