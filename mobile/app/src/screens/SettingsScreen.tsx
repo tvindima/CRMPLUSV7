@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { apiService } from '../services/api';
 
 interface AppTheme {
@@ -101,6 +102,7 @@ const SETTINGS_STORAGE_KEY = '@crm_plus_settings';
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, user } = useAuth();
+  const { setTheme: setGlobalTheme, themeId: globalThemeId } = useTheme();
   
   // Notifications
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -113,7 +115,7 @@ export default function SettingsScreen() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   
   // Theme
-  const [selectedTheme, setSelectedTheme] = useState('futuristic');
+  const [selectedTheme, setSelectedTheme] = useState(globalThemeId || 'futuristic');
   const [showThemeModal, setShowThemeModal] = useState(false);
 
   // Password modals
@@ -206,6 +208,7 @@ export default function SettingsScreen() {
 
   const handleThemeSelect = (themeId: string) => {
     setSelectedTheme(themeId);
+    setGlobalTheme(themeId); // Propagar para o ThemeContext
     saveSettings({ theme: themeId });
     setShowThemeModal(false);
   };
