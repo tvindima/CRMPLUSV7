@@ -1,36 +1,71 @@
 /**
  * Serviço de API para Leads
  * Mobile App B2E - endpoints otimizados para agentes
+ * Usa apiService centralizado para autenticação e multi-tenant
  */
 
 import { apiService } from './api';
-import type { Lead, LeadStatus, LeadSource } from '../types';
+import type { Lead, LeadStatus } from '../types';
 
 export interface LeadFilters {
   status?: LeadStatus;
-  source?: LeadSource;
   search?: string;
-  my_leads?: boolean;
+  property_id?: number;
+  skip?: number;
+  limit?: number;
 }
 
 export interface LeadCreateInput {
   name: string;
   email?: string;
-  phone?: string;
-  source?: LeadSource;
+  phone: string;
+  source?: string;
+  property_id?: number;
   notes?: string;
+  budget_min?: number;
+  budget_max?: number;
+  preferred_locations?: string[];
+  property_types?: string[];
+}
+
+export interface LeadUpdateInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  status?: LeadStatus;
+  source?: string;
+  notes?: string;
+  budget_min?: number;
+  budget_max?: number;
+  preferred_locations?: string[];
+  property_types?: string[];
+  property_id?: number;
+}
+
+export interface LeadListItem {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  status: LeadStatus;
+  source?: string;
+  property_id?: number;
+  property_title?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 const leadsService = {
   /**
-   * Lista meus leads (filtro automático por agent_id no backend)
+   * Lista leads do agente atual (filtro automático por agent_id via token)
    */
   async list(filters?: LeadFilters): Promise<Lead[]> {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
-    if (filters?.source) params.append('source', filters.source);
     if (filters?.search) params.append('search', filters.search);
-    params.append('my_leads', 'true'); // Sempre filtrar por agent_id
+    if (filters?.property_id) params.append('property_id', filters.property_id.toString());
+    if (filters?.skip) params.append('skip', filters.skip.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const queryString = params.toString();
     const endpoint = `/mobile/leads${queryString ? '?' + queryString : ''}`;
@@ -41,86 +76,66 @@ const leadsService = {
   /**
    * Obtém detalhes de um lead específico
    */
-  async get(id: number): Promise<Lead> {
+  async getById(id: number): Promise<Lead> {
     return apiService.get<Lead>(`/mobile/leads/${id}`);
   },
 
   /**
-   * Cria um novo lead em campo (auto-atribuição ao agente)
-   * Backend implementa POST /mobile/leads
+   * Cria um novo lead
    */
   async create(data: LeadCreateInput): Promise<Lead> {
     return apiService.post<Lead>('/mobile/leads', data);
   },
 
   /**
-   * Atualiza um lead existente
+   * Atualiza um lead
    */
-  async update(id: number, data: Partial<LeadCreateInput>): Promise<Lead> {
-    return apiService.put<Lead>(`/leads/${id}`, data);
+  async update(id: number, data: LeadUpdateInput): Promise<Lead> {
+    return apiService.put<Lead>(`/mobile/leads/${id}`, data);
   },
 
   /**
-   * Atualiza apenas o status de um lead
+   * Atualiza apenas o status do lead
    */
   async updateStatus(id: number, status: LeadStatus): Promise<Lead> {
-    return apiService.patch<Lead>(`/leads/${id}/status`, { status });
+    return apiService.patch<Lead>(`/mobile/leads/${id}/status`, { status });
   },
 
   /**
-   * Remove um lead
+   * Elimina um lead (soft delete)
    */
   async delete(id: number): Promise<void> {
-    await apiService.delete<void>(`/leads/${id}`);
+    return apiService.delete(`/mobile/leads/${id}`);
   },
 
   /**
-   * Obtém leads de um agente específico
-   */
-  async getByAgent(agentId: number): Promise<Lead[]> {
-    return apiService.get<Lead[]>(`/agents/${agentId}/leads`);
-  },
-
-  /**
-   * Obtém estatísticas de leads do agente atual
+   * Obtém estatísticas de leads
    */
   async getStats(): Promise<{
     total: number;
-    new: number;
-    contacted: number;
-    qualified: number;
-    converted: number;
-    lost: number;
+    by_status: Record<LeadStatus, number>;
+    recent: number;
+    conversion_rate: number;
   }> {
-    return apiService.get<{
-      total: number;
-      new: number;
-      contacted: number;
-      qualified: number;
-      converted: number;
-      lost: number;
-    }>('/leads/stats');
+    return apiService.get('/mobile/leads/stats');
   },
 
   /**
-   * Adiciona uma nota ao histórico do lead
+   * Associa lead a um imóvel
    */
-  async addNote(id: number, note: string): Promise<Lead> {
-    return apiService.post<Lead>(`/leads/${id}/notes`, { note });
+  async assignProperty(leadId: number, propertyId: number): Promise<Lead> {
+    return apiService.post<Lead>(`/mobile/leads/${leadId}/assign-property`, {
+      property_id: propertyId,
+    });
   },
 
   /**
-   * Registra uma interação com o lead
+   * Remove associação de imóvel
    */
-  async logInteraction(
-    id: number,
-    data: {
-      type: 'call' | 'email' | 'whatsapp' | 'meeting' | 'other';
-      notes?: string;
-    }
-  ): Promise<void> {
-    await apiService.post<void>(`/leads/${id}/interactions`, data);
+  async unassignProperty(leadId: number): Promise<Lead> {
+    return apiService.delete<Lead>(`/mobile/leads/${leadId}/unassign-property`);
   },
 };
 
+export { leadsService };
 export default leadsService;

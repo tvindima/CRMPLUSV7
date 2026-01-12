@@ -38,7 +38,7 @@ class AuthService {
         headers['X-Tenant-Slug'] = tenantSlug;
       }
       
-      const response = await fetch(`${apiService['baseURL']}/auth/login`, {
+      const response = await fetch(`${apiService['baseURL']}/auth/mobile/login`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -151,12 +151,19 @@ class AuthService {
       const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       if (!refreshToken) return false;
 
+      // CRITICAL: Incluir X-Tenant-Slug para multi-tenant
+      const tenantSlug = getTenantSlug();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (tenantSlug) {
+        headers['X-Tenant-Slug'] = tenantSlug;
+      }
+
       // POST /auth/refresh retorna novo par de tokens (token rotation)
       const response = await fetch(`${apiService['baseURL']}/auth/refresh`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
 

@@ -1,8 +1,37 @@
 /**
  * clientService - Serviço para gestão de clientes
+ * CORRIGIDO: Agora usa apiService centralizado para autenticação e multi-tenant
  */
 
+import { apiService, getTenantSlug } from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/config';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
+
+/**
+ * Helper para obter headers com autenticação e tenant
+ */
+async function getHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+  
+  // Adicionar token de autenticação
+  const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // CRITICAL: Adicionar X-Tenant-Slug para multi-tenant
+  const tenantSlug = getTenantSlug();
+  if (tenantSlug) {
+    headers['X-Tenant-Slug'] = tenantSlug;
+  }
+  
+  return headers;
+}
 
 export interface Client {
   id: number;
@@ -82,8 +111,9 @@ class ClientService {
       params.append('is_active', options.isActive.toString());
     }
 
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/?${params}`, {
-      headers: { Accept: 'application/json' },
+      headers,
     });
 
     if (!response.ok) {
@@ -97,8 +127,9 @@ class ClientService {
    * Obter um cliente específico
    */
   async getClient(clientId: number): Promise<Client> {
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/${clientId}`, {
-      headers: { Accept: 'application/json' },
+      headers,
     });
 
     if (!response.ok) {
@@ -119,12 +150,10 @@ class ClientService {
       params.append('agency_id', agencyId.toString());
     }
 
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/?${params}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -140,12 +169,10 @@ class ClientService {
    * Atualizar cliente
    */
   async updateClient(clientId: number, data: Partial<Client>): Promise<Client> {
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/${clientId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -161,11 +188,12 @@ class ClientService {
    * Atualizar notas de um cliente
    */
   async updateNotes(clientId: number, notas: string): Promise<{ success: boolean; notas: string }> {
+    const headers = await getHeaders();
     const response = await fetch(
       `${API_URL}/clients/${clientId}/notes?notas=${encodeURIComponent(notas)}`,
       {
         method: 'PATCH',
-        headers: { Accept: 'application/json' },
+        headers,
       }
     );
 
@@ -180,8 +208,10 @@ class ClientService {
    * Eliminar cliente (soft delete)
    */
   async deleteClient(clientId: number): Promise<void> {
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/${clientId}`, {
       method: 'DELETE',
+      headers,
     });
 
     if (!response.ok) {
@@ -196,9 +226,10 @@ class ClientService {
     agentId: number,
     daysAhead: number = 7
   ): Promise<{ total: number; items: (Client & { days_until_birthday: number; birthday_date: string; age: number })[] }> {
+    const headers = await getHeaders();
     const response = await fetch(
       `${API_URL}/clients/birthdays?agent_id=${agentId}&days_ahead=${daysAhead}`,
-      { headers: { Accept: 'application/json' } }
+      { headers }
     );
 
     if (!response.ok) {
@@ -221,8 +252,9 @@ class ClientService {
     senhorios: number;
     leads: number;
   }> {
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/stats?agent_id=${agentId}`, {
-      headers: { Accept: 'application/json' },
+      headers,
     });
 
     if (!response.ok) {
@@ -266,9 +298,10 @@ class ClientService {
     if (data.email) params.append('email', data.email);
     if (data.morada) params.append('morada', data.morada);
 
+    const headers = await getHeaders();
     const response = await fetch(`${API_URL}/clients/from-angariacao?${params}`, {
       method: 'POST',
-      headers: { Accept: 'application/json' },
+      headers,
     });
 
     if (!response.ok) {
