@@ -230,13 +230,19 @@ const ClientsScreen: React.FC = () => {
     setRefreshing(false);
   }, [loadData]);
 
+  // Carregar dados quando o token estiver disponível
   useEffect(() => {
-    loadData();
-  }, []);
+    if (accessToken && user?.agent_id) {
+      console.log('[ClientsScreen] Token disponível, carregando dados...');
+      loadData();
+    }
+  }, [accessToken, user?.agent_id]);
 
   useEffect(() => {
-    fetchClients();
-  }, [selectedType, searchText]);
+    if (accessToken) {
+      fetchClients();
+    }
+  }, [selectedType, searchText, accessToken]);
 
   // Create client
   const handleCreateClient = async () => {
