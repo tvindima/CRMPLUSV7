@@ -354,6 +354,7 @@ export type LeadStatus =
   | "lost";
 
 export type LeadSource =
+  | "portal"
   | "website"
   | "phone"
   | "email"
@@ -370,6 +371,7 @@ export type BackofficeLead = {
   message?: string | null;
   origin?: string | null;
   source: LeadSource;
+  portal_name?: string | null;
   property_id?: number | null;
   action_type?: string | null;
   status: LeadStatus;
