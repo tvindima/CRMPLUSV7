@@ -13,5 +13,7 @@ from app.models.pre_angariacao import PreAngariacao  # Pré-angariação / Dossi
 from app.models.contrato_mediacao import ContratoMediacaoImobiliaria  # CMI
 from app.models.crm_settings import CRMSettings  # Configurações globais CRM (watermark, branding, etc.)
 from app.models.client import Client  # Base de dados de clientes por agente
+from app.models.opportunity import Opportunity  # Pipeline de oportunidades
+from app.models.proposal import Proposal  # Propostas de negócio
 
-__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao", "ContratoMediacaoImobiliaria", "CRMSettings", "Client"]
+__all__ = ["Agent", "Property", "Lead", "Task", "Visit", "Event", "FirstImpression", "DraftProperty", "IngestionFile", "AgentSitePreferences", "PreAngariacao", "ContratoMediacaoImobiliaria", "CRMSettings", "Client", "Opportunity", "Proposal"]
