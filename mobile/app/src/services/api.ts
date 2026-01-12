@@ -35,11 +35,18 @@ export function getTenantSlug(): string {
       return 'lenitronik';
     }
     
+    // Fallback para URLs genéricos do Vercel (crmplusv7-mobile.vercel.app, etc)
+    // Default para imoveismais para testes
+    if (hostname.includes('vercel.app') || hostname.includes('localhost')) {
+      console.log('[TENANT] Vercel/localhost fallback: imoveismais');
+      return 'imoveismais';
+    }
+    
     console.log('[TENANT] No hostname match, checking env');
   }
   
   // Fallback para env var (apps nativas ou desenvolvimento)
-  const envSlug = process.env.EXPO_PUBLIC_TENANT_SLUG || '';
+  const envSlug = process.env.EXPO_PUBLIC_TENANT_SLUG || 'imoveismais';
   console.log('[TENANT] Env slug:', envSlug);
   // Corrigir slug se necessário (luis-gaspar -> luisgaspar)
   if (envSlug === 'luis-gaspar') {
