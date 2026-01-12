@@ -217,10 +217,10 @@ function TabNavigator() {
         name="Leads"
         component={LeadsStackNavigator}
         options={{
-          tabBarLabel: 'Leads',
+          tabBarLabel: 'Clientes',
           tabBarIcon: ({ focused }) => (
             <Ionicons 
-              name={focused ? "person" : "person-outline"} 
+              name={focused ? "people" : "people-outline"} 
               size={24} 
               color={focused ? colors.brand.cyan : colors.text.tertiary} 
             />
