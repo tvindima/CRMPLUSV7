@@ -44,9 +44,10 @@ function getTenantSlug(): string {
 }
 const TENANT_SLUG = getTenantSlug();
 
-// Helper para obter headers com tenant
-const getHeaders = (token?: string): Record<string, string> => {
+// Helper para obter headers com tenant e autenticação
+const getHeaders = (token?: string | null, contentType?: string): Record<string, string> => {
   const headers: Record<string, string> = { 'Accept': 'application/json' };
+  if (contentType) headers['Content-Type'] = contentType;
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (TENANT_SLUG) headers['X-Tenant-Slug'] = TENANT_SLUG;
   return headers;
@@ -104,7 +105,7 @@ interface ClientFormData {
 }
 
 const ClientsScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [birthdays, setBirthdays] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -138,7 +139,7 @@ const ClientsScreen: React.FC = () => {
 
   // Fetch clients (incluindo leads do site)
   const fetchClients = useCallback(async () => {
-    if (!user?.agent_id) return;
+    if (!user?.agent_id || !accessToken) return;
     
     try {
       const params = new URLSearchParams({
@@ -154,9 +155,9 @@ const ClientsScreen: React.FC = () => {
       }
       
       // Usar endpoint que inclui leads do site
-      // FIXED: Usar headers com X-Tenant-Slug
+      // FIXED: Usar headers com X-Tenant-Slug e accessToken
       const response = await fetch(`${API_URL}/clients/with-leads?${params}`, {
-        headers: getHeaders(),
+        headers: getHeaders(accessToken),
       });
       
       if (response.ok) {
@@ -166,17 +167,17 @@ const ClientsScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching clients:', error);
     }
-  }, [user?.agent_id, selectedType, searchText]);
+  }, [user?.agent_id, accessToken, selectedType, searchText]);
 
   // Fetch birthdays
   const fetchBirthdays = useCallback(async () => {
-    if (!user?.agent_id) return;
+    if (!user?.agent_id || !accessToken) return;
     
     try {
-      // FIXED: Usar headers com X-Tenant-Slug
+      // FIXED: Usar headers com X-Tenant-Slug e accessToken
       const response = await fetch(
         `${API_URL}/clients/birthdays?agent_id=${user.agent_id}&days_ahead=7`,
-        { headers: getHeaders() }
+        { headers: getHeaders(accessToken) }
       );
       
       if (response.ok) {
@@ -186,17 +187,17 @@ const ClientsScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching birthdays:', error);
     }
-  }, [user?.agent_id]);
+  }, [user?.agent_id, accessToken]);
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
-    if (!user?.agent_id) return;
+    if (!user?.agent_id || !accessToken) return;
     
     try {
-      // FIXED: Usar headers com X-Tenant-Slug
+      // FIXED: Usar headers com X-Tenant-Slug e accessToken
       const response = await fetch(
         `${API_URL}/clients/stats?agent_id=${user.agent_id}`,
-        { headers: getHeaders() }
+        { headers: getHeaders(accessToken) }
       );
       
       if (response.ok) {
@@ -206,7 +207,7 @@ const ClientsScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  }, [user?.agent_id]);
+  }, [user?.agent_id, accessToken]);
 
   // Load all data
   const loadData = useCallback(async () => {
@@ -263,7 +264,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/?agent_id=${user?.agent_id}`,
         {
           method: 'POST',
-          headers: getHeaders('application/json'),
+          headers: getHeaders(accessToken, 'application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -313,7 +314,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/?${params}`,
         {
           method: 'POST',
-          headers: getHeaders('application/json'),
+          headers: getHeaders(accessToken, 'application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -369,7 +370,7 @@ const ClientsScreen: React.FC = () => {
         `${API_URL}/clients/${selectedClient.id}`,
         {
           method: 'PUT',
-          headers: getHeaders('application/json'),
+          headers: getHeaders(accessToken, 'application/json'),
           body: JSON.stringify(body),
         }
       );
@@ -417,7 +418,7 @@ const ClientsScreen: React.FC = () => {
             try {
               const response = await fetch(
                 `${API_URL}/clients/${selectedClient.id}`,
-                { method: 'DELETE', headers: getHeaders() }
+                { method: 'DELETE', headers: getHeaders(accessToken || undefined) }
               );
               
               if (response.ok) {
