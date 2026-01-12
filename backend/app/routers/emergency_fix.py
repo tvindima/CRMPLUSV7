@@ -729,6 +729,47 @@ def init_tenant_schema(
     }
 
 
+@router.post("/add-leads-portal-name")
+def add_leads_portal_name(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_key)
+):
+    """
+    Adicionar coluna portal_name à tabela leads.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    sql_statements = [
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS portal_name VARCHAR(100);",
+        "CREATE INDEX IF NOT EXISTS ix_leads_portal_name ON leads(portal_name);",
+    ]
+    
+    results = []
+    for i, sql in enumerate(sql_statements, 1):
+        try:
+            db.execute(text(sql))
+            db.commit()
+            results.append(f"✅ {i}/{len(sql_statements)}: Executado com sucesso")
+        except Exception as e:
+            results.append(f"⚠️ {i}/{len(sql_statements)}: {str(e)}")
+    
+    # Verificar se a coluna existe
+    result = db.execute(text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'leads' 
+        AND column_name = 'portal_name'
+    """))
+    columns = [row[0] for row in result]
+    
+    return {
+        "status": "completed",
+        "total_commands": len(sql_statements),
+        "results": results,
+        "columns_added": columns,
+        "message": "Coluna portal_name adicionada à tabela leads!"
+    }
+
+
 @router.post("/add-missing-columns")
 def add_missing_columns(
     db: Session = Depends(get_db),
