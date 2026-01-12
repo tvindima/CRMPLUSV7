@@ -71,7 +71,16 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 @router.get("/me")
 def me(request: Request, db: Session = Depends(get_db)):
     from app.security import get_current_user
+    from app.agents.models import Agent
+    
     user = get_current_user(request, db)
+    
+    # Buscar agent_id pelo email do utilizador
+    agent_id = None
+    agent = db.query(Agent).filter(Agent.email == user.email).first()
+    if agent:
+        agent_id = agent.id
+    
     return {
         "id": user.id,
         "email": user.email,
@@ -79,6 +88,7 @@ def me(request: Request, db: Session = Depends(get_db)):
         "name": user.full_name,
         "is_active": user.is_active,
         "avatar_url": user.avatar_url,
+        "agent_id": agent_id,  # CRITICAL: Mobile precisa disto para filtrar clientes
         "valid": True,
     }
 
