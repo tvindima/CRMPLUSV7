@@ -8,8 +8,9 @@ class LeadBase(BaseModel):
     email: Optional[EmailStr] = None  # Email opcional para suportar leads mobile
     phone: Optional[str] = None
     message: Optional[str] = None
-    source: Optional[str] = "manual"  # String em vez de Enum para compatibilidade BD
+    source: Optional[str] = "manual"  # website, portal, phone, email, referral, social, manual, other
     origin: Optional[str] = None
+    portal_name: Optional[str] = None  # Nome do portal externo (idealista, imovirtual, standvirtual, etc.)
     property_id: Optional[int] = None
     action_type: Optional[str] = None
 

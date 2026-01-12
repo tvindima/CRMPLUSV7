@@ -18,6 +18,7 @@ class LeadStatus(str, PyEnum):
 
 class LeadSource(str, PyEnum):
     WEBSITE = "website"  # Site montra
+    PORTAL = "portal"  # Portais externos (Idealista, Imovirtual, StandVirtual, etc.)
     PHONE = "phone"  # Telefone
     EMAIL = "email"  # Email direto
     REFERRAL = "referral"  # Indicação
@@ -36,8 +37,9 @@ class Lead(Base):
     message = Column(Text, nullable=True)  # Mensagem do cliente (site ou mobile)
     
     # Origem e contexto
-    source = Column(String, nullable=True)  # website, phone, email, referral, social, manual, other
+    source = Column(String, nullable=True)  # website, portal, phone, email, referral, social, manual, other
     origin = Column(String, nullable=True)  # URL ou descrição adicional
+    portal_name = Column(String, nullable=True)  # Nome do portal (idealista, imovirtual, standvirtual, etc.)
     
     # Status e atribuição
     status = Column(String, default="NEW")  # NEW, CONTACTED, QUALIFIED, etc.
