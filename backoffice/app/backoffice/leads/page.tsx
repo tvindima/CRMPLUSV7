@@ -171,7 +171,7 @@ function LeadsInner() {
         </select>
         <select
           value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
+          onChange={(e) => setSourceFilter(e.target.value as LeadSource | "all")}
           className="rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
         >
           <option value="all">Todas as origens</option>
