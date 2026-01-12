@@ -6,7 +6,15 @@ import jwt
 from fastapi import HTTPException, Request, status, Depends
 from sqlalchemy.orm import Session
 
-SECRET_KEY = os.environ.get("CRMPLUS_AUTH_SECRET", "change_me_crmplus_secret")
+# SECURITY: SECRET_KEY deve estar sempre definido em produção
+SECRET_KEY = os.environ.get("CRMPLUS_AUTH_SECRET")
+if not SECRET_KEY:
+    # Em desenvolvimento, usar fallback (mas nunca em produção)
+    if os.environ.get("RAILWAY_ENVIRONMENT"):
+        raise RuntimeError("CRITICAL: CRMPLUS_AUTH_SECRET environment variable must be set in production!")
+    SECRET_KEY = "dev_only_secret_change_in_production"
+    print("⚠️  WARNING: Using development SECRET_KEY - DO NOT use in production!")
+
 ALGORITHM = "HS256"
 STAFF_COOKIE = "crmplus_staff_session"
 ALLOWED_ROLES = {"staff", "admin", "coordinator", "agent"}
@@ -87,19 +95,10 @@ def get_current_user(req: Request, db: Session = Depends(lambda: None)):
             if not email:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido - sem user_id nem email")
             user = db.query(User).filter(User.email == email).first()
+            # SECURITY: Removida criação automática de users - era falha de segurança crítica
             if not user:
-                # Se o user não existe, criar automaticamente (migração)
-                print(f"[WARN] Criando user automático para {email}")
-                user = User(
-                    email=email,
-                    name=email.split('@')[0],
-                    password_hash="legacy_hash",
-                    role="admin",
-                    is_active=True
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
+                print(f"[SECURITY] Tentativa de acesso com email não registado: {email}")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilizador não encontrado - contacte o administrador")
         else:
             user = db.query(User).filter(User.id == user_id).first()
         

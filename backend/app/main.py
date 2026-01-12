@@ -188,7 +188,9 @@ if os.environ.get("RAILWAY_ENVIRONMENT"):
         ALLOWED_ORIGINS.extend(extra_origins)
     
     ALLOW_CREDENTIALS = True
-    ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+    # SECURITY: Restringir regex para apenas subdomínios conhecidos do Vercel
+    # Permite: *-toinos-projects.vercel.app, *-tvindima.vercel.app, crmplusv7-*.vercel.app
+    ALLOW_ORIGIN_REGEX = r"https://(.*-(toinos-projects|tvindima)|crmplusv7-.*|backoffice-.*|imoveismais-.*|luisgaspar-.*)\.vercel\.app"
     
     print(f"[CORS] 🔒 Railway detected - Production mode")
     print(f"[CORS] ✅ Allowed origins: {ALLOWED_ORIGINS}")
@@ -631,7 +633,12 @@ def root():
 
 @app.get("/debug/db")
 def debug_db():
-    """Debug endpoint para verificar DB no Railway"""
+    """Debug endpoint para verificar DB - PROTEGIDO em produção"""
+    # SECURITY: Só acessível se ENABLE_DEBUG_ENDPOINTS estiver definido
+    if os.environ.get("RAILWAY_ENVIRONMENT") and not os.environ.get("ENABLE_DEBUG_ENDPOINTS"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
+    
     from app.database import SessionLocal
     try:
         db = SessionLocal()
