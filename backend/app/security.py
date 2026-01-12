@@ -10,19 +10,13 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 # SECURITY: SECRET_KEY deve estar sempre definido em produção
-SECRET_KEY = os.environ.get("CRMPLUS_AUTH_SECRET")
+# Usar SECRET_KEY que já está configurado no Railway
+SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
-    # Em desenvolvimento, usar fallback (mas nunca em produção)
     if os.environ.get("RAILWAY_ENVIRONMENT"):
-        # Tentar fallback para SECRET_KEY se CRMPLUS_AUTH_SECRET não estiver definido
-        SECRET_KEY = os.environ.get("SECRET_KEY")
-        if SECRET_KEY:
-            logger.warning("⚠️  Using SECRET_KEY as fallback - please set CRMPLUS_AUTH_SECRET")
-        else:
-            logger.critical("🚨 CRITICAL: Neither CRMPLUS_AUTH_SECRET nor SECRET_KEY is set in production!")
-            # Usar um valor único baseado em outras variáveis de ambiente (temporário)
-            SECRET_KEY = os.environ.get("DATABASE_URL", "emergency_fallback_change_me")[:64]
-            logger.warning("⚠️  Using emergency fallback SECRET_KEY - set CRMPLUS_AUTH_SECRET immediately!")
+        logger.critical("🚨 CRITICAL: SECRET_KEY environment variable must be set in production!")
+        # Fallback de emergência - NÃO usar em produção real
+        SECRET_KEY = "CHANGE_ME_IN_RAILWAY_VARIABLES"
     else:
         SECRET_KEY = "dev_only_secret_change_in_production"
         print("⚠️  WARNING: Using development SECRET_KEY - DO NOT use in production!")
