@@ -79,18 +79,23 @@ class AuthService {
       apiService.setAccessToken(data.access_token);
 
       // Buscar dados do usuário - /auth/me retorna { user: {...}, agent: {...} }
-      const meResponse = await apiService.get<{ user: any; agent: any }>('/auth/me');
+      const meResponse = await apiService.get<any>('/auth/me');
+      console.log('[AUTH] /auth/me response:', JSON.stringify(meResponse));
+      
+      // A resposta pode ser { user: {...}, agent: {...} } ou diretamente o user
+      const userData = meResponse.user || meResponse;
+      const agentData = meResponse.agent;
       
       // Construir objeto User com agent_id do agent
       const user: User = {
-        id: meResponse.user.id,
-        email: meResponse.user.email,
-        name: meResponse.user.full_name || meResponse.user.email,
-        role: meResponse.user.role,
-        avatar_url: meResponse.user.avatar_url,
-        is_active: meResponse.user.is_active,
-        agent_id: meResponse.agent?.id,  // CRITICAL: extrair agent_id do agent
-        agency_id: meResponse.agent?.agency_id,
+        id: userData.id,
+        email: userData.email,
+        name: userData.full_name || userData.name || userData.email,
+        role: userData.role,
+        avatar_url: userData.avatar_url,
+        is_active: userData.is_active !== false,
+        agent_id: agentData?.id || userData.agent_id,  // Tentar ambos os locais
+        agency_id: agentData?.agency_id || userData.agency_id,
       };
       
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
