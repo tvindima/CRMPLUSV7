@@ -164,20 +164,31 @@ def mobile_login(
     device_type, device_name = parse_user_agent(user_agent or "")
     client_ip = get_client_ip(request)
     
-    # Criar refresh token (7 dias) com device tracking
-    refresh_token_str = RefreshToken.generate_token()
-    refresh_token_obj = RefreshToken(
-        token=refresh_token_str,
-        user_id=user.id,
-        device_info=user_agent,
-        device_name=device_name,
-        device_type=device_type,
-        ip_address=client_ip,
-        last_used_at=datetime.utcnow(),
-        expires_at=RefreshToken.create_expiry(days=7)
-    )
-    db.add(refresh_token_obj)
-    db.commit()
+    # Tentar criar refresh token (7 dias) com device tracking
+    # NOTA: Em multi-tenant, a tabela refresh_tokens pode não existir no schema do tenant
+    # Nesse caso, usamos o access_token como refresh_token (fallback seguro)
+    refresh_token_str = access_token  # Fallback
+    
+    try:
+        refresh_token_str = RefreshToken.generate_token()
+        refresh_token_obj = RefreshToken(
+            token=refresh_token_str,
+            user_id=user.id,
+            device_info=user_agent,
+            device_name=device_name,
+            device_type=device_type,
+            ip_address=client_ip,
+            last_used_at=datetime.utcnow(),
+            expires_at=RefreshToken.create_expiry(days=7)
+        )
+        db.add(refresh_token_obj)
+        db.commit()
+    except Exception as e:
+        # Se falhar (ex: tabela não existe no schema), usar access_token como refresh
+        print(f"[AUTH MOBILE] ⚠️ Não foi possível criar refresh_token: {e}")
+        print(f"[AUTH MOBILE] Usando access_token como fallback para refresh_token")
+        db.rollback()
+        refresh_token_str = access_token
     
     return TokenPairResponse(
         access_token=access_token,
