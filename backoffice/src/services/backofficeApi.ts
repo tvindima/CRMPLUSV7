@@ -395,15 +395,17 @@ export async function getBackofficeLeads(params?: {
   limit?: number;
   skip?: number;
   search?: string;
+  status?: string;
+  source?: string;
 }): Promise<BackofficeLead[]> {
   const query = new URLSearchParams();
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.skip) query.set("skip", String(params.skip));
-  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  if (params?.source) query.set("source", params.source);
   const qs = query.toString();
   return request(qs ? `/leads/?${qs}` : "/leads/");
 }
-
 export async function getBackofficeLead(id: number): Promise<BackofficeLead> {
   return request(`/leads/${id}`);
 }
