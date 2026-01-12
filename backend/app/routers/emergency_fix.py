@@ -1002,3 +1002,48 @@ def fix_tenant_branding(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar branding: {str(e)}")
+
+
+@router.post("/update-tenant-domain/{tenant_id}")
+def update_tenant_domain(
+    tenant_id: int,
+    backoffice_domain: str = None,
+    primary_domain: str = None,
+    _: bool = Depends(verify_admin_key),
+    db: Session = Depends(get_db)
+):
+    """
+    Atualizar domínios de um tenant.
+    PROTEGIDO - Requer header: X-Admin-Key
+    """
+    from app.platform.models import Tenant
+    
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    
+    updates = {}
+    if backoffice_domain:
+        tenant.backoffice_domain = backoffice_domain
+        updates["backoffice_domain"] = backoffice_domain
+    if primary_domain:
+        tenant.primary_domain = primary_domain
+        updates["primary_domain"] = primary_domain
+    
+    db.commit()
+    db.refresh(tenant)
+    
+    # Limpar cache de domínios
+    try:
+        from app.middleware.tenant import clear_domain_cache
+        clear_domain_cache()
+    except:
+        pass
+    
+    return {
+        "success": True,
+        "tenant_id": tenant_id,
+        "slug": tenant.slug,
+        "updates": updates,
+        "message": f"Domínios atualizados para tenant {tenant.slug}"
+    }
