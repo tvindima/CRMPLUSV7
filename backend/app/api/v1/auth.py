@@ -7,15 +7,13 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.security import decode_token, extract_token
+from app.security import decode_token, extract_token, SECRET_KEY, ALGORITHM
 from app.database import get_db
 from app.users import authenticate_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# Valores de exemplo; em produção, definir SECRET_KEY via env.
-SECRET_KEY = os.environ.get("CRMPLUS_AUTH_SECRET", "change_me_crmplus_secret")
-ALGORITHM = "HS256"
+# Usar mesma SECRET_KEY do security.py para consistência
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
