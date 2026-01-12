@@ -501,7 +501,7 @@ export default function ProfileScreenV6() {
         <View style={styles.statsSection}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.properties}</Text>
-            <Text style={styles.statLabel}>Imóveis</Text>
+            <Text style={styles.statLabel}>{terms.items}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
@@ -511,7 +511,7 @@ export default function ProfileScreenV6() {
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.visits_today}</Text>
-            <Text style={styles.statLabel}>Visitas Hoje</Text>
+            <Text style={styles.statLabel}>{terms.visits} Hoje</Text>
           </View>
         </View>
 
