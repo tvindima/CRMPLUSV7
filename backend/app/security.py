@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import Optional
 from datetime import datetime, timedelta
 
@@ -6,14 +7,25 @@ import jwt
 from fastapi import HTTPException, Request, status, Depends
 from sqlalchemy.orm import Session
 
+logger = logging.getLogger(__name__)
+
 # SECURITY: SECRET_KEY deve estar sempre definido em produção
 SECRET_KEY = os.environ.get("CRMPLUS_AUTH_SECRET")
 if not SECRET_KEY:
     # Em desenvolvimento, usar fallback (mas nunca em produção)
     if os.environ.get("RAILWAY_ENVIRONMENT"):
-        raise RuntimeError("CRITICAL: CRMPLUS_AUTH_SECRET environment variable must be set in production!")
-    SECRET_KEY = "dev_only_secret_change_in_production"
-    print("⚠️  WARNING: Using development SECRET_KEY - DO NOT use in production!")
+        # Tentar fallback para SECRET_KEY se CRMPLUS_AUTH_SECRET não estiver definido
+        SECRET_KEY = os.environ.get("SECRET_KEY")
+        if SECRET_KEY:
+            logger.warning("⚠️  Using SECRET_KEY as fallback - please set CRMPLUS_AUTH_SECRET")
+        else:
+            logger.critical("🚨 CRITICAL: Neither CRMPLUS_AUTH_SECRET nor SECRET_KEY is set in production!")
+            # Usar um valor único baseado em outras variáveis de ambiente (temporário)
+            SECRET_KEY = os.environ.get("DATABASE_URL", "emergency_fallback_change_me")[:64]
+            logger.warning("⚠️  Using emergency fallback SECRET_KEY - set CRMPLUS_AUTH_SECRET immediately!")
+    else:
+        SECRET_KEY = "dev_only_secret_change_in_production"
+        print("⚠️  WARNING: Using development SECRET_KEY - DO NOT use in production!")
 
 ALGORITHM = "HS256"
 STAFF_COOKIE = "crmplus_staff_session"

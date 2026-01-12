@@ -15,6 +15,7 @@ import {
   getBackofficeLeads,
   updateBackofficeLead,
   LeadStatus,
+  LeadSource,
 } from "../../../src/services/backofficeApi";
 
 export default function LeadsPage() {
@@ -32,7 +33,7 @@ function LeadsInner() {
   const [items, setItems] = useState<BackofficeLead[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | LeadStatus>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | LeadSource>("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
@@ -40,7 +41,7 @@ function LeadsInner() {
   const [saving, setSaving] = useState(false);
 
   // Labels para sources
-  const sourceLabels: Record<string, string> = {
+  const sourceLabels: Record<LeadSource, string> = {
     portal: "Portal",
     website: "Website",
     manual: "Manual",
