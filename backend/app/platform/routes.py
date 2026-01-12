@@ -1504,8 +1504,23 @@ def get_tenant_terminology_endpoint(tenant_slug: str, db: Session = Depends(get_
     PÚBLICO - Para o frontend do tenant.
     
     Exemplo: GET /platform/terminology/tenant/pg-auto
+    
+    Se tenant_slug for "default", retorna terminologia padrão (real_estate).
     """
-    from app.platform.seeds import get_tenant_terminology, get_available_sectors
+    from app.platform.seeds import get_tenant_terminology, get_available_sectors, get_sector_terminology
+    
+    # Fallback para "default" - retorna terminologia de real_estate
+    if tenant_slug == "default":
+        terminology = get_sector_terminology("real_estate")
+        available = get_available_sectors()
+        return {
+            "tenant_slug": "default",
+            "sector": "real_estate",
+            "sub_sector": None,
+            "sector_name": available.get("real_estate", "Imobiliário"),
+            "terminology": terminology,
+            "has_custom_terminology": False
+        }
     
     # Buscar tenant
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
