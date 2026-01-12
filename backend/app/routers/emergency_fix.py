@@ -729,18 +729,19 @@ def init_tenant_schema(
     }
 
 
-@router.post("/add-leads-portal-name")
+@router.post("/add-leads-portal-name/{schema_name}")
 def add_leads_portal_name(
+    schema_name: str,
     db: Session = Depends(get_db),
     _: bool = Depends(verify_admin_key)
 ):
     """
-    Adicionar coluna portal_name à tabela leads.
+    Adicionar coluna portal_name à tabela leads num schema específico.
     PROTEGIDO - Requer header: X-Admin-Key
     """
     sql_statements = [
-        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS portal_name VARCHAR(100);",
-        "CREATE INDEX IF NOT EXISTS ix_leads_portal_name ON leads(portal_name);",
+        f"ALTER TABLE {schema_name}.leads ADD COLUMN IF NOT EXISTS portal_name VARCHAR(100);",
+        f"CREATE INDEX IF NOT EXISTS ix_{schema_name}_leads_portal_name ON {schema_name}.leads(portal_name);",
     ]
     
     results = []
@@ -756,17 +757,19 @@ def add_leads_portal_name(
     result = db.execute(text("""
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_name = 'leads' 
+        WHERE table_schema = :schema
+        AND table_name = 'leads' 
         AND column_name = 'portal_name'
-    """))
+    """), {"schema": schema_name})
     columns = [row[0] for row in result]
     
     return {
         "status": "completed",
+        "schema": schema_name,
         "total_commands": len(sql_statements),
         "results": results,
         "columns_added": columns,
-        "message": "Coluna portal_name adicionada à tabela leads!"
+        "message": f"Coluna portal_name adicionada à tabela {schema_name}.leads!"
     }
 
 
