@@ -1,5 +1,5 @@
 import "../styles/globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from 'next/font/google';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
@@ -12,6 +12,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "CRM PLUS — Advanced CRM for Real Estate Agencies",
   description: "Streamline your operations, track leads, and grow. The most powerful CRM platform for real estate agencies with automation, collaboration and integration.",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

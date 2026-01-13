@@ -184,10 +184,13 @@ export async function updateBackofficeProperty(
   
   const updated = await res.json() as BackofficeProperty;
   
-  // Se houver novas imagens, fazer upload
+  // Se houver novas imagens, fazer upload (mantendo as atuais)
   if (files && files.length > 0) {
     const uploadRes = await uploadPropertyImages(id, files);
-    updated.images = uploadRes.urls;
+    const kept = imagesToKeep ?? updated.images ?? [];
+    updated.images = [...kept, ...uploadRes.urls];
+  } else if (imagesToKeep !== undefined) {
+    updated.images = imagesToKeep;
   }
   
   return updated;

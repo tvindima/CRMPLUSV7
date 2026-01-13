@@ -24,6 +24,7 @@ function EditarItemInner({ id }: { id: number }) {
   const [property, setProperty] = useState<BackofficeProperty | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -43,7 +44,9 @@ function EditarItemInner({ id }: { id: number }) {
   const handleSubmit = async ({ payload, files, imagesToKeep }: PropertyFormSubmit) => {
     setSaving(true);
     try {
-      await updateBackofficeProperty(id, payload, files, imagesToKeep);
+      const updated = await updateBackofficeProperty(id, payload, files, imagesToKeep);
+      setProperty(updated);
+      setLastSavedAt(new Date());
       toast.push(`${term('item', 'Item')} atualizado`, "success");
     } catch (err: any) {
       toast.push(err?.message || "Erro ao atualizar", "error");
@@ -67,7 +70,16 @@ function EditarItemInner({ id }: { id: number }) {
 
       {loading && <p className="text-sm text-[#C5C5C5]">A carregar {term('item_singular', 'item')}...</p>}
       {!loading && !property && <p className="text-sm text-red-400">{term('item', 'Item')} não encontrado.</p>}
-      {property && <PropertyForm initial={property} onSubmit={handleSubmit} loading={saving} />}
+      {property && (
+        <>
+          {lastSavedAt && (
+            <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+              {term('item_singular', 'Item')} guardado e imagens atualizadas às {lastSavedAt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+          <PropertyForm initial={property} onSubmit={handleSubmit} loading={saving} />
+        </>
+      )}
     </BackofficeLayout>
   );
 }
