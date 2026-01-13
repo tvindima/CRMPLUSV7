@@ -21,14 +21,14 @@ export function PropertyGallery({ images, title }: Props) {
     <>
       {/* Main Image */}
       <div
-        className="relative aspect-video w-full cursor-pointer overflow-hidden rounded-2xl"
+        className="relative w-full cursor-pointer overflow-hidden rounded-2xl bg-black/80 min-h-[240px] sm:min-h-[320px] lg:min-h-[480px] max-h-[75vh]"
         onClick={() => setShowModal(true)}
       >
         <SafeImage
           src={galleryImages[selectedIndex]}
           alt={`${title} - Imagem ${selectedIndex + 1}`}
           fill
-          className="object-cover transition duration-300 hover:scale-105"
+          className="object-contain object-center transition duration-300 hover:scale-[1.01]"
           priority
         />
         <div className="absolute bottom-4 right-4 rounded-full bg-black/70 px-4 py-2 text-sm text-white backdrop-blur">
