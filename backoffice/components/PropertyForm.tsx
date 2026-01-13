@@ -204,9 +204,9 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     });
   };
 
-  const handleAddFiles = (fileList: FileList | null) => {
-    if (!fileList) return;
-    setNewFiles((prev) => [...prev, ...Array.from(fileList)]);
+  const handleAddFiles = (files: File[]) => {
+    if (!files || files.length === 0) return;
+    setNewFiles((prev) => [...prev, ...files]);
   };
 
   // Municípios disponíveis baseados no distrito selecionado
