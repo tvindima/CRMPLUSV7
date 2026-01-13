@@ -7,6 +7,8 @@ import { ToastProvider, useToast } from "../../../../backoffice/components/Toast
 import { BackofficeProperty, getBackofficeProperty } from "../../../../src/services/backofficeApi";
 import { useTenant } from "@/context/TenantContext";
 import { useTerminology } from "@/context/TerminologyContext";
+import { useRouter } from "next/navigation";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 type Props = { params: { id: string } };
 
@@ -28,6 +30,7 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
 }
 
 function ItemDetalheInner({ id }: { id: number }) {
+  const router = useRouter();
   const toast = useToast();
   const { sector, isRealEstate } = useTenant();
   const { term } = useTerminology();
@@ -64,6 +67,13 @@ function ItemDetalheInner({ id }: { id: number }) {
                 <p className="text-sm text-[#C5C5C5]">{property.location || [property.municipality, property.parish].filter(Boolean).join(" / ")}</p>
               </div>
               <div className="flex gap-2 text-sm text-[#C5C5C5]">
+                <button 
+                  onClick={() => router.push(`/backoffice/properties/${id}/editar`)}
+                  className="flex items-center gap-2 rounded-lg bg-[#E10600] px-4 py-2 text-white transition-all hover:bg-[#c00500]"
+                >
+                  <PencilSquareIcon className="h-4 w-4" />
+                  Editar
+                </button>
                 <button className="rounded-lg bg-[#101013] px-3 py-2 ring-1 ring-[#2A2A2E]">Ver contactos</button>
                 <button className="rounded-lg bg-[#101013] px-3 py-2 ring-1 ring-[#2A2A2E]">Reatribuir</button>
               </div>

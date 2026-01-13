@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
-import { PlusIcon, HomeIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, HomeIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { useTerminology } from "@/context/TerminologyContext";
 
 type Property = {
@@ -50,7 +50,7 @@ export default function PropertiesPage() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch('/api/properties?limit=100', {
+        const response = await fetch('/api/properties?limit=500', {
           credentials: 'include',
         });
         if (response.ok) {
@@ -135,6 +135,16 @@ export default function PropertiesPage() {
                       {[property.typology, property.municipality].filter(Boolean).join(' • ')}
                     </p>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/backoffice/properties/${property.id}/editar`);
+                    }}
+                    className="ml-2 rounded-lg p-2 text-[#999] transition-colors hover:bg-[#1F1F22] hover:text-white"
+                    title="Editar"
+                  >
+                    <PencilSquareIcon className="h-5 w-5" />
+                  </button>
                 </div>
                 
                 <div className="mt-3 flex items-center justify-between">
