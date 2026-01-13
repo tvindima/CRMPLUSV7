@@ -1,55 +1,37 @@
 import { NextResponse, NextRequest } from "next/server";
-import { cookies } from "next/headers";
 import { API_BASE_URL, SESSION_COOKIE } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
+
+// Extrair tenant do hostname: petala-dourada.bo.crmplus.trioto.tech -> petala-dourada
+function getTenantFromHost(host: string): string {
+  if (host.endsWith('.bo.crmplus.trioto.tech')) {
+    return host.replace('.bo.crmplus.trioto.tech', '');
+  }
+  // Domínios dedicados
+  if (host.includes('imoveismais')) return 'imoveismais';
+  if (host.includes('luisgaspar') || host.includes('luiscarlosgaspar')) return 'luisgaspar';
+  return process.env.NEXT_PUBLIC_TENANT_SLUG || '';
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Extrair tenant slug do hostname da request
+    // Extrair tenant do hostname
     const host = req.headers.get('host') || '';
-    let tenantSlug = '';
+    const tenantSlug = getTenantFromHost(host);
     
-    // Padrão: slug.bo.crmplus.trioto.tech
-    if (host.endsWith('.bo.crmplus.trioto.tech')) {
-      tenantSlug = host.replace('.bo.crmplus.trioto.tech', '');
-    }
-    
-    // Fallback: cookie
-    if (!tenantSlug) {
-      try {
-        const cookieStore = await cookies();
-        tenantSlug = cookieStore.get('tenant_slug')?.value || '';
-      } catch (e) {
-        // Ignorar erro de cookies
-      }
-    }
-    
-    // Fallback: header
-    if (!tenantSlug) {
-      tenantSlug = req.headers.get('x-tenant-slug') || '';
-    }
-    
-    // Fallback: env var
-    if (!tenantSlug) {
-      tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || '';
-    }
-    
-    // Construir headers com tenant
+    // Headers para o backend
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    
     if (tenantSlug) {
       headers['X-Tenant-Slug'] = tenantSlug;
     }
     
-    console.log("[Login API Route] Host:", host);
-    console.log("[Login API Route] Tenant slug:", tenantSlug || "(empty)");
-    console.log("[Login API Route] Calling backend:", `${API_BASE_URL}/auth/login`);
+    console.log("[Login] Host:", host, "Tenant:", tenantSlug);
     
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
@@ -97,4 +79,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro inesperado" }, { status: 500 });
   }
 }
-// Trigger redeploy Tue Jan 13 00:11:46 WET 2026
