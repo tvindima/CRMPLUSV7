@@ -437,25 +437,49 @@ async def upload_property_images(
     
     Suporta múltiplos arquivos. Cria versões otimizadas automaticamente.
     Storage configurável via ENV (ver app/core/storage.py).
+    
+    LIMITE: Máximo 30 imagens por propriedade.
     """
+    # Rollback de qualquer transação pendente/abortada
+    try:
+        db.rollback()
+    except:
+        pass
+    
     property_obj = services.get_property(db, property_id)
     if not property_obj:
         raise HTTPException(status_code=404, detail="Property not found")
 
-    urls = property_obj.images or []
+    urls = list(property_obj.images or [])
+    
+    # Verificar limite de 30 imagens
+    MAX_IMAGES = 30
+    current_count = len(urls)
+    if current_count + len(files) > MAX_IMAGES:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Limite de {MAX_IMAGES} imagens excedido. Atual: {current_count}, A adicionar: {len(files)}"
+        )
+    
+    uploaded_count = 0
+    errors = []
     
     for upload in files:
         if not upload.content_type or not upload.content_type.startswith(ALLOWED_MIME_PREFIX):
-            raise HTTPException(status_code=415, detail="Tipo de ficheiro não suportado (apenas imagens)")
-
-        content = await upload.read()
-        if len(content) > MAX_UPLOAD_BYTES:
-            raise HTTPException(status_code=413, detail=f"Ficheiro excede o limite de {MAX_UPLOAD_BYTES // (1024*1024)}MB")
+            errors.append(f"{upload.filename}: Tipo não suportado")
+            continue
 
         try:
+            content = await upload.read()
+            if len(content) > MAX_UPLOAD_BYTES:
+                errors.append(f"{upload.filename}: Excede {MAX_UPLOAD_BYTES // (1024*1024)}MB")
+                continue
+
             # Otimizar e redimensionar imagem automaticamente
             # Criar 3 versões: thumbnail, medium, large
             base_name = os.path.splitext(upload.filename)[0]
+            # Sanitizar nome do ficheiro
+            base_name = "".join(c for c in base_name if c.isalnum() or c in "._- ")[:50]
             
             saved_urls = []
             for size_name in ["thumbnail", "medium", "large"]:
@@ -480,22 +504,44 @@ async def upload_property_images(
                 saved_urls.append(url)
             
             # Adicionar apenas a versão 'large' ao array principal (compatibilidade)
-            # As outras versões ficam disponíveis com sufixo (_thumbnail, _medium)
             urls.append(saved_urls[2])  # large
+            uploaded_count += 1
             
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erro ao processar imagem: {str(e)}")
+            print(f"[Upload] Erro ao processar {upload.filename}: {e}")
+            errors.append(f"{upload.filename}: {str(e)[:100]}")
+            # Rollback para limpar transação abortada
+            try:
+                db.rollback()
+            except:
+                pass
+            continue
 
-    services.update_property(
-        db,
-        property_id,
-        schemas.PropertyUpdate(images=urls),
-    )
-    return JSONResponse({
-        "uploaded": len(files), 
+    # Só atualiza se houve uploads com sucesso
+    if uploaded_count > 0:
+        try:
+            services.update_property(
+                db,
+                property_id,
+                schemas.PropertyUpdate(images=urls),
+            )
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Erro ao guardar imagens: {str(e)}")
+    
+    response_data = {
+        "uploaded": uploaded_count, 
         "urls": urls,
-        "message": f"{len(files)} imagem(ns) otimizada(s) e salva(s) em 3 tamanhos (thumbnail, medium, large)"
-    })
+        "total_images": len(urls),
+        "message": f"{uploaded_count} imagem(ns) carregada(s) com sucesso"
+    }
+    
+    if errors:
+        response_data["errors"] = errors
+        response_data["message"] += f". {len(errors)} erro(s)."
+    
+    return JSONResponse(response_data)
 
 
 @router.post("/{property_id}/upload-video")
