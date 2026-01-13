@@ -1,7 +1,9 @@
 import { NextResponse, NextRequest } from "next/server";
-import { API_BASE_URL, SESSION_COOKIE } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
+
+const API_BASE_URL = 'https://crmplusv7-production.up.railway.app';
+const SESSION_COOKIE = 'crmplus_staff_session';
 
 // Extrair tenant do hostname: petala-dourada.bo.crmplus.trioto.tech -> petala-dourada
 function getTenantFromHost(host: string): string {
