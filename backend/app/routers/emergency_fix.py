@@ -663,14 +663,18 @@ def init_tenant_schema(
                 conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema}"'))
                 conn.commit()
             
-            # Criar tabela crm_settings no schema específico (com schema qualificado)
+            # Criar tabela crm_settings no schema específico (sincronizado com o modelo SQLAlchemy)
             conn.execute(text(f'''
                 CREATE TABLE IF NOT EXISTS "{schema}".crm_settings (
                     id SERIAL PRIMARY KEY,
+                    watermark_enabled INTEGER DEFAULT 1,
+                    watermark_image_url VARCHAR(500),
+                    watermark_opacity FLOAT DEFAULT 0.6,
+                    watermark_scale FLOAT DEFAULT 0.15,
+                    watermark_position VARCHAR(50) DEFAULT 'bottom-right',
                     agency_name VARCHAR(255) DEFAULT 'CRM Plus',
-                    agency_slogan VARCHAR(500),
                     agency_logo_url VARCHAR(500),
-                    agency_watermark_url VARCHAR(500),
+                    agency_slogan VARCHAR(500) DEFAULT 'Powered by CRM Plus',
                     primary_color VARCHAR(20) DEFAULT '#E10600',
                     secondary_color VARCHAR(20) DEFAULT '#C5C5C5',
                     background_color VARCHAR(20) DEFAULT '#0B0B0D',
@@ -679,6 +683,9 @@ def init_tenant_schema(
                     text_muted VARCHAR(20) DEFAULT '#9CA3AF',
                     border_color VARCHAR(20) DEFAULT '#2A2A2E',
                     accent_color VARCHAR(20) DEFAULT '#E10600',
+                    max_photos_per_property INTEGER DEFAULT 30,
+                    max_video_size_mb INTEGER DEFAULT 100,
+                    max_image_size_mb INTEGER DEFAULT 20,
                     contact_email VARCHAR(255),
                     contact_phone VARCHAR(50),
                     contact_address TEXT,

@@ -2,12 +2,13 @@ import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from PIL import Image
 import io
 import requests
 from . import services, schemas
-from app.database import get_db
+from app.database import get_db, get_tenant_schema, DEFAULT_SCHEMA, DATABASE_URL
 from app.properties.models import PropertyStatus, Property
 from app.core.storage import storage  # Storage abstraction layer
 from app.security import require_staff, get_current_user, get_optional_user
@@ -41,6 +42,10 @@ def get_watermark_settings(db: Session) -> Optional[dict]:
     """
     try:
         from app.models.crm_settings import CRMSettings
+        # Garantir que a sessão está apontada para o schema do tenant atual
+        if DATABASE_URL:
+            schema = get_tenant_schema() or DEFAULT_SCHEMA
+            db.execute(text(f'SET search_path TO "{schema}", public'))
         settings = db.query(CRMSettings).first()
         
         if not settings or not settings.watermark_enabled or not settings.watermark_image_url:
