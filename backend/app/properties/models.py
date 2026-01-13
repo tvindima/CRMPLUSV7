@@ -13,6 +13,7 @@ class PropertyStatus(str, PyEnum):
     AVAILABLE = "AVAILABLE"
     RESERVED = "RESERVED"
     SOLD = "SOLD"
+    CANCELLED = "CANCELLED"
 
 
 class Property(Base):
