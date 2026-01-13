@@ -82,3 +82,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro inesperado" }, { status: 500 });
   }
 }
+// Trigger redeploy Tue Jan 13 00:11:46 WET 2026
