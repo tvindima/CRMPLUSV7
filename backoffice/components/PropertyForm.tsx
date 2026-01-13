@@ -143,8 +143,11 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     // Validações obrigatórias
     if (!reference) errs.push("Referência é obrigatória");
     if (!selectedAgentId) errs.push("Agente é obrigatório");
-    if (!selectedDistrict) errs.push("Distrito é obrigatório");
-    if (!selectedMunicipality) errs.push("Concelho é obrigatório");
+    // Ao editar, permitimos cancelar/atualizar mesmo sem distrito/concelho preenchidos
+    if (!initial) {
+      if (!selectedDistrict) errs.push("Distrito é obrigatório");
+      if (!selectedMunicipality) errs.push("Concelho é obrigatório");
+    }
     
     const priceNumber = toNumber(price);
     if (priceNumber === null) errs.push("Preço é obrigatório e deve ser numérico");
