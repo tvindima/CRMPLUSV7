@@ -113,7 +113,7 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
             
             if not table_exists:
                 conn.execute(text(f"""
-                    CREATE TABLE {tenant_schema}.crm_settings (
+                    CREATE TABLE "{tenant_schema}".crm_settings (
                         id SERIAL PRIMARY KEY,
                         watermark_enabled INTEGER DEFAULT 1,
                         watermark_image_url VARCHAR,
@@ -138,7 +138,7 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
                         updated_at TIMESTAMP WITH TIME ZONE
                     )
                 """))
-                conn.execute(text(f"INSERT INTO {tenant_schema}.crm_settings DEFAULT VALUES"))
+                conn.execute(text(f'INSERT INTO "{tenant_schema}".crm_settings DEFAULT VALUES'))
                 conn.commit()
                 tenant_results.append("Tabela criada")
             else:
@@ -155,7 +155,7 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
                     if col_name not in existing_columns:
                         try:
                             conn.execute(text(f"""
-                                ALTER TABLE {tenant_schema}.crm_settings 
+                                ALTER TABLE "{tenant_schema}".crm_settings 
                                 ADD COLUMN {col_name} {col_def}
                             """))
                             conn.commit()
@@ -170,10 +170,10 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
                     tenant_results.append("Todas as colunas já existem")
             
             # Garantir que existe pelo menos 1 registo
-            count_result = conn.execute(text(f"SELECT COUNT(*) FROM {tenant_schema}.crm_settings"))
+            count_result = conn.execute(text(f'SELECT COUNT(*) FROM "{tenant_schema}".crm_settings'))
             count = count_result.scalar()
             if count == 0:
-                conn.execute(text(f"INSERT INTO {tenant_schema}.crm_settings DEFAULT VALUES"))
+                conn.execute(text(f'INSERT INTO "{tenant_schema}".crm_settings DEFAULT VALUES'))
                 conn.commit()
                 tenant_results.append("Registo inicial inserido")
             
