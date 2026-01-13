@@ -8,17 +8,31 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Obter tenant slug do cookie (definido pelo middleware) ou env var
-    // Também tentar extrair do hostname da request
-    const cookieStore = await cookies();
-    let tenantSlug = cookieStore.get('tenant_slug')?.value || '';
+    // Extrair tenant slug do hostname da request
+    const host = req.headers.get('host') || '';
+    let tenantSlug = '';
     
-    // Fallback: extrair do header x-tenant-slug se o frontend o enviou
+    // Padrão: slug.bo.crmplus.trioto.tech
+    if (host.endsWith('.bo.crmplus.trioto.tech')) {
+      tenantSlug = host.replace('.bo.crmplus.trioto.tech', '');
+    }
+    
+    // Fallback: cookie
+    if (!tenantSlug) {
+      try {
+        const cookieStore = await cookies();
+        tenantSlug = cookieStore.get('tenant_slug')?.value || '';
+      } catch (e) {
+        // Ignorar erro de cookies
+      }
+    }
+    
+    // Fallback: header
     if (!tenantSlug) {
       tenantSlug = req.headers.get('x-tenant-slug') || '';
     }
     
-    // Fallback: variável de ambiente para deploys dedicados
+    // Fallback: env var
     if (!tenantSlug) {
       tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || '';
     }
@@ -33,6 +47,7 @@ export async function POST(req: NextRequest) {
       headers['X-Tenant-Slug'] = tenantSlug;
     }
     
+    console.log("[Login API Route] Host:", host);
     console.log("[Login API Route] Tenant slug:", tenantSlug || "(empty)");
     console.log("[Login API Route] Calling backend:", `${API_BASE_URL}/auth/login`);
     
