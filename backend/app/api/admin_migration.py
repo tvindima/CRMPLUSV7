@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import get_db, SessionLocal, engine
 from sqlalchemy.orm import Session
-from app.agents.models import Agent
+from app.models.agent import Agent
 from app.models.client import Client
 from app.models.website_client import WebsiteClient
 
