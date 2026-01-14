@@ -257,12 +257,10 @@ function LeadsInner() {
         title={mode === "create" ? "Nova Lead" : "Editar Lead"}
       >
         <LeadForm
-          mode={mode}
-          lead={current}
+          initial={current || undefined}
           onSubmit={handleSubmit}
           onCancel={() => setDrawerOpen(false)}
           saving={saving}
-          canEditAll={permissions.canEditAllProperties}
         />
       </Drawer>
     </>
