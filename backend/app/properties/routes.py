@@ -315,9 +315,12 @@ def list_properties(
     
     team_agent_ids = None  # Lista de agent_ids da equipa
     
+    hide_cancelled = False
+
     if current_user is None:
         # Acesso público - apenas imóveis publicados
         is_published = 1
+        hide_cancelled = True
     elif current_user.role in privileged_roles:
         # Admin/Staff - pode ver todos
         pass
@@ -346,6 +349,7 @@ def list_properties(
         is_published=is_published,
         agent_id=agent_id,
         agent_ids=team_agent_ids,
+        hide_cancelled=hide_cancelled,
     )
 
 

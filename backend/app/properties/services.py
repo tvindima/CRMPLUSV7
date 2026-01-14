@@ -14,6 +14,7 @@ def get_properties(
     is_published: int | None = None,
     agent_id: int | None = None,
     agent_ids: List[int] | None = None,
+    hide_cancelled: bool = False,
 ):
     query = db.query(Property)
     
@@ -30,6 +31,8 @@ def get_properties(
         query = query.filter(Property.status == PropertyStatus(status))
     if is_published is not None:
         query = query.filter(Property.is_published == is_published)
+    if hide_cancelled:
+        query = query.filter(Property.status != PropertyStatus.CANCELLED.value)
     return query.offset(skip).limit(limit).all()
 
 
