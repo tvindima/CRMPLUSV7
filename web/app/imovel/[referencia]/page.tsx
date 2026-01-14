@@ -214,7 +214,7 @@ export default async function ImovelDetail({ params }: Props) {
         </nav>
 
       {/* Main Grid - Stack em mobile, side-by-side em desktop */}
-      <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_380px]">
+      <div className="grid items-start justify-items-center gap-6 lg:gap-8 lg:grid-cols-[1fr_380px] lg:justify-items-start">
         {/* Left Column - Property Details */}
         <div className="space-y-8">
           {/* Gallery */}
