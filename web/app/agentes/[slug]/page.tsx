@@ -341,11 +341,7 @@ export default async function AgentPage({ params }: Props) {
               style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
             >
               <Image
-                src={
-                  optimizeAvatarUrl(agent.photo) ||
-                  agent.avatar_url ||
-                  `/avatars/${normalizeSlug(agent.name)}.png`
-                }
+                src={optimizeAvatarUrl(agent.photo) || agent.avatar || `/avatars/${normalizeSlug(agent.name)}.png`}
                 alt={agent.name}
                 fill
                 className="object-cover"
