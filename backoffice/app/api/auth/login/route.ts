@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       role: data?.role || "staff",
       access_token: token 
     });
+    const hostNoPort = (host || '').split(':')[0];
     response.cookies.set({
       name: SESSION_COOKIE,
       value: token,
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
       secure: true,
       sameSite: "none",
       path: "/",
+      domain: hostNoPort || undefined,
       maxAge: 60 * 60, // 1h
     });
     return response;
