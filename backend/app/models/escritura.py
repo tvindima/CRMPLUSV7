@@ -58,6 +58,12 @@ class Escritura(Base):
     fatura_emitida = Column(Boolean, default=False)
     numero_fatura = Column(String(50), nullable=True)
     data_fatura = Column(DateTime(timezone=True), nullable=True)
+
+    # === Pedido de Fatura ===
+    fatura_pedida = Column(Boolean, default=False)
+    pedido_fatura_nota = Column(Text, nullable=True)
+    data_pedido_fatura = Column(DateTime(timezone=True), nullable=True)
+    pedido_fatura_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # === Notas ===
     notas = Column(Text, nullable=True)
@@ -71,6 +77,7 @@ class Escritura(Base):
     property = relationship("Property", foreign_keys=[property_id])
     agent = relationship("Agent", foreign_keys=[agent_id])
     client = relationship("Client", foreign_keys=[client_id])
+    pedido_fatura_user = relationship("User", foreign_keys=[pedido_fatura_user_id], lazy="joined")
     
     def to_dict(self):
         return {
@@ -97,7 +104,14 @@ class Escritura(Base):
             "fatura_emitida": self.fatura_emitida,
             "numero_fatura": self.numero_fatura,
             "data_fatura": self.data_fatura.isoformat() if self.data_fatura else None,
+            "fatura_pedida": self.fatura_pedida,
+            "pedido_fatura_nota": self.pedido_fatura_nota,
+            "data_pedido_fatura": self.data_pedido_fatura.isoformat() if self.data_pedido_fatura else None,
+            "pedido_fatura_user_id": self.pedido_fatura_user_id,
             "notas": self.notas,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "property_reference": getattr(self.property, "reference", None) if self.property else None,
+            "property_title": getattr(self.property, "title", None) if self.property else None,
+            "property_price": float(self.property.price) if self.property and self.property.price is not None else None,
         }

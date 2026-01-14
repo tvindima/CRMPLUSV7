@@ -295,6 +295,12 @@ export default function AgendaScreen() {
         <Text style={styles.headerTitle}>📅 Agenda</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
+            style={[styles.addButton, styles.listButton]}
+            onPress={() => navigation.navigate('EscriturasList')}
+          >
+            <Ionicons name="list-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.addButton, styles.escrituraButton]}
             onPress={() => navigation.navigate('EscrituraForm')}
           >
@@ -900,6 +906,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  listButton: {
+    backgroundColor: '#1f2937',
   },
   escrituraButton: {
     width: 'auto',

@@ -23,6 +23,9 @@ import {
 interface Escritura {
   id: number;
   property_id: number | null;
+  property_reference?: string | null;
+  property_title?: string | null;
+  property_price?: number | null;
   agent_id: number;
   agency_id: number | null;
   client_id: number | null;
@@ -42,6 +45,9 @@ interface Escritura {
   notas_documentacao: string | null;
   fatura_emitida: boolean;
   numero_fatura: string | null;
+  fatura_pedida?: boolean;
+  data_pedido_fatura?: string | null;
+  pedido_fatura_nota?: string | null;
   notas: string | null;
   created_at: string;
   updated_at: string | null;
@@ -263,6 +269,7 @@ function EscriturasInner() {
             <thead>
               <tr className="border-b border-[#1F1F22] text-xs font-semibold uppercase tracking-wide text-[#888]">
                 <th className="px-4 py-3 text-left">Data</th>
+                <th className="px-4 py-3 text-left">Imóvel</th>
                 <th className="px-4 py-3 text-left">Local</th>
                 <th className="px-4 py-3 text-left">Partes</th>
                 <th className="px-4 py-3 text-left">Valor</th>
@@ -274,13 +281,13 @@ function EscriturasInner() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-sm text-[#C5C5C5]">
+                  <td colSpan={8} className="p-6 text-center text-sm text-[#C5C5C5]">
                     A carregar...
                   </td>
                 </tr>
               ) : escrituras.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-sm text-[#C5C5C5]">
+                  <td colSpan={8} className="p-6 text-center text-sm text-[#C5C5C5]">
                     Nenhuma escritura encontrada.
                   </td>
                 </tr>
@@ -315,6 +322,23 @@ function EscriturasInner() {
                               )}
                             </p>
                           </div>
+                        </div>
+                      </td>
+
+                      {/* Imóvel */}
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white">
+                            {escritura.property_reference || "—"}
+                          </p>
+                          {escritura.property_title && (
+                            <p className="max-w-[180px] truncate text-xs text-[#888]">
+                              {escritura.property_title}
+                            </p>
+                          )}
+                          {escritura.property_id && (
+                            <p className="text-[11px] text-[#555]">ID #{escritura.property_id}</p>
+                          )}
                         </div>
                       </td>
 

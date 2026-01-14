@@ -9,6 +9,7 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models.website_client import WebsiteClient, LeadDistributionCounter
+from app.models.client import Client
 from app.agents.models import Agent
 from app.schemas.website_client import WebsiteClientListItem
 
@@ -207,7 +208,33 @@ def reassign_client_agent(
     client.assigned_agent_id = agent_id
     client.agent_selected_by_client = False  # Reatribuído manualmente
     client.updated_at = datetime.utcnow()
-    
+
+    # Sincronizar também na tabela clients (CRM)
+    client_type_crm = "comprador" if getattr(client, "interest_type", "compra") == "compra" else "arrendatario"
+    crm_client = db.query(Client).filter(Client.email == client.email).first()
+    if crm_client:
+        crm_client.agent_id = agent_id
+        crm_client.agency_id = agent.agency_id
+        crm_client.client_type = client_type_crm
+        crm_client.origin = crm_client.origin or "website"
+        crm_client.nome = client.name or crm_client.nome
+        crm_client.telefone = client.phone or crm_client.telefone
+        crm_client.email = client.email
+        crm_client.is_active = True
+        crm_client.updated_at = datetime.utcnow()
+    else:
+        crm_client = Client(
+            agent_id=agent_id,
+            agency_id=agent.agency_id,
+            nome=client.name,
+            email=client.email,
+            telefone=client.phone,
+            client_type=client_type_crm,
+            origin="website",
+            is_active=True,
+        )
+        db.add(crm_client)
+
     db.commit()
     
     return {"success": True, "message": f"Cliente reatribuído a {agent.name}"}
