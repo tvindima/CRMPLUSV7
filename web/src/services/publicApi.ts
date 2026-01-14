@@ -51,6 +51,7 @@ export type Agent = {
 	twitter?: string | null;
 	tiktok?: string | null;
 	whatsapp?: string | null;
+	team?: string | null;
 	team_id?: number | null;
 	agency_id?: number | null;
 };
