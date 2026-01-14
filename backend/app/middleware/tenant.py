@@ -10,6 +10,7 @@ Define o schema correto na BD para cada request.
 """
 
 from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -127,10 +128,14 @@ class TenantMiddleware(BaseHTTPMiddleware):
         
         # 3. Default para 'public' se não encontrado (backwards compatible)
         if not tenant_slug:
-            # Em produção, podemos querer rejeitar requests sem tenant
-            # Por agora, usar schema public para backwards compatibility
-            tenant_slug = None
-        
+            # Em produção, não permitir fallback para public para evitar cross-tenant
+            try:
+                enforce_tenant_or_fail(request)
+            except HTTPException as e:
+                return JSONResponse({"detail": e.detail}, status_code=e.status_code)
+            # Em dev, manter compat mas logar
+            print(f"[TENANT WARN] No tenant resolved, falling back to public (dev mode)")
+
         # Definir schema
         if tenant_slug:
             # Schema do tenant usa o formato tenant_{slug}
@@ -149,7 +154,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
             request.state.tenant_slug = tenant_slug
             request.state.tenant_schema = schema_name
         else:
-            # Sem tenant, usar schema public
+            # Sem tenant (apenas dev), usar schema public
             set_tenant_schema(DEFAULT_SCHEMA)
             
             # Debug logging para auth routes
@@ -183,3 +188,19 @@ def require_tenant(request: Request) -> str:
             detail="Tenant não identificado. Use header X-Tenant-Slug ou aceda via domínio do tenant."
         )
     return tenant
+
+
+def enforce_tenant_or_fail(request: Request):
+    """
+    Variante rígida: em produção rejeita requests sem tenant para evitar escrever no schema public.
+    """
+    tenant = get_current_tenant(request)
+    if tenant:
+        return tenant
+    import os
+    if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("VERCEL"):
+        raise HTTPException(
+            status_code=400,
+            detail="Tenant obrigatório em produção. Inclua X-Tenant-Slug ou use o domínio do tenant."
+        )
+    return None
