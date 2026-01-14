@@ -21,7 +21,9 @@ import {
 export default function LeadsPage() {
   return (
     <ToastProvider>
-      <LeadsInner />
+      <BackofficeLayout title="Leads">
+        <LeadsInner />
+      </BackofficeLayout>
     </ToastProvider>
   );
 }
@@ -30,6 +32,7 @@ function LeadsInner() {
   const toast = useToast();
   const { permissions } = useRole();
   const { term } = useTerminology();
+
   const [items, setItems] = useState<BackofficeLead[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | LeadStatus>("all");
@@ -40,7 +43,6 @@ function LeadsInner() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Labels para sources
   const sourceLabels: Record<LeadSource, string> = {
     portal: "Portal",
     website: "Website",
@@ -87,7 +89,6 @@ function LeadsInner() {
     });
   }, [items, search, statusFilter, sourceFilter]);
 
-  // Helper para formatar canal/source da lead
   const formatSource = (lead: BackofficeLead) => {
     const label = sourceLabels[lead.source || "other"] || lead.source || "—";
     if (lead.source === "portal" && lead.portal_name) {
@@ -150,7 +151,7 @@ function LeadsInner() {
   };
 
   return (
-    <BackofficeLayout title="Leads">
+    <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           value={search}
@@ -256,12 +257,14 @@ function LeadsInner() {
         title={mode === "create" ? "Nova Lead" : "Editar Lead"}
       >
         <LeadForm
-          initial={current}
+          mode={mode}
+          lead={current}
           onSubmit={handleSubmit}
           onCancel={() => setDrawerOpen(false)}
           saving={saving}
+          canEditAll={permissions.canEditAllProperties}
         />
       </Drawer>
-    </BackofficeLayout>
+    </>
   );
 }
