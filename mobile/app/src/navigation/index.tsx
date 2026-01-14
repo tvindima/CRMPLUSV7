@@ -35,7 +35,6 @@ import TaxCalculatorScreen from '../screens/TaxCalculatorScreen';
 import MortgageSimulatorScreen from '../screens/MortgageSimulatorScreen';
 import ClientsScreen from '../screens/ClientsScreen';
 import EscrituraFormScreen from '../screens/EscrituraFormScreen';
-import EscriturasListScreen from '../screens/EscriturasListScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -54,7 +53,6 @@ export type RootStackParamList = {
   MortgageSimulator: undefined;
   Clients: undefined;
   EscrituraForm: { escrituraId?: number; propertyId?: number; clientId?: number; preAngariacaoId?: number };
-  EscriturasList: undefined;
 };
 
 export type TabParamList = {
@@ -91,7 +89,6 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="MortgageSimulator" component={MortgageSimulatorScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Clients" component={ClientsScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="EscrituraForm" component={EscrituraFormScreen} options={{ headerShown: false }} />
-      <HomeStack.Screen name="EscriturasList" component={EscriturasListScreen} options={{ headerShown: false }} />
     </HomeStack.Navigator>
   );
 }
@@ -142,7 +139,6 @@ function AgendaStackNavigator() {
       <AgendaStack.Screen name="AgendaMain" component={AgendaScreenV5} options={{ headerShown: false }} />
       <AgendaStack.Screen name="VisitDetail" component={VisitDetailScreenV4} options={{ title: 'Detalhe da Visita' }} />
       <AgendaStack.Screen name="EscrituraForm" component={EscrituraFormScreen} options={{ headerShown: false }} />
-      <AgendaStack.Screen name="EscriturasList" component={EscriturasListScreen} options={{ headerShown: false }} />
     </AgendaStack.Navigator>
   );
 }

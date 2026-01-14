@@ -23,9 +23,6 @@ import {
 interface Escritura {
   id: number;
   property_id: number | null;
-  property_reference?: string | null;
-  property_title?: string | null;
-  property_price?: number | null;
   agent_id: number;
   data_escritura: string;
   hora_escritura: string | null;
@@ -43,10 +40,6 @@ interface Escritura {
   notas_documentacao: string | null;
   fatura_emitida: boolean;
   numero_fatura: string | null;
-  fatura_pedida?: boolean;
-  data_pedido_fatura?: string | null;
-  pedido_fatura_nota?: string | null;
-  pedido_fatura_user_id?: number | null;
   notas: string | null;
   created_at: string;
   updated_at: string | null;
@@ -189,16 +182,6 @@ function EscrituraDetailInner() {
     });
   };
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("pt-PT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const getDaysUntil = (dateStr: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -237,11 +220,6 @@ function EscrituraDetailInner() {
   const isUrgent = daysUntil <= 7 && daysUntil >= 0;
   const statusStyle = STATUS_STYLES[escritura.status] || STATUS_STYLES.agendada;
   const checklistProgress = getChecklistProgress();
-  const faturaStatus = escritura.fatura_emitida
-    ? { label: `#${escritura.numero_fatura}`, color: "text-green-400" }
-    : escritura.fatura_pedida
-      ? { label: "Pedido ao backoffice", color: "text-orange-300" }
-      : { label: "Pendente", color: "text-yellow-400" };
 
   return (
     <BackofficeLayout title={`Escritura #${escritura.id}`}>
@@ -271,35 +249,6 @@ function EscrituraDetailInner() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Coluna Principal */}
         <div className="space-y-6 lg:col-span-2">
-          {(escritura.property_reference || escritura.property_title || escritura.property_id) && (
-            <div className="rounded-xl border border-[#1F1F22] bg-[#0F0F10] p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-                <MapPinIcon className="h-5 w-5 text-[#E10600]" />
-                Imóvel
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-xs text-[#888]">Referência</p>
-                  <p className="text-lg font-semibold text-white">{escritura.property_reference || "—"}</p>
-                  {escritura.property_id && (
-                    <p className="text-sm text-[#C5C5C5]">ID #{escritura.property_id}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs text-[#888]">Descrição</p>
-                  <p className="text-lg font-semibold text-white">
-                    {escritura.property_title || "—"}
-                  </p>
-                  {escritura.property_price && (
-                    <p className="text-sm text-green-400">
-                      Preço anunciado: {formatCurrency(escritura.property_price)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Data e Local */}
           <div className="rounded-xl border border-[#1F1F22] bg-[#0F0F10] p-6">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
@@ -372,15 +321,9 @@ function EscrituraDetailInner() {
               
               <div>
                 <p className="text-xs text-[#888]">Fatura</p>
-                <p className={`text-lg font-semibold ${faturaStatus.color}`}>
-                  {faturaStatus.label}
+                <p className={`text-lg font-semibold ${escritura.fatura_emitida ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {escritura.fatura_emitida ? `#${escritura.numero_fatura}` : "Pendente"}
                 </p>
-                {escritura.fatura_pedida && !escritura.fatura_emitida && (
-                  <p className="text-xs text-[#888]">
-                    Pedido em {escritura.data_pedido_fatura ? formatDateTime(escritura.data_pedido_fatura) : "—"}
-                    {escritura.pedido_fatura_nota ? ` • ${escritura.pedido_fatura_nota}` : ""}
-                  </p>
-                )}
               </div>
             </div>
           </div>

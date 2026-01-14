@@ -2,16 +2,11 @@
 Admin endpoint para aplicar migração de tasks no Railway.
 TEMPORÁRIO - Remover após migração aplicada.
 """
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import get_db, SessionLocal, engine
 from sqlalchemy.orm import Session
-from app.models.agent import Agent
-from app.models.client import Client
-from app.models.website_client import WebsiteClient
 
 router = APIRouter(prefix="/admin", tags=["Admin Migration"])
 
@@ -690,116 +685,6 @@ def fix_leads_status_enum(db: Session = Depends(get_db)):
             "messages": results
         }
         
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/migrate-escritura-invoice-fields")
-def migrate_escritura_invoice_fields(db: Session = Depends(get_db)):
-    """
-    Garantir que colunas de fatura existem na tabela escrituras para evitar crashes no painel.
-    """
-    results = []
-
-    columns = [
-        ("fatura_emitida", "BOOLEAN DEFAULT FALSE"),
-        ("numero_fatura", "VARCHAR(50)"),
-        ("data_fatura", "TIMESTAMPTZ"),
-        ("fatura_pedida", "BOOLEAN DEFAULT FALSE"),
-        ("pedido_fatura_nota", "TEXT"),
-        ("data_pedido_fatura", "TIMESTAMPTZ"),
-        ("pedido_fatura_user_id", "INTEGER REFERENCES users(id) ON DELETE SET NULL"),
-    ]
-
-    try:
-        for col_name, col_def in columns:
-            db.execute(text(f"ALTER TABLE escrituras ADD COLUMN IF NOT EXISTS {col_name} {col_def}"))
-            results.append(f"✅ Coluna '{col_name}' adicionada/verificada")
-
-        db.commit()
-
-        return {
-            "status": "success",
-            "messages": results,
-        }
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/sync-website-clients-to-crm")
-def sync_website_clients_to_crm(db: Session = Depends(get_db)):
-    """
-    Sincronizar todos os website_clients para clients, garantindo visibilidade no backoffice/mobile.
-    """
-    summary = {
-        "total": 0,
-        "created": 0,
-        "updated": 0,
-        "skipped_without_agent": 0,
-        "errors": [],
-    }
-
-    try:
-        website_clients = db.query(WebsiteClient).all()
-        summary["total"] = len(website_clients)
-
-        for wc in website_clients:
-            if not wc.assigned_agent_id:
-                summary["skipped_without_agent"] += 1
-                continue
-
-            try:
-                agent = db.query(Agent).filter(Agent.id == wc.assigned_agent_id).first()
-                client_type_crm = "comprador" if wc.interest_type == "compra" else "arrendatario"
-
-                existing = db.query(Client).filter(
-                    Client.email == wc.email,
-                    Client.agent_id == wc.assigned_agent_id,
-                ).first()
-
-                if existing:
-                    existing.nome = wc.name or existing.nome
-                    existing.telefone = wc.phone or existing.telefone
-                    existing.email = wc.email
-                    existing.client_type = client_type_crm
-                    existing.origin = "website"
-                    if agent and agent.agency_id:
-                        existing.agency_id = agent.agency_id
-                    existing.is_active = True
-                    existing.updated_at = datetime.utcnow()
-                    summary["updated"] += 1
-                else:
-                    new_client = Client(
-                        agent_id=wc.assigned_agent_id,
-                        agency_id=agent.agency_id if agent else None,
-                        nome=wc.name,
-                        email=wc.email,
-                        telefone=wc.phone,
-                        client_type=client_type_crm,
-                        origin="website",
-                        is_active=True,
-                    )
-                    db.add(new_client)
-                    summary["created"] += 1
-
-                db.commit()
-
-            except Exception as sync_err:
-                db.rollback()
-                summary["errors"].append({
-                    "website_client_id": wc.id,
-                    "email": wc.email,
-                    "error": str(sync_err),
-                })
-
-        return {
-            "status": "success",
-            "summary": summary,
-        }
-
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

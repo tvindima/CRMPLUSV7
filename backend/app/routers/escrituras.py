@@ -3,7 +3,7 @@ Router para gestão de Escrituras
 CRUD + notificações + integração com agenda
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, extract
 from typing import Optional, List
 from datetime import datetime, date, timedelta
@@ -11,11 +11,6 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 from app.database import get_db
 from app.models.escritura import Escritura
-from app.models.event import Event
-from app.properties.models import Property
-from app.security import get_current_user
-from app.users.models import User, UserRole
-from app.schemas.event import EventType
 
 
 router = APIRouter(prefix="/escrituras", tags=["escrituras"])
@@ -79,71 +74,6 @@ class EscrituraFaturar(BaseModel):
     numero_fatura: str
 
 
-class PedidoFaturaRequest(BaseModel):
-    """Schema para pedido de fatura vindo do agente"""
-    nota: Optional[str] = None
-
-
-def upsert_escritura_event(db: Session, escritura: Escritura):
-    """Criar ou atualizar evento de agenda associado à escritura para aparecer na app mobile."""
-    try:
-        start_dt = escritura.data_escritura
-        if escritura.hora_escritura:
-            try:
-                hours, minutes = escritura.hora_escritura.split(":")
-                start_dt = start_dt.replace(hour=int(hours), minute=int(minutes), second=0, microsecond=0)
-            except Exception:
-                # Se hora inválida, mantém data original
-                pass
-
-        prop_ref = getattr(escritura.property, "reference", None)
-        if not prop_ref and escritura.property_id:
-            prop = db.query(Property).filter(Property.id == escritura.property_id).first()
-            if prop:
-                prop_ref = prop.reference
-
-        title = "Escritura agendada"
-        if prop_ref:
-            title = f"Escritura - {prop_ref}"
-
-        notes = f"Escritura #{escritura.id}"
-        if escritura.local_escritura:
-            notes = f"{notes} • {escritura.local_escritura}"
-
-        existing = db.query(Event).filter(
-            Event.agent_id == escritura.agent_id,
-            Event.notes.ilike(f"%Escritura #{escritura.id}%"),
-        ).first()
-
-        if existing:
-            existing.title = title
-            existing.event_type = EventType.OTHER.value
-            existing.scheduled_date = start_dt
-            existing.duration_minutes = existing.duration_minutes or 60
-            existing.location = escritura.local_escritura
-            existing.property_id = escritura.property_id
-            existing.notes = notes
-            existing.status = "scheduled"
-        else:
-            new_event = Event(
-                agent_id=escritura.agent_id,
-                title=title,
-                event_type=EventType.OTHER.value,
-                scheduled_date=start_dt,
-                duration_minutes=60,
-                location=escritura.local_escritura,
-                property_id=escritura.property_id,
-                notes=notes,
-                status="scheduled",
-            )
-            db.add(new_event)
-
-        db.commit()
-    except Exception as event_err:
-        db.rollback()
-        print(f"[ESCRITURA->AGENDA] Falha ao sincronizar evento: {event_err}")
-
-
 # === Endpoints ===
 
 @router.get("/")
@@ -163,10 +93,7 @@ def list_escrituras(
     - Agente: vê as suas escrituras
     - Admin/Backoffice: vê todas (para preparar documentação)
     """
-    query = db.query(Escritura).options(
-        joinedload(Escritura.property),
-        joinedload(Escritura.pedido_fatura_user),
-    )
+    query = db.query(Escritura)
     
     if agent_id:
         query = query.filter(Escritura.agent_id == agent_id)
@@ -210,10 +137,7 @@ def get_proximas_escrituras(
     hoje = datetime.now()
     fim = hoje + timedelta(days=dias)
     
-    query = db.query(Escritura).options(
-        joinedload(Escritura.property),
-        joinedload(Escritura.pedido_fatura_user),
-    ).filter(
+    query = db.query(Escritura).filter(
         Escritura.data_escritura >= hoje,
         Escritura.data_escritura <= fim,
         Escritura.status.in_(["agendada", "confirmada"])
@@ -259,10 +183,7 @@ def get_pendentes_faturacao(
     Escrituras realizadas mas não faturadas
     Para backoffice emitir faturas
     """
-    query = db.query(Escritura).options(
-        joinedload(Escritura.property),
-        joinedload(Escritura.pedido_fatura_user),
-    ).filter(
+    query = db.query(Escritura).filter(
         Escritura.status == "realizada",
         Escritura.fatura_emitida == False
     )
@@ -323,10 +244,7 @@ def get_escrituras_stats(
 @router.get("/{escritura_id}")
 def get_escritura(escritura_id: int, db: Session = Depends(get_db)):
     """Obter detalhes de uma escritura"""
-    escritura = db.query(Escritura).options(
-        joinedload(Escritura.property),
-        joinedload(Escritura.pedido_fatura_user),
-    ).filter(Escritura.id == escritura_id).first()
+    escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
     return escritura.to_dict()
@@ -341,13 +259,6 @@ def create_escritura(
     Agendar nova escritura
     Cria entrada na agenda automaticamente
     """
-    property_obj = db.query(Property).filter(Property.id == data.property_id).first()
-    if not property_obj:
-        raise HTTPException(status_code=404, detail="Imóvel associado não encontrado")
-
-    if property_obj.agent_id and property_obj.agent_id != data.agent_id:
-        raise HTTPException(status_code=403, detail="Apenas o agente responsável pode agendar a escritura deste imóvel")
-
     escritura = Escritura(
         property_id=data.property_id,
         agent_id=data.agent_id,
@@ -372,9 +283,6 @@ def create_escritura(
     db.add(escritura)
     db.commit()
     db.refresh(escritura)
-
-    # Criar/atualizar evento na agenda para aparecer no mobile
-    upsert_escritura_event(db, escritura)
     
     # TODO: Criar evento no calendário do agente
     # TODO: Enviar notificação ao backoffice
@@ -409,9 +317,6 @@ def update_escritura(
     
     db.commit()
     db.refresh(escritura)
-
-    # Sincronizar evento na agenda (atualiza data/local se mudou)
-    upsert_escritura_event(db, escritura)
     
     return {
         "success": True,
@@ -460,41 +365,6 @@ def update_documentacao(
     db.commit()
     
     return {"success": True, "documentacao_pronta": pronta}
-
-
-@router.post("/{escritura_id}/pedido-fatura")
-def pedir_fatura(
-    escritura_id: int,
-    data: PedidoFaturaRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Registar pedido de fatura feito pelo agente"""
-    escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
-    if not escritura:
-        raise HTTPException(status_code=404, detail="Escritura não encontrada")
-
-    if escritura.fatura_emitida:
-        raise HTTPException(status_code=400, detail="Fatura já emitida para esta escritura")
-
-    # Apenas admins/coordenadores podem pedir por qualquer agente
-    is_admin = current_user.role in [UserRole.ADMIN.value, UserRole.COORDINATOR.value]
-    if not is_admin and current_user.agent_id and escritura.agent_id != current_user.agent_id:
-        raise HTTPException(status_code=403, detail="Não pode pedir fatura de uma escritura de outro agente")
-
-    escritura.fatura_pedida = True
-    escritura.pedido_fatura_nota = data.nota
-    escritura.data_pedido_fatura = datetime.now()
-    escritura.pedido_fatura_user_id = current_user.id
-
-    db.commit()
-    db.refresh(escritura)
-
-    return {
-        "success": True,
-        "message": "Pedido de fatura registado",
-        "escritura": escritura.to_dict(),
-    }
 
 
 @router.post("/{escritura_id}/faturar")

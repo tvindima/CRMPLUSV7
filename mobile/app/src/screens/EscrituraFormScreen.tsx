@@ -95,19 +95,6 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
   });
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [invoiceRequested, setInvoiceRequested] = useState(false);
-  const [invoiceRequestNote, setInvoiceRequestNote] = useState('');
-  const [invoiceRequestedAt, setInvoiceRequestedAt] = useState<string | null>(null);
-  const [invoiceIssued, setInvoiceIssued] = useState(false);
-  const [invoiceNumber, setInvoiceNumber] = useState<string | null>(null);
-  const [requestingInvoice, setRequestingInvoice] = useState(false);
-
-  const unwrapResponse = (response: any) => {
-    if (response && typeof response === 'object' && 'data' in response) {
-      return (response as any).data;
-    }
-    return response;
-  };
 
   // Carregar dados
   useEffect(() => {
@@ -123,7 +110,7 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
   const loadProperties = async () => {
     setLoadingProperties(true);
     try {
-      const response = await apiService.get('/mobile/properties?limit=500&my_properties=true');
+      const response = await apiService.get('/mobile/properties', { limit: 500 });
       if (response?.items) {
         setProperties(response.items);
       } else if (Array.isArray(response)) {
@@ -158,8 +145,8 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
     setLoading(true);
     try {
       const response = await apiService.get(`/escrituras/${editingId}`);
-      const e: any = unwrapResponse(response);
-      if (e) {
+      if (response.data) {
+        const e = response.data;
         setFormData({
           property_id: e.property_id,
           agent_id: e.agent_id,
@@ -177,13 +164,6 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
           percentagem_comissao: e.percentagem_comissao?.toString() || '5',
           notas: e.notas || '',
         });
-
-        setInvoiceRequested(!!e.fatura_pedida);
-        setInvoiceRequestNote(e.pedido_fatura_nota || '');
-        setInvoiceRequestedAt(e.data_pedido_fatura || null);
-        setInvoiceIssued(!!e.fatura_emitida);
-        setInvoiceNumber(e.numero_fatura || null);
-
         if (e.property_id) {
           loadPropertyDetails(e.property_id);
         }
@@ -327,60 +307,20 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
         response = await apiService.post('/escrituras/', payload);
       }
       
-      const result: any = unwrapResponse(response);
-
-      const escrituraPayload = result?.escritura || result;
-      if (escrituraPayload) {
-        setInvoiceIssued(!!escrituraPayload.fatura_emitida);
-        setInvoiceRequested(!!escrituraPayload.fatura_pedida);
-        setInvoiceNumber(escrituraPayload.numero_fatura || null);
-        setInvoiceRequestedAt(escrituraPayload.data_pedido_fatura || null);
-        setInvoiceRequestNote(escrituraPayload.pedido_fatura_nota || '');
+      if (response.data?.success) {
+        Alert.alert(
+          '✅ Sucesso',
+          isEditing 
+            ? 'Escritura atualizada com sucesso!' 
+            : 'Escritura agendada!\n\nO backoffice será notificado para preparar a documentação.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
       }
-
-      Alert.alert(
-        '✅ Sucesso',
-        isEditing 
-          ? 'Escritura atualizada com sucesso!' 
-          : 'Escritura agendada!\n\nO backoffice será notificado para preparar a documentação.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
     } catch (error: any) {
       console.error('Erro ao salvar escritura:', error);
       Alert.alert('Erro', error.response?.data?.detail || 'Não foi possível salvar a escritura');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handlePedidoFatura = async () => {
-    if (!editingId) {
-      Alert.alert('Guarde primeiro', 'Guarde a escritura antes de pedir a fatura.');
-      return;
-    }
-
-    setRequestingInvoice(true);
-    try {
-      const response = await apiService.post(`/escrituras/${editingId}/pedido-fatura`, {
-        nota: invoiceRequestNote || undefined,
-      });
-      const result: any = unwrapResponse(response);
-      const payload = result?.escritura || result;
-
-      if (payload) {
-        setInvoiceRequested(!!payload.fatura_pedida);
-        setInvoiceRequestNote(payload.pedido_fatura_nota || invoiceRequestNote);
-        setInvoiceRequestedAt(payload.data_pedido_fatura || new Date().toISOString());
-        setInvoiceIssued(!!payload.fatura_emitida);
-        setInvoiceNumber(payload.numero_fatura || null);
-      }
-
-      Alert.alert('Pedido de fatura enviado', 'O backoffice irá emitir a fatura e atualizar o estado.');
-    } catch (error: any) {
-      console.error('Erro ao pedir fatura:', error);
-      Alert.alert('Erro', error?.detail || 'Não foi possível registar o pedido de fatura');
-    } finally {
-      setRequestingInvoice(false);
     }
   };
 
@@ -672,77 +612,6 @@ const EscrituraFormScreen: React.FC<Props> = ({ navigation, route }) => {
                 Comissão: {formatCurrency(formData.valor_comissao)}
               </Text>
             </View>
-          )}
-        </View>
-
-        {/* === SECÇÃO: FATURAÇÃO === */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            <Ionicons name="receipt" size={18} color="#1a56db" /> Faturação
-          </Text>
-
-          <View style={styles.invoiceStatusBox}>
-            <Ionicons
-              name={invoiceIssued ? 'checkmark-done' : invoiceRequested ? 'mail-open' : 'mail-unread'}
-              size={20}
-              color={invoiceIssued ? '#059669' : invoiceRequested ? '#d97706' : '#b45309'}
-            />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.invoiceStatusLabel}>Estado da fatura</Text>
-              <Text
-                style={[
-                  styles.invoiceStatusValue,
-                  { color: invoiceIssued ? '#059669' : invoiceRequested ? '#d97706' : '#b45309' },
-                ]}
-              >
-                {invoiceIssued ? 'Emitida' : invoiceRequested ? 'Pedido enviado ao backoffice' : 'Pendente'}
-              </Text>
-              {invoiceNumber && <Text style={styles.invoiceStatusMeta}>N.º {invoiceNumber}</Text>}
-              {invoiceRequestedAt && !invoiceIssued && (
-                <Text style={styles.invoiceStatusMeta}>
-                  Pedido em {new Date(invoiceRequestedAt).toLocaleString('pt-PT')}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {!invoiceIssued && (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Notas para faturação</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={invoiceRequestNote}
-                  onChangeText={setInvoiceRequestNote}
-                  placeholder="Dados para a fatura (NIF, empresa, observações)"
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.requestInvoiceButton, (!isEditing || requestingInvoice) && styles.requestInvoiceButtonDisabled]}
-                onPress={handlePedidoFatura}
-                disabled={!isEditing || requestingInvoice}
-              >
-                {requestingInvoice ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={18} color="#fff" />
-                    <Text style={[styles.requestInvoiceButtonText, { marginLeft: 8 }]}>
-                      {invoiceRequested ? 'Reenviar pedido de fatura' : 'Pedir fatura ao backoffice'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {!isEditing && (
-                <Text style={styles.helperText}>
-                  Guarde a escritura primeiro para enviar o pedido de fatura.
-                </Text>
-              )}
-            </>
           )}
         </View>
 
@@ -1084,30 +953,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#059669',
   },
-  invoiceStatusBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-    marginBottom: 12,
-  },
-  invoiceStatusLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  invoiceStatusValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  invoiceStatusMeta: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
   buttonContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -1143,22 +988,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-  },
-  requestInvoiceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1a56db',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  requestInvoiceButtonDisabled: {
-    opacity: 0.5,
-  },
-  requestInvoiceButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,
@@ -1221,11 +1050,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 15,
     marginTop: 40,
-  },
-  helperText: {
-    marginTop: 8,
-    fontSize: 13,
-    color: '#6b7280',
   },
 });
 

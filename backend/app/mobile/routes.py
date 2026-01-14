@@ -276,16 +276,19 @@ def list_mobile_properties(
     
     query = db.query(Property)
     
-    # Administradores/Coordenadores podem ver tudo; agentes/assistentes ficam limitados aos seus imóveis
-    is_admin_like = current_user.role in [UserRole.ADMIN.value, UserRole.COORDINATOR.value]
-
-    if not is_admin_like:
-        # Assistentes e agentes vêem apenas os seus imóveis
+    # ASSISTENTES: Sempre filtrar pelo agente responsável
+    # AGENTES: Filtrar apenas se my_properties=true
+    is_assistant = current_user.role == UserRole.ASSISTANT.value
+    
+    if is_assistant:
+        # Assistentes SEMPRE vêem apenas propriedades do agente responsável
         if not effective_agent_id:
             return []
         query = query.filter(Property.agent_id == effective_agent_id)
-    elif my_properties and effective_agent_id:
-        # Admin/coordenador pode opcionalmente filtrar pelos seus imóveis
+    elif my_properties:
+        # Agentes só filtram se pedirem explicitamente
+        if not effective_agent_id:
+            return []
         query = query.filter(Property.agent_id == effective_agent_id)
     
     # Filtros
