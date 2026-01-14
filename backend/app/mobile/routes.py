@@ -1843,6 +1843,8 @@ async def create_lead_mobile(
         "outro": LeadSource.OTHER.value,
     }
     normalized_source = source_map.get(source_raw) or source_map.get(origin_raw) or LeadSource.MANUAL.value
+    # Alguns tenants antigos têm enum leadsource em UPPERCASE -> forçamos uppercase na persistência
+    normalized_source_db = normalized_source.upper()
 
     notes = (lead_data.notes or "").strip() or None
     origin = (lead_data.origin or "").strip() or notes
@@ -1853,7 +1855,7 @@ async def create_lead_mobile(
             name=lead_data.name,
             email=lead_data.email,  # Pode ser None
             phone=lead_data.phone,
-            source=normalized_source,
+            source=normalized_source_db,
             origin=origin,  # Guardar notes em origin se não tiver origin
             message=notes,  # Persistir notas no campo message/texto
             assigned_agent_id=assigned_agent_id,  # ← Auto-atribuição
