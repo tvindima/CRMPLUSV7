@@ -4,12 +4,12 @@ CRUD + notificações + integração com agenda
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, extract
+from sqlalchemy import and_, or_, extract, text
 from typing import Optional, List
 from datetime import datetime, date, timedelta
 from pydantic import BaseModel, Field
 from decimal import Decimal
-from app.database import get_db
+from app.database import get_db, get_tenant_schema, DATABASE_URL
 from app.models.escritura import Escritura
 from app.models.event import Event
 from app.properties.models import Property
@@ -144,6 +144,60 @@ def upsert_escritura_event(db: Session, escritura: Escritura):
         print(f"[ESCRITURA->AGENDA] Falha ao sincronizar evento: {event_err}")
 
 
+def ensure_escrituras_table_for_tenant(db: Session):
+    """Garantir que a tabela escrituras existe no schema do tenant (multi-tenant)."""
+    if not DATABASE_URL:
+        return  # SQLite/local dev: já gerido pelo Base.metadata.create_all
+
+    schema = get_tenant_schema()
+    if not schema or schema == "public":
+        return  # No tenant or using public schema
+
+    try:
+        exists = db.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = :schema AND table_name = 'escrituras'
+                );
+                """
+            ),
+            {"schema": schema},
+        ).scalar()
+
+        if exists:
+            return
+
+        # Verificar se estrutura existe no public para copiar
+        source_exists = db.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' AND table_name = 'escrituras'
+                );
+                """
+            )
+        ).scalar()
+
+        if not source_exists:
+            raise HTTPException(status_code=500, detail="Tabela escrituras não existe no schema público")
+
+        # Criar tabela no schema do tenant copiando estrutura + dados do public
+        db.execute(text(f'CREATE TABLE IF NOT EXISTS "{schema}"."escrituras" (LIKE public."escrituras" INCLUDING ALL)'))
+        db.execute(text(f'INSERT INTO "{schema}"."escrituras" SELECT * FROM public."escrituras"'))
+        db.commit()
+        print(f"[ESCRITURAS] Tabela criada/copied no schema {schema}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"[ESCRITURAS] Erro ao garantir tabela para schema {schema}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao preparar tabela de escrituras para o tenant")
+
+
 # === Endpoints ===
 
 @router.get("/")
@@ -163,6 +217,7 @@ def list_escrituras(
     - Agente: vê as suas escrituras
     - Admin/Backoffice: vê todas (para preparar documentação)
     """
+    ensure_escrituras_table_for_tenant(db)
     query = db.query(Escritura).options(
         joinedload(Escritura.property),
         joinedload(Escritura.pedido_fatura_user),
@@ -207,6 +262,7 @@ def get_proximas_escrituras(
     Escrituras nos próximos X dias
     Para dashboard e alertas
     """
+    ensure_escrituras_table_for_tenant(db)
     hoje = datetime.now()
     fim = hoje + timedelta(days=dias)
     
@@ -259,6 +315,7 @@ def get_pendentes_faturacao(
     Escrituras realizadas mas não faturadas
     Para backoffice emitir faturas
     """
+    ensure_escrituras_table_for_tenant(db)
     query = db.query(Escritura).options(
         joinedload(Escritura.property),
         joinedload(Escritura.pedido_fatura_user),
@@ -291,6 +348,7 @@ def get_escrituras_stats(
     """
     Estatísticas de escrituras
     """
+    ensure_escrituras_table_for_tenant(db)
     ano = ano or datetime.now().year
     
     query = db.query(Escritura).filter(
@@ -323,6 +381,7 @@ def get_escrituras_stats(
 @router.get("/{escritura_id}")
 def get_escritura(escritura_id: int, db: Session = Depends(get_db)):
     """Obter detalhes de uma escritura"""
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).options(
         joinedload(Escritura.property),
         joinedload(Escritura.pedido_fatura_user),
@@ -341,6 +400,7 @@ def create_escritura(
     Agendar nova escritura
     Cria entrada na agenda automaticamente
     """
+    ensure_escrituras_table_for_tenant(db)
     property_obj = db.query(Property).filter(Property.id == data.property_id).first()
     if not property_obj:
         raise HTTPException(status_code=404, detail="Imóvel associado não encontrado")
@@ -393,6 +453,7 @@ def update_escritura(
     db: Session = Depends(get_db)
 ):
     """Atualizar escritura"""
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
@@ -427,6 +488,7 @@ def update_escritura_status(
     db: Session = Depends(get_db)
 ):
     """Atualizar status da escritura"""
+    ensure_escrituras_table_for_tenant(db)
     valid_statuses = ["agendada", "confirmada", "realizada", "cancelada", "adiada"]
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Status inválido. Valores válidos: {valid_statuses}")
@@ -449,6 +511,7 @@ def update_documentacao(
     db: Session = Depends(get_db)
 ):
     """Marcar documentação como pronta/pendente"""
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
@@ -470,6 +533,7 @@ def pedir_fatura(
     db: Session = Depends(get_db)
 ):
     """Registar pedido de fatura feito pelo agente"""
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
@@ -507,6 +571,7 @@ def emitir_fatura(
     Registar emissão de fatura
     O backoffice emite a fatura e regista aqui
     """
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
@@ -531,6 +596,7 @@ def emitir_fatura(
 @router.delete("/{escritura_id}")
 def delete_escritura(escritura_id: int, db: Session = Depends(get_db)):
     """Eliminar escritura (apenas se ainda não realizada)"""
+    ensure_escrituras_table_for_tenant(db)
     escritura = db.query(Escritura).filter(Escritura.id == escritura_id).first()
     if not escritura:
         raise HTTPException(status_code=404, detail="Escritura não encontrada")
