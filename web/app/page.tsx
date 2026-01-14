@@ -19,32 +19,17 @@ type RailConfig = {
 const railConfigs: RailConfig[] = [
   {
     title: "Novidades",
-    filter: (items) =>
-      [...items]
-        .filter((p) => {
-          const status = (p.status || "").toUpperCase();
-          const isAvailable = status === "" || status === "AVAILABLE";
-          return isAvailable && (p.is_published ?? 1) === 1;
-        })
-        .sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return dateB - dateA;
-        }),
+    filter: (items) => [...items].sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    }),
     filterQuery: "",
-    maxItems: 15,
   },
   {
     title: "Mais Vistos da Semana",
-    filter: (items) =>
-      [...items].sort((a, b) => {
-        const viewsA = a.view_count_7d ?? a.views_last_7_days ?? a.weekly_views ?? 0;
-        const viewsB = b.view_count_7d ?? b.views_last_7_days ?? b.weekly_views ?? 0;
-        if (viewsB !== viewsA) return viewsB - viewsA;
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
-      }),
+    filter: (items) => [...items]
+      .sort((a, b) => (b.usable_area ?? 0) - (a.usable_area ?? 0)),
     showRanking: true,
     filterQuery: "",
     maxItems: 10,
