@@ -6,7 +6,6 @@ import { BrandImage } from "../../../components/BrandImage";
 import { CarouselHorizontal } from "../../../components/CarouselHorizontal";
 import { LeadForm } from "../../../components/LeadForm";
 import { getPropertyCover } from "../../../src/utils/placeholders";
-import { optimizeAvatarUrl } from "../../../src/lib/cloudinary";
 
 type Props = { params: { slug: string } };
 
