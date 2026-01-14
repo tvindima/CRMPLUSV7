@@ -158,6 +158,8 @@ BASE_PRODUCTION_ORIGINS = [
     # CRM Plus Platform (site-montra)
     "https://crmplus.trioto.tech",
     "https://www.crmplus.trioto.tech",
+    # Super Admin
+    "https://admin.crmplus.trioto.tech",
     # Imóveis Mais
     "https://backoffice.imoveismais.com",
     "https://www.imoveismais.com",
