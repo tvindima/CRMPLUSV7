@@ -195,7 +195,13 @@ if os.environ.get("RAILWAY_ENVIRONMENT"):
     ALLOW_CREDENTIALS = True
     # SECURITY: Restringir regex para apenas subdomínios conhecidos do Vercel
     # Permite: *-toinos-projects.vercel.app, *-tvindima.vercel.app, crmplusv7-*.vercel.app
-    ALLOW_ORIGIN_REGEX = r"https://(.*-(toinos-projects|tvindima)|crmplusv7-.*|backoffice-.*|imoveismais-.*|luisgaspar-.*)\.vercel\.app"
+    # Também permite tenants auto-gerados:
+    #   https://{slug}.crmplus.trioto.tech
+    #   https://{slug}.bo.crmplus.trioto.tech
+    ALLOW_ORIGIN_REGEX = (
+        r"https://([a-z0-9-]+)\.(crmplus\.trioto\.tech|bo\.crmplus\.trioto\.tech)"
+        r"|https://(.*-(toinos-projects|tvindima)|crmplusv7-.*|backoffice-.*|imoveismais-.*|luisgaspar-.*)\.vercel\.app"
+    )
     
     print(f"[CORS] 🔒 Railway detected - Production mode")
     print(f"[CORS] ✅ Allowed origins: {ALLOWED_ORIGINS}")
