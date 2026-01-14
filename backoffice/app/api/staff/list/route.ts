@@ -1,41 +1,32 @@
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { API_BASE_URL, SESSION_COOKIE } from '@/lib/api'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthToken, serverApiGet } from '@/lib/server-api'
 
 export const dynamic = 'force-dynamic'
 
-const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || 'dev_admin_key_change_in_production'
-
-export async function GET() {
+export async function GET(_req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get(SESSION_COOKIE)
-    const tenantSlug = cookieStore.get('tenant_slug')?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || ''
-
+    const token = await getAuthToken()
     if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    const headers: Record<string, string> = {
-      'X-Admin-Key': ADMIN_SETUP_KEY,
-    }
-    if (tenantSlug) {
-      headers['X-Tenant-Slug'] = tenantSlug
+    // Usa /users com filtro de ativos; backend já faz isolamento por X-Tenant-Slug via serverApiGet
+    const res = await serverApiGet('/users?limit=200&is_active=true', token)
+    if (!res.ok) {
+      const detail = await res.text()
+      console.error('[staff/list] backend error', res.status, detail)
+      return NextResponse.json({ error: 'Erro ao carregar staff' }, { status: res.status })
     }
 
-    const res = await fetch(`${API_BASE_URL}/admin/setup/list-staff`, {
-      headers,
+    const users = await res.json()
+    const staff = (users || []).filter((u: any) => {
+      const role = (u.role || '').toLowerCase()
+      return ['staff', 'admin', 'leader', 'coordinator', 'assistant', 'agent'].includes(role)
     })
 
-    const data = await res.json()
-
-    if (!res.ok) {
-      return NextResponse.json(data, { status: res.status })
-    }
-
-    return NextResponse.json(data)
+    return NextResponse.json({ staff })
   } catch (error) {
-    console.error('Error listing staff:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[staff/list] exception', error)
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
