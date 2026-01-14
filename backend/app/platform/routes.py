@@ -941,7 +941,11 @@ def get_tenant_stats(tenant_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/tenants/{tenant_id}/users")
-def get_tenant_users(tenant_id: int, db: Session = Depends(get_db)):
+def get_tenant_users(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+    _: SuperAdmin = Depends(require_super_admin())
+):
     """
     Listar utilizadores de um tenant específico.
     """
@@ -963,7 +967,7 @@ def get_tenant_users(tenant_id: int, db: Session = Depends(get_db)):
             # Buscar utilizadores do schema do tenant
             result = db.execute(
                 text(f'''
-                    SELECT id, email, full_name, role, is_active, created_at, last_login
+                    SELECT id, email, full_name, role, is_active, created_at, updated_at AS last_login
                     FROM "{schema_name}".users
                     ORDER BY created_at DESC
                 ''')
