@@ -138,19 +138,21 @@ class AuthService {
       apiService.setAccessToken(token);
       
       // IMPORTANTE: /auth/me retorna { user: {...}, agent: {...} }
-      const response = await apiService.get<{ user: any; agent: any }>('/auth/me');
-      
-      // Construir objeto User com agent_id do agent
-      const user: User = {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.full_name || response.user.email,
-        role: response.user.role,
-        avatar_url: response.user.avatar_url,
-        is_active: response.user.is_active,
-        agent_id: response.agent?.id,  // CRITICAL: extrair agent_id do agent
-        agency_id: response.agent?.agency_id,
-      };
+        const response = await apiService.get<{ user?: any; agent?: any; [key: string]: any }>('/auth/me');
+        
+        const userData = response.user || response;
+        const agentData = response.agent;
+        
+        const user: User = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.full_name || userData.name || userData.email,
+          role: userData.role,
+          avatar_url: userData.avatar_url,
+          is_active: userData.is_active !== false,
+          agent_id: agentData?.id || userData.agent_id,
+          agency_id: agentData?.agency_id || userData.agency_id,
+        };
       
       console.log('[AuthService] User loaded with agent_id:', user.agent_id);
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
