@@ -1810,6 +1810,42 @@ async def create_lead_mobile(
             status_code=403,
             detail="Apenas agentes podem criar leads via mobile app"
         )
+
+    # Normalizar agent_id para inteiro (evita psycopg2.InvalidTextRepresentation)
+    try:
+        assigned_agent_id = int(current_user.agent_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="agent_id inválido para criar lead"
+        )
+    
+    # Normalizar source para um valor seguro do enum
+    source_raw = (lead_data.source or "manual").strip().lower()
+    origin_raw = (lead_data.origin or "").strip().lower()
+    source_map = {
+        "site": LeadSource.WEBSITE.value,
+        "website": LeadSource.WEBSITE.value,
+        "portal": LeadSource.PORTAL.value,
+        "idealista": LeadSource.PORTAL.value,
+        "imovirtual": LeadSource.PORTAL.value,
+        "phone": LeadSource.PHONE.value,
+        "telefone": LeadSource.PHONE.value,
+        "email": LeadSource.EMAIL.value,
+        "referencia": LeadSource.REFERRAL.value,
+        "referência": LeadSource.REFERRAL.value,
+        "referral": LeadSource.REFERRAL.value,
+        "facebook": LeadSource.SOCIAL.value,
+        "instagram": LeadSource.SOCIAL.value,
+        "social": LeadSource.SOCIAL.value,
+        "manual": LeadSource.MANUAL.value,
+        "other": LeadSource.OTHER.value,
+        "outro": LeadSource.OTHER.value,
+    }
+    normalized_source = source_map.get(source_raw) or source_map.get(origin_raw) or LeadSource.MANUAL.value
+
+    notes = (lead_data.notes or "").strip() or None
+    origin = (lead_data.origin or "").strip() or notes
     
     try:
         # Criar lead com auto-atribuição
@@ -1817,10 +1853,11 @@ async def create_lead_mobile(
             name=lead_data.name,
             email=lead_data.email,  # Pode ser None
             phone=lead_data.phone,
-            source=lead_data.source or "manual",  # String, não Enum
-            origin=lead_data.origin or lead_data.notes,  # Guardar notes em origin se não tiver origin
-            assigned_agent_id=current_user.agent_id,  # ← Auto-atribuição
-            status="new"  # String, não Enum - BD usa String
+            source=normalized_source,
+            origin=origin,  # Guardar notes em origin se não tiver origin
+            message=notes,  # Persistir notas no campo message/texto
+            assigned_agent_id=assigned_agent_id,  # ← Auto-atribuição
+            status=LeadStatus.NEW.value  # Enum em minúsculas (compatível com leadstatus)
         )
         
         db.add(new_lead)
@@ -1848,6 +1885,7 @@ async def create_lead_mobile(
     except Exception as e:
         db.rollback()
         import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao criar lead: {str(e)}"
