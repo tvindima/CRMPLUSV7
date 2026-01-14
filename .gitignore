@@ -63,3 +63,5 @@ yarn-error.log*
 # Scripts
 setup-fresh.sh
 setup-git.sh
+.vercel
+.env*.local
