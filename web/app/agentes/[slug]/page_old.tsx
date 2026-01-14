@@ -98,7 +98,7 @@ export default async function AgentMiniSite({ params }: Props) {
             {/* Agent Avatar */}
             <div className="relative h-48 w-48 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-[#E10600]/30 md:h-56 md:w-56">
               <Image
-                src={agent.avatar || `/avatars/${normalizeForFilename(agent.name)}.png`}
+                src={optimizeAvatarUrl(agent.photo) || agent.avatar_url || `/avatars/${normalizeForFilename(agent.name)}.png`}
                 alt={agent.name}
                 fill
                 className="object-cover"
