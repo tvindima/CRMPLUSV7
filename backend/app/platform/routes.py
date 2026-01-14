@@ -916,28 +916,31 @@ def get_tenant_stats(tenant_id: int, db: Session = Depends(get_db)):
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
-    
-    # Por agora, contar dados globais (single-DB)
-    try:
-        agents_count = db.execute(text("SELECT COUNT(*) FROM agents")).scalar() or 0
-        properties_count = db.execute(text("SELECT COUNT(*) FROM properties")).scalar() or 0
-        leads_count = db.execute(text("SELECT COUNT(*) FROM leads")).scalar() or 0
-        users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
-    except:
-        agents_count = 0
-        properties_count = 0
-        leads_count = 0
-        users_count = 0
-    
-    return schemas.TenantStats(
-        tenant_id=tenant.id,
-        tenant_slug=tenant.slug,
-        tenant_name=tenant.name,
-        agents_count=agents_count,
-        properties_count=properties_count,
-        leads_count=leads_count,
-        users_count=users_count
-    )
+        schema_name = tenant.schema_name or f"tenant_{tenant.slug}"
+        agents_count = properties_count = leads_count = users_count = 0
+
+        try:
+            # Isolar search_path no schema do tenant para contar dados certos
+            db.execute(text(f'SET search_path TO "{schema_name}", public'))
+            agents_count = db.execute(text("SELECT COUNT(*) FROM agents")).scalar() or 0
+            properties_count = db.execute(text("SELECT COUNT(*) FROM properties")).scalar() or 0
+            leads_count = db.execute(text("SELECT COUNT(*) FROM leads")).scalar() or 0
+            users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
+        except Exception as e:
+            print(f"[STATS] Erro ao contar dados em {schema_name}: {e}")
+        finally:
+            # Restaurar search_path
+            db.execute(text('SET search_path TO public'))
+
+        return schemas.TenantStats(
+            tenant_id=tenant.id,
+            tenant_slug=tenant.slug,
+            tenant_name=tenant.name,
+            agents_count=agents_count,
+            properties_count=properties_count,
+            leads_count=leads_count,
+            users_count=users_count
+        )
 
 
 @router.get("/tenants/{tenant_id}/users")
