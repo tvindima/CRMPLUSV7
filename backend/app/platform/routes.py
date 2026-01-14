@@ -266,13 +266,13 @@ async def get_current_super_admin(
         )
 
 
-def require_super_admin(db: Session = Depends(get_db)):
+def require_super_admin():
     """
     Dependency que extrai e valida token de super admin.
     """
     from fastapi import Request
     
-    async def _require_super_admin(request: Request):
+    async def _require_super_admin(request: Request, db: Session = Depends(get_db)):
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(
