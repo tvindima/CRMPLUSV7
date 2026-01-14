@@ -194,7 +194,7 @@ export default async function ImovelDetail({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <div className="space-y-8 max-w-6xl mx-auto px-4 md:px-6 lg:px-0">
+      <div className="space-y-8 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }} itemScope itemType="https://schema.org/BreadcrumbList">
           <Link href="/" className="hover:text-white" itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
