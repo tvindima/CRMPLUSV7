@@ -520,11 +520,11 @@ export default async function AgentPage({ params }: Props) {
                       style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
                     >
                       <Image
-                        src={member.avatar || `/avatars/${normalizeSlug(member.name)}.png`}
+                        src={member.avatar_url || `/avatars/${normalizeSlug(member.name)}.png`}
                         alt={member.name}
                         fill
                         className="object-cover"
-                        sizes="64px"
+                        sizes="96px"
                       />
                     </div>
                     <div className="flex-1">
