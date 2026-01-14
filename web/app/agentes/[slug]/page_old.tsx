@@ -101,19 +101,19 @@ export default async function AgentMiniSite({ params }: Props) {
               <Image
                 src={optimizeAvatarUrl(agent.photo) || agent.avatar_url || `/avatars/${normalizeForFilename(agent.name)}.png`}
                 alt={agent.name}
-                  <Link
-                    key={property.id}
-                    href={`/imovel/${encodeURIComponent(property.reference || property.title || "")}`}
-                    className="group overflow-hidden rounded-2xl border border-[#2A2A2E] bg-[#151518] transition hover:border-[#E1060000]/50"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={getPropertyCover(property)}
-                        alt={property.title || property.reference || "Imóvel"}
-                        fill
-                        className="object-cover transition duration-500 group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
+                fill
+                className="object-cover"
+                sizes="224px"
+                priority
+              />
+            </div>
+
+            {/* Agent Info */}
+            <div className="flex-1 space-y-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-[#E10600]">Consultor Imobiliário</p>
+                <h1 className="text-4xl font-bold text-white md:text-5xl">{agent.name}</h1>
+                {agent.team && (
                   <p className="mt-2 text-[#C5C5C5]">Equipa {agent.team}</p>
                 )}
               </div>
