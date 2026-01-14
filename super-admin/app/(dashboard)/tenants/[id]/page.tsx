@@ -71,7 +71,8 @@ export default function TenantDetailPage() {
   const [adminName, setAdminName] = useState('');
 
   const tenantId = params.id as string;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // Default to production API to avoid localhost in deployed super-admin
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crmplusv7-production.up.railway.app';
 
   const fetchTenant = async () => {
     try {
