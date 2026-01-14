@@ -73,7 +73,7 @@ function RailCard({ property, index, showRanking }: { property: Property; index:
       <div className="relative h-36 sm:h-44 md:h-48 w-full overflow-hidden">
         <SafeImage
           src={getPropertyCover(property)}
-          alt={property.title}
+          alt={property.title || property.reference || "Imóvel"}
           fill
           className="object-cover transition duration-500 group-hover:scale-[1.05]"
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 40vw, 240px"
@@ -105,7 +105,7 @@ function SpotlightCardVertical({ property }: { property: Property }) {
       <div className="relative h-80 w-full overflow-hidden">
         <SafeImage
           src={getPropertyCover(property)}
-          alt={property.title}
+          alt={property.title || property.reference || "Imóvel"}
           fill
           className="object-cover transition duration-500 group-hover:scale-105"
           sizes="300px"
