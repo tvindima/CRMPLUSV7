@@ -96,6 +96,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
     """
     
     async def dispatch(self, request: Request, call_next):
+        # CORS preflight must bypass tenant resolution
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         path = request.url.path
         
         # Rotas públicas não precisam de tenant
