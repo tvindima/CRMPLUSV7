@@ -58,11 +58,11 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
   const hasVideo = videoInfo && !videoError;
 
   const gradientMain = hasVideo
-    ? "from-black/35 via-black/25 to-transparent"
-    : "from-black via-black/70 to-transparent";
+    ? "from-black/20 via-black/10 to-transparent"
+    : "from-black/80 via-black/70 to-transparent";
   const gradientSecondary = hasVideo
-    ? "from-black/25 via-transparent to-black/5"
-    : "from-black/50 via-transparent to-black/10";
+    ? "from-black/15 via-transparent to-black/0"
+    : "from-black/60 via-transparent to-black/15";
 
   // Reset video error when slide changes
   useEffect(() => {
@@ -172,11 +172,11 @@ export function HeroCarousel({ properties }: HeroCarouselProps) {
             {currentProperty.reference}
           </span>
         )}
-        <h1 className="text-2xl font-semibold leading-tight md:text-4xl">
+        <h1 className="text-xl font-semibold leading-tight md:text-3xl">
           {currentProperty?.title || "Descobre os melhores produtos"}
         </h1>
         <p 
-          className="text-xs md:text-sm"
+          className="text-[11px] md:text-xs"
           style={{ color: 'var(--color-text-muted)' }}
         >
           {currentProperty
