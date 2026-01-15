@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../../../backoffice/components/ToastProvider";
-import { useRole } from "../../../../../../backoffice/context/roleContext";
+import { useRole } from "@/context/roleContext";
 
 type Agent = {
   id: number;

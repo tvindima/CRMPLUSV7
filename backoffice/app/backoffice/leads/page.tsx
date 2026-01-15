@@ -6,7 +6,7 @@ import { ToastProvider, useToast } from "../../../backoffice/components/ToastPro
 import { DataTable } from "../../../backoffice/components/DataTable";
 import { Drawer } from "../../../backoffice/components/Drawer";
 import { LeadForm, LeadFormSubmit } from "../../../backoffice/components/LeadForm";
-import { useRole } from "../../../backoffice/context/roleContext";
+import { useRole } from "@/context/roleContext";
 import { useTerminology } from "@/context/TerminologyContext";
 import {
   BackofficeLead,
