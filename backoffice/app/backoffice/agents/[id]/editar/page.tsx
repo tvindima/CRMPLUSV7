@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
 import { useTerminology } from '@/context/TerminologyContext';
+import { compressAvatar, uploadAgentAvatar } from '@/lib/avatarUpload';
 
 interface AgentData {
   id: number;
@@ -54,6 +55,8 @@ function EditAgentInner() {
   const [saving, setSaving] = useState(false);
   const [agents, setAgents] = useState<Array<{ id: number; name: string }>>([]);
   const [formData, setFormData] = useState<AgentData | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -121,6 +124,23 @@ function EditAgentInner() {
     }
   };
 
+  const handleAvatarChange = async (file: File | null) => {
+    if (!file || !formData) return;
+    try {
+      setAvatarUploading(true);
+      const compressed = await compressAvatar(file);
+      const url = await uploadAgentAvatar(Number(agentId), compressed);
+      setFormData({ ...formData, photo: url });
+      setAvatarPreview(url);
+      toast?.push('Avatar atualizado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao carregar avatar do agente:', error);
+      toast?.push('Erro ao carregar avatar do agente', 'error');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <BackofficeLayout title={`Editar ${agentLabel}`}>
@@ -145,6 +165,41 @@ function EditAgentInner() {
   return (
     <BackofficeLayout title={`Editar ${formData.name}`}>
       <form onSubmit={handleSubmit} className="max-w-4xl space-y-4 md:space-y-6 pb-8">
+        {/* Foto de Perfil */}
+        <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">
+          <h2 className="mb-3 md:mb-4 text-base md:text-lg font-semibold text-white">Foto de Perfil</h2>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="h-24 w-24 overflow-hidden rounded-full border border-[#2A2A2E] bg-[#151518]">
+              <img
+                src={
+                  avatarPreview ||
+                  formData.photo ||
+                  formData.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=E10600&color=fff&size=256`
+                }
+                alt={`Avatar de ${formData.name}`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                disabled={avatarUploading}
+                onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-[#C5C5C5] file:mr-4 file:rounded file:border-0 file:bg-[#1F1F22] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2A2A2E]"
+              />
+              <p className="text-xs text-[#666]">
+                A imagem é redimensionada para 512x512px e comprimida para não pesar.
+              </p>
+              {avatarUploading && (
+                <p className="text-xs text-[#E10600]">A carregar avatar...</p>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Dados Básicos */}
         <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">
           <h2 className="mb-3 md:mb-4 text-base md:text-lg font-semibold text-white">Dados Básicos</h2>

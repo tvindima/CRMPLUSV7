@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../../../backoffice/components/ToastProvider";
 import { useRole } from "@/context/roleContext";
+import { compressAvatar, uploadStaffAvatar } from "@/lib/avatarUpload";
 
 type Agent = {
   id: number;
@@ -19,6 +20,7 @@ type StaffData = {
   role: string;
   works_for_agent_id: number | null;
   is_active: boolean;
+  avatar_url?: string | null;
 };
 
 export default function EditStaffPage() {
@@ -41,6 +43,8 @@ function EditStaffInner() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<StaffData>({
     id: 0,
@@ -67,7 +71,8 @@ function EditStaffInner() {
           phone: data.phone || '',
           role: data.role,
           works_for_agent_id: data.works_for_agent_id,
-          is_active: data.is_active
+          is_active: data.is_active,
+          avatar_url: data.avatar_url || null
         });
       } catch (error) {
         console.error("Erro ao carregar staff:", error);
@@ -98,6 +103,31 @@ function EditStaffInner() {
     }
     loadAgents();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const handleAvatarChange = async (file: File | null) => {
+    if (!file) return;
+    try {
+      setAvatarUploading(true);
+      const compressed = await compressAvatar(file);
+      const url = await uploadStaffAvatar(Number(staffId), compressed);
+      setFormData((prev) => ({ ...prev, avatar_url: url }));
+      setAvatarPreview(url);
+      toast?.push("Avatar atualizado com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao atualizar avatar:", error);
+      toast?.push("Erro ao atualizar avatar", "error");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,6 +227,39 @@ function EditStaffInner() {
     <BackofficeLayout title={`Editar ${formData.full_name}`}>
       <div className="max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Foto de Perfil */}
+          <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Foto de Perfil</h2>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="h-24 w-24 overflow-hidden rounded-full border border-[#2A2A2E] bg-[#151518]">
+                <img
+                  src={
+                    avatarPreview ||
+                    formData.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name)}&background=0047AB&color=fff&size=256`
+                  }
+                  alt={`Avatar de ${formData.full_name}`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={avatarUploading}
+                  onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-[#C5C5C5] file:mr-4 file:rounded file:border-0 file:bg-[#1F1F22] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2A2A2E]"
+                />
+                <p className="text-xs text-[#666]">
+                  A imagem é redimensionada para 512x512px e comprimida para não pesar.
+                </p>
+                {avatarUploading && (
+                  <p className="text-xs text-[#0047AB]">A carregar avatar...</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Dados Pessoais */}
           <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Dados Pessoais</h2>

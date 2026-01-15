@@ -351,7 +351,8 @@ def get_user_by_id(
         "agent_id": user.agent_id,
         "works_for_agent_id": user.works_for_agent_id,
         "works_for_agent_name": works_for_agent_name,
-        "is_active": user.is_active
+        "is_active": user.is_active,
+        "avatar_url": user.avatar_url
     }
 
 

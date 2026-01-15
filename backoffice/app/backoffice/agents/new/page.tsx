@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { BackofficeLayout } from '@/components/BackofficeLayout';
 import { ToastProvider, useToast } from '@/backoffice/components/ToastProvider';
 import { useTerminology } from '@/context/TerminologyContext';
+import { compressAvatar, uploadAgentAvatar, uploadStaffAvatar } from '@/lib/avatarUpload';
 
 interface AgentFormData {
   name: string;
@@ -58,6 +59,9 @@ function NewAgentInner() {
     certifications: [] as File[],
     cv_document: null as File | null,
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarProcessing, setAvatarProcessing] = useState(false);
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
     email: '',
@@ -101,6 +105,32 @@ function NewAgentInner() {
     loadAgents();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const handleAvatarSelect = async (file: File | null) => {
+    if (!file) return;
+    try {
+      setAvatarProcessing(true);
+      const compressed = await compressAvatar(file);
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarFile(compressed);
+      setAvatarPreview(URL.createObjectURL(compressed));
+    } catch (error) {
+      console.error('Erro ao preparar avatar:', error);
+      toast?.push('Erro ao preparar avatar', 'error');
+    } finally {
+      setAvatarProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -119,6 +149,7 @@ function NewAgentInner() {
       setLoading(true);
 
       let agentId: number | null = null;
+      let userId: number | null = null;
 
       // PASSO 1: Se for comercial, criar o agente primeiro
       if (formData.employee_type === 'comercial') {
@@ -187,6 +218,23 @@ function NewAgentInner() {
         throw new Error(errorData.detail || 'Erro ao criar credenciais');
       }
 
+      const createdUser = await userResponse.json();
+      userId = createdUser.user_id || null;
+
+      // Upload de avatar (se fornecido)
+      if (avatarFile) {
+        try {
+          if (formData.employee_type === 'comercial' && agentId) {
+            await uploadAgentAvatar(agentId, avatarFile);
+          } else if (formData.employee_type === 'staff' && userId) {
+            await uploadStaffAvatar(userId, avatarFile);
+          }
+        } catch (error) {
+          console.error('Erro ao fazer upload do avatar:', error);
+          toast?.push('Avatar não foi carregado. Pode tentar mais tarde.', 'error');
+        }
+      }
+
       // Mostrar credenciais criadas
       const successMsg = formData.employee_type === 'staff' 
         ? `Assistente criado! Email: ${formData.email} | Password temporária: ${tempPassword}`
@@ -214,6 +262,39 @@ function NewAgentInner() {
   return (
     <BackofficeLayout title={`Novo ${agentLabel}`}>
       <form onSubmit={handleSubmit} className="max-w-4xl space-y-4 md:space-y-6 pb-8">
+        {/* Foto de Perfil */}
+        <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">
+          <h2 className="mb-3 md:mb-4 text-base md:text-lg font-semibold text-white">Foto de Perfil</h2>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="h-24 w-24 overflow-hidden rounded-full border border-[#2A2A2E] bg-[#151518]">
+              <img
+                src={
+                  avatarPreview ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'Avatar')}&background=E10600&color=fff&size=256`
+                }
+                alt="Avatar do agente"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                disabled={avatarProcessing}
+                onChange={(e) => handleAvatarSelect(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-[#C5C5C5] file:mr-4 file:rounded file:border-0 file:bg-[#1F1F22] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2A2A2E]"
+              />
+              <p className="text-xs text-[#666]">
+                A imagem é redimensionada para 512x512px e comprimida para não pesar.
+              </p>
+              {avatarProcessing && (
+                <p className="text-xs text-[#E10600]">A preparar avatar...</p>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Dados Básicos */}
         <section className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 md:p-6">
           <h2 className="mb-3 md:mb-4 text-base md:text-lg font-semibold text-white">Dados Básicos</h2>

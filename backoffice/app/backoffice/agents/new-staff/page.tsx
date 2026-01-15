@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { BackofficeLayout } from "@/components/BackofficeLayout";
 import { ToastProvider, useToast } from "../../../../backoffice/components/ToastProvider";
+import { compressAvatar, uploadStaffAvatar } from "@/lib/avatarUpload";
 
 type Agent = {
   id: number;
@@ -22,6 +23,9 @@ function NewStaffForm() {
   const [loading, setLoading] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarProcessing, setAvatarProcessing] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -73,6 +77,32 @@ function NewStaffForm() {
     generatePassword();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const handleAvatarSelect = async (file: File | null) => {
+    if (!file) return;
+    try {
+      setAvatarProcessing(true);
+      const compressed = await compressAvatar(file);
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarFile(compressed);
+      setAvatarPreview(URL.createObjectURL(compressed));
+    } catch (error) {
+      console.error("Erro ao preparar avatar:", error);
+      toast?.push("Erro ao preparar avatar", "error");
+    } finally {
+      setAvatarProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -108,6 +138,15 @@ function NewStaffForm() {
       if (!response.ok) {
         throw new Error(result.detail || 'Erro ao criar staff');
       }
+
+      if (avatarFile && result.user_id) {
+        try {
+          await uploadStaffAvatar(result.user_id, avatarFile);
+        } catch (error) {
+          console.error("Erro ao fazer upload do avatar:", error);
+          toast?.push("Staff criado, mas avatar não foi carregado.", "error");
+        }
+      }
       
       toast?.push(`Staff criado com sucesso! Password: ${formData.password}`, "success");
       
@@ -131,6 +170,38 @@ function NewStaffForm() {
     <BackofficeLayout title="Novo Membro de Staff">
       <div className="max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Foto de Perfil */}
+          <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Foto de Perfil</h2>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="h-24 w-24 overflow-hidden rounded-full border border-[#2A2A2E] bg-[#151518]">
+                <img
+                  src={
+                    avatarPreview ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || 'Staff')}&background=0047AB&color=fff&size=256`
+                  }
+                  alt="Avatar do staff"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={avatarProcessing}
+                  onChange={(e) => handleAvatarSelect(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-[#C5C5C5] file:mr-4 file:rounded file:border-0 file:bg-[#1F1F22] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#2A2A2E]"
+                />
+                <p className="text-xs text-[#666]">
+                  A imagem é redimensionada para 512x512px e comprimida para não pesar.
+                </p>
+                {avatarProcessing && (
+                  <p className="text-xs text-[#0047AB]">A preparar avatar...</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Dados Pessoais */}
           <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Dados Pessoais</h2>

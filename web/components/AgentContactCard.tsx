@@ -19,6 +19,8 @@ type Agent = {
   email: string;
   phone?: string | null;
   avatar?: string | null;
+  avatar_url?: string | null;
+  photo?: string | null;
   team?: string | null;
 };
 
@@ -90,7 +92,7 @@ export function AgentContactCard({ agent, propertyTitle }: Props) {
           style={{ backgroundColor: 'var(--color-background)' }}
         >
           <Image 
-            src={agent.avatar || `/avatars/${normalizeForFilename(agent.name)}.png`} 
+            src={agent.photo || agent.avatar_url || agent.avatar || `/avatars/${normalizeForFilename(agent.name)}.png`} 
             alt={agent.name} 
             fill 
             className="object-cover" 

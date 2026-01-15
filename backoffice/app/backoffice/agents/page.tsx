@@ -15,6 +15,7 @@ type AgentItem = {
   status?: string | null;
   avatar?: string | null;
   avatar_url?: string | null;
+  photo?: string | null;
   employee_type?: 'comercial' | 'staff';
 };
 
@@ -27,13 +28,14 @@ type StaffItem = {
   works_for_agent_id?: number | null;
   works_for_agent_name?: string | null;
   is_active: boolean;
+  avatar_url?: string | null;
 };
 
 function AgentRow({ agent }: { agent: AgentItem }) {
   const [imgError, setImgError] = useState(false);
   const avatarUrl = imgError 
     ? `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=E10600&color=fff&size=96`
-    : agent.avatar_url || agent.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=E10600&color=fff&size=96`;
+    : agent.photo || agent.avatar_url || agent.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=E10600&color=fff&size=96`;
   
   return (
     <div className="grid grid-cols-[60px_1fr_auto] md:grid-cols-[80px_1.2fr_1.2fr_1fr_0.6fr_0.6fr] items-center gap-2 md:gap-0 border-b border-[#1F1F22] px-3 py-3 text-sm text-white">
@@ -84,7 +86,9 @@ function AgentRow({ agent }: { agent: AgentItem }) {
 }
 
 function StaffRow({ staff, onDelete }: { staff: StaffItem; onDelete: (id: number) => void }) {
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.full_name)}&background=0047AB&color=fff&size=96`;
+  const avatarUrl = staff.avatar_url
+    ? staff.avatar_url
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.full_name)}&background=0047AB&color=fff&size=96`;
   
   const roleLabels: Record<string, string> = {
     'assistant': 'Assistente',
@@ -182,6 +186,7 @@ function AgentesInner() {
             phone: a.phone,
             status: "Ativo",
             avatar_url: a.avatar_url,
+            photo: a.photo,
             team: a.team,
             employee_type: a.employee_type || 'comercial'
           }))
