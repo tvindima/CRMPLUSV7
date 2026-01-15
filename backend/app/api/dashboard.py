@@ -29,16 +29,22 @@ def get_dashboard_kpis(
     """
     try:
         # Propriedades ativas
-        propriedades_ativas = db.query(Property).filter(
-            func.upper(Property.status) == 'AVAILABLE'
-        ).count()
+        try:
+            propriedades_ativas = db.query(Property).filter(
+                func.upper(Property.status) == 'AVAILABLE'
+            ).count()
+        except Exception:
+            propriedades_ativas = 0
         
         # Propriedades ativas há 7 dias (para calcular trend)
         seven_days_ago = datetime.now() - timedelta(days=7)
-        propriedades_ativas_7d_ago = db.query(Property).filter(
-            func.upper(Property.status) == 'AVAILABLE',
-            Property.created_at <= seven_days_ago
-        ).count()
+        try:
+            propriedades_ativas_7d_ago = db.query(Property).filter(
+                func.upper(Property.status) == 'AVAILABLE',
+                Property.created_at <= seven_days_ago
+            ).count()
+        except Exception:
+            propriedades_ativas_7d_ago = 0
         
         # Calcular trend de propriedades
         if propriedades_ativas_7d_ago > 0:
@@ -47,18 +53,24 @@ def get_dashboard_kpis(
             prop_trend = 0
         
         # Novas leads (últimos 7 dias) - apenas com created_at definido
-        novas_leads_7d = db.query(Lead).filter(
-            Lead.created_at.isnot(None),
-            Lead.created_at >= seven_days_ago
-        ).count()
+        try:
+            novas_leads_7d = db.query(Lead).filter(
+                Lead.created_at.isnot(None),
+                Lead.created_at >= seven_days_ago
+            ).count()
+        except Exception:
+            novas_leads_7d = 0
         
         # Leads há 14 dias (para calcular trend)
         fourteen_days_ago = datetime.now() - timedelta(days=14)
-        seven_to_fourteen_days_ago = db.query(Lead).filter(
-            Lead.created_at.isnot(None),
-            Lead.created_at >= fourteen_days_ago,
-            Lead.created_at < seven_days_ago
-        ).count()
+        try:
+            seven_to_fourteen_days_ago = db.query(Lead).filter(
+                Lead.created_at.isnot(None),
+                Lead.created_at >= fourteen_days_ago,
+                Lead.created_at < seven_days_ago
+            ).count()
+        except Exception:
+            seven_to_fourteen_days_ago = 0
         
         # Calcular trend de leads
         if seven_to_fourteen_days_ago > 0:
@@ -71,7 +83,10 @@ def get_dashboard_kpis(
         propostas_trend = 5.0  # Mock
         
         # Agentes ativos (todos os agentes cadastrados)
-        agentes_ativos = db.query(Agent).count()
+        try:
+            agentes_ativos = db.query(Agent).count()
+        except Exception:
+            agentes_ativos = 0
         
         # === ESCRITURAS ===
         try:
