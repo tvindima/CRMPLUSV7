@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthToken, serverApiGet } from '@/lib/server-api'
+import { getAuthToken, serverApiGet, SESSION_COOKIE } from '@/lib/server-api'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: NextRequest) {
+function getTokenFromRequest(req: NextRequest): string | null {
+  const cookieToken = req.cookies.get(SESSION_COOKIE)?.value
+  if (cookieToken) return cookieToken
+
+  const rawCookie = req.headers.get('cookie') || ''
+  const match = rawCookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+export async function GET(req: NextRequest) {
   try {
-    const token = await getAuthToken()
+    const token = getTokenFromRequest(req) || await getAuthToken()
     if (!token) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
