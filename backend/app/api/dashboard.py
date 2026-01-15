@@ -34,6 +34,7 @@ def get_dashboard_kpis(
                 func.upper(Property.status) == 'AVAILABLE'
             ).count()
         except Exception:
+            db.rollback()
             propriedades_ativas = 0
         
         # Propriedades ativas há 7 dias (para calcular trend)
@@ -44,6 +45,7 @@ def get_dashboard_kpis(
                 Property.created_at <= seven_days_ago
             ).count()
         except Exception:
+            db.rollback()
             propriedades_ativas_7d_ago = 0
         
         # Calcular trend de propriedades
@@ -59,6 +61,7 @@ def get_dashboard_kpis(
                 Lead.created_at >= seven_days_ago
             ).count()
         except Exception:
+            db.rollback()
             novas_leads_7d = 0
         
         # Leads há 14 dias (para calcular trend)
@@ -70,6 +73,7 @@ def get_dashboard_kpis(
                 Lead.created_at < seven_days_ago
             ).count()
         except Exception:
+            db.rollback()
             seven_to_fourteen_days_ago = 0
         
         # Calcular trend de leads
@@ -86,6 +90,7 @@ def get_dashboard_kpis(
         try:
             agentes_ativos = db.query(Agent).count()
         except Exception:
+            db.rollback()
             agentes_ativos = 0
         
         # === ESCRITURAS ===
@@ -107,6 +112,7 @@ def get_dashboard_kpis(
             # Escrituras com documentação pendente
             escrituras_docs_pendentes = escrituras_agendadas - escrituras_docs_ok
         except Exception:
+            db.rollback()
             # Se tabela não existir ainda
             escrituras_agendadas = 0
             escrituras_docs_ok = 0
