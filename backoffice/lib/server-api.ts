@@ -4,7 +4,7 @@
  * Para código client-side, usar lib/api.ts
  */
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
 export const SESSION_COOKIE = 'crmplus_staff_session';
@@ -15,7 +15,15 @@ export const TENANT_COOKIE = 'tenant_slug';
  */
 export async function getAuthToken(): Promise<string | null> {
   const cookieStore = await cookies();
-  return cookieStore.get(SESSION_COOKIE)?.value || null;
+  const cookieToken = cookieStore.get(SESSION_COOKIE)?.value;
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  // Fallback: parse raw cookie header if cookies() is empty in this context
+  const rawCookie = (await headers()).get('cookie') || '';
+  const match = rawCookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 /**
