@@ -101,6 +101,16 @@ class TenantMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
+        tenant_slug = request.headers.get("X-Tenant-Slug")
+
+        # If tenant header is explicitly provided, always honor it,
+        # even for public routes like /admin/setup/.
+        if tenant_slug:
+            schema_name = f"tenant_{tenant_slug.lower()}"
+            set_tenant_schema(schema_name)
+            request.state.tenant_slug = tenant_slug
+            request.state.tenant_schema = schema_name
+            return await call_next(request)
         
         # Rotas públicas não precisam de tenant
         if is_public_route(path):
@@ -109,9 +119,6 @@ class TenantMiddleware(BaseHTTPMiddleware):
         
         # Tentar resolver tenant
         tenant_slug = None
-        
-        # 1. Header explícito (prioridade máxima)
-        tenant_slug = request.headers.get("X-Tenant-Slug")
         
         # Debug logging para auth routes
         if "/auth/" in path:
