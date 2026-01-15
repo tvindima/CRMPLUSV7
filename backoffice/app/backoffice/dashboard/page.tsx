@@ -394,12 +394,12 @@ export default function DashboardPage() {
 
   const handleKpiClick = (kpiTitle: string) => {
     // Navegar baseado no título do KPI (considera terminologia dinâmica)
-    if (kpiTitle.includes(itemsLabel) || kpiTitle.includes('Stock') || kpiTitle.includes('Ativ')) {
-      router.push('/backoffice/properties');
+    if (kpiTitle.includes(agentsLabel)) {
+      router.push('/backoffice/agents');
     } else if (kpiTitle.includes('Leads')) {
       router.push('/backoffice/leads');
-    } else if (kpiTitle.includes('Agentes')) {
-      router.push('/backoffice/agents');
+    } else if (kpiTitle.includes(itemsLabel) || kpiTitle.includes('Stock') || kpiTitle.includes('Ativ')) {
+      router.push('/backoffice/properties');
     }
   };
 
