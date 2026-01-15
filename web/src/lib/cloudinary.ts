@@ -68,9 +68,8 @@ export function optimizeAvatarUrl(url: string | null | undefined): string | null
     return url;
   }
   
-  // Apenas otimizações de formato e qualidade
-  // Fundo já foi removido permanentemente das imagens originais
-  const transformations = 'f_auto,q_auto:best';
+  // Remover margens transparentes e escalar mantendo proporção
+  const transformations = 'e_trim,c_scale,h_600,f_auto,q_auto:best';
   
   // Se já tem transformações, não duplicar
   if (url.includes('f_auto') || url.includes('q_auto')) {
