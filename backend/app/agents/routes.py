@@ -135,7 +135,7 @@ async def upload_agent_photo(
     Requer autenticação (staff).
     
     Faz upload para Cloudinary e atualiza campo 'photo' na database.
-    Otimiza automaticamente para tamanho ideal (500x500).
+    Otimiza automaticamente para tamanho ideal (máx. 800px no maior lado).
     """
     agent = services.get_agent(db, agent_id)
     if not agent:
@@ -152,26 +152,12 @@ async def upload_agent_photo(
         # Abrir imagem
         img = Image.open(BytesIO(content))
         
-        # Converter para RGB se necessário
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            if img.mode == 'P':
-                img = img.convert('RGBA')
-            background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-            img = background
+        # Preservar transparência quando existir (sem fundo branco)
+        if img.mode in ('P', 'LA'):
+            img = img.convert('RGBA')
         
-        # Resize para 500x500 (quadrado)
-        img.thumbnail((500, 500), Image.Resampling.LANCZOS)
-        
-        # Se não for quadrado, fazer crop central
-        if img.size[0] != img.size[1]:
-            # Crop para quadrado
-            min_dim = min(img.size)
-            left = (img.size[0] - min_dim) // 2
-            top = (img.size[1] - min_dim) // 2
-            right = left + min_dim
-            bottom = top + min_dim
-            img = img.crop((left, top, right, bottom))
+        # Redimensionar mantendo proporção (sem cortar)
+        img.thumbnail((800, 800), Image.Resampling.LANCZOS)
         
         # Salvar como WebP otimizado
         output = BytesIO()
