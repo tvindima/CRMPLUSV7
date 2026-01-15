@@ -155,6 +155,13 @@ async def upload_agent_photo(
         # Preservar transparência quando existir (sem fundo branco)
         if img.mode in ('P', 'LA'):
             img = img.convert('RGBA')
+
+        # Remover margens transparentes (evita espaço vazio em cima/baixo)
+        if img.mode == 'RGBA':
+            alpha = img.split()[-1]
+            bbox = alpha.getbbox()
+            if bbox:
+                img = img.crop(bbox)
         
         # Redimensionar mantendo proporção (sem cortar)
         img.thumbnail((800, 800), Image.Resampling.LANCZOS)
