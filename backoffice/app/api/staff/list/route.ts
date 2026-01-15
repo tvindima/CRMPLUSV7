@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Usa /users com filtro de ativos; backend já faz isolamento por X-Tenant-Slug via serverApiGet
-    const res = await serverApiGet('/users?limit=200&is_active=true', token)
+    // Use trailing slash to avoid 307 redirect that can drop Authorization
+    const res = await serverApiGet('/users/?limit=200&is_active=true', token)
     if (!res.ok) {
       const detail = await res.text()
       console.error('[staff/list] backend error', res.status, detail)
