@@ -44,8 +44,8 @@ class UserOut(UserBase):
     works_for_agent_id: Optional[int] = None
     role_label: Optional[str] = None
     display_name: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
