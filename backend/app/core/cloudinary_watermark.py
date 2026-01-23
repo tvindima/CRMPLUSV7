@@ -208,22 +208,27 @@ def get_watermark_settings_for_response(db_session) -> Optional[Dict]:
             print("[Watermark] Sem settings na DB")
             return None
         
-        if not settings.watermark_enabled:
+        # Usar getattr para evitar erro se coluna não existir ainda
+        watermark_enabled = getattr(settings, 'watermark_enabled', None)
+        watermark_image_url = getattr(settings, 'watermark_image_url', None)
+        
+        if not watermark_enabled:
             print("[Watermark] Watermark desativado")
             return None
         
-        if not settings.watermark_image_url:
+        if not watermark_image_url:
             print("[Watermark] Sem URL de watermark configurado")
             return None
         
         # Obter public_id - pode estar guardado ou precisamos extrair da URL
-        public_id = settings.watermark_public_id
+        # Usar getattr com default None caso a coluna não exista ainda
+        public_id = getattr(settings, 'watermark_public_id', None)
         
         if not public_id:
             # FALLBACK: Tentar extrair public_id da URL existente
             # URL típica: https://res.cloudinary.com/xxx/image/upload/v123/crm-plus/crm-settings/watermark.png
             # Ou com tenant: https://res.cloudinary.com/xxx/image/upload/v123/crm-plus/watermarks/tenant/watermark.png
-            url = settings.watermark_image_url
+            url = watermark_image_url
             print(f"[Watermark] Tentando extrair public_id de URL: {url}")
             
             if "cloudinary.com" in url and "crm-plus" in url:

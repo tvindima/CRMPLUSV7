@@ -132,6 +132,43 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"⚠️ [LIFESPAN] Erro ao alterar client_name: {e}")
         
+        # Adicionar coluna watermark_public_id se não existir (para todos os tenants)
+        try:
+            # Listar schemas de tenants
+            result = db.execute(text("""
+                SELECT schema_name FROM information_schema.schemata 
+                WHERE schema_name LIKE 'tenant_%'
+            """))
+            tenant_schemas = [row[0] for row in result]
+            
+            for schema in tenant_schemas:
+                # Verificar se tabela crm_settings existe no schema
+                result = db.execute(text(f"""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = '{schema}' AND table_name = 'crm_settings'
+                    )
+                """))
+                if not result.scalar():
+                    continue
+                
+                # Verificar se coluna watermark_public_id existe
+                result = db.execute(text(f"""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_schema = '{schema}' 
+                        AND table_name = 'crm_settings' 
+                        AND column_name = 'watermark_public_id'
+                    )
+                """))
+                if not result.scalar():
+                    print(f"📊 [LIFESPAN] Adicionando coluna watermark_public_id em {schema}.crm_settings...")
+                    db.execute(text(f'ALTER TABLE "{schema}".crm_settings ADD COLUMN watermark_public_id VARCHAR'))
+                    db.commit()
+                    print(f"✅ [LIFESPAN] Coluna watermark_public_id adicionada em {schema}!")
+        except Exception as e:
+            print(f"⚠️ [LIFESPAN] Erro ao adicionar watermark_public_id: {e}")
+        
         db.close()
     except Exception as e:
         print(f"⚠️ [LIFESPAN] Erro ao verificar tabelas: {e}")
