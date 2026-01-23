@@ -30,10 +30,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 horas (era 60)
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
-def create_access_token(user_id: int, email: str, role: str, agent_id: Optional[int] = None) -> str:
+def create_access_token(user_id: int, email: str, role: str, agent_id: Optional[int] = None, tenant_slug: Optional[str] = None) -> str:
     """
     Cria JWT access token para mobile app
     Inclui agent_id no payload (requerido por frontend)
+    SECURITY: Inclui tenant_slug para evitar cross-tenant token reuse
     """
     payload = {
         "sub": email,
@@ -46,6 +47,10 @@ def create_access_token(user_id: int, email: str, role: str, agent_id: Optional[
     # Incluir agent_id se existir (crítico para mobile app)
     if agent_id:
         payload["agent_id"] = agent_id
+    
+    # SECURITY: Incluir tenant_slug para binding ao tenant
+    if tenant_slug:
+        payload["tenant_slug"] = tenant_slug
     
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
@@ -91,6 +96,18 @@ def get_current_user(req: Request, db: Session = Depends(lambda: None)):
         payload = decode_token(token)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token inválido: {str(e)}")
+    
+    # ✅ SECURITY: Validar que o token pertence ao tenant atual
+    token_tenant = payload.get("tenant_slug")
+    request_tenant = getattr(req.state, 'tenant_slug', None)
+    
+    # Se o token tem tenant_slug, DEVE corresponder ao tenant do request
+    if token_tenant and request_tenant and token_tenant != request_tenant:
+        print(f"[SECURITY] Cross-tenant access attempt! Token tenant: {token_tenant}, Request tenant: {request_tenant}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token não válido para este tenant. Faça login novamente."
+        )
     
     try:
         user_id = payload.get("user_id")

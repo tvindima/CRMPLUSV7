@@ -17,7 +17,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
-def _create_token(user_id: int, email: str, role: str, agent_id: int = None) -> TokenResponse:
+def _create_token(user_id: int, email: str, role: str, agent_id: int = None, tenant_slug: str = None) -> TokenResponse:
     expires = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": email,
@@ -25,6 +25,7 @@ def _create_token(user_id: int, email: str, role: str, agent_id: int = None) -> 
         "email": email,
         "role": role,
         "agent_id": agent_id,  # ✅ Incluir agent_id no token
+        "tenant_slug": tenant_slug,  # ✅ SECURITY: Binding ao tenant para evitar cross-tenant access
         "exp": expires,
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -32,7 +33,7 @@ def _create_token(user_id: int, email: str, role: str, agent_id: int = None) -> 
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> TokenResponse:
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> TokenResponse:
     """Autenticação de utilizadores."""
     
     try:
@@ -44,9 +45,12 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         
         # ✅ Para assistentes, usar works_for_agent_id como agent_id efetivo
         effective_agent_id = user.works_for_agent_id if user.works_for_agent_id else user.agent_id
-        print(f"[AUTH LOGIN] User: {user.email}, Role: {user.role}, agent_id: {user.agent_id}, works_for: {user.works_for_agent_id}, effective: {effective_agent_id}")
         
-        token = _create_token(user.id, user.email, user.role, effective_agent_id)
+        # ✅ SECURITY: Obter tenant_slug do request para binding no token
+        tenant_slug = getattr(request.state, 'tenant_slug', None)
+        print(f"[AUTH LOGIN] User: {user.email}, Role: {user.role}, agent_id: {user.agent_id}, works_for: {user.works_for_agent_id}, effective: {effective_agent_id}, tenant: {tenant_slug}")
+        
+        token = _create_token(user.id, user.email, user.role, effective_agent_id, tenant_slug)
     except Exception as e:
         import traceback
         error_details = {

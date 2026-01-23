@@ -151,13 +151,18 @@ def mobile_login(
             detail="Esta app é exclusiva para agentes imobiliários e assistentes. Contacte o administrador."
         )
     
-    # Criar access token (24h) com agent_id efetivo
+    # ✅ SECURITY: Obter tenant_slug do request para binding no token
+    tenant_slug = getattr(request.state, 'tenant_slug', None)
+    print(f"[AUTH MOBILE] User: {user.email}, effective_agent_id: {effective_agent_id}, tenant: {tenant_slug}")
+    
+    # Criar access token (24h) com agent_id efetivo e tenant_slug
     # O assistente opera "em nome do" agente
     access_token = create_access_token(
         user_id=user.id,
         email=user.email,
         role=user.role,
-        agent_id=effective_agent_id
+        agent_id=effective_agent_id,
+        tenant_slug=tenant_slug
     )
     
     # Parse device info
