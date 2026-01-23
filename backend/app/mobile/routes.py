@@ -319,10 +319,7 @@ def list_mobile_properties(
     else:  # recent (default)
         query = query.order_by(desc(Property.created_at))
     
-    properties = query.offset(skip).limit(limit).all()
-    
-    # Aplicar watermark dinamicamente às imagens (isolado por tenant)
-    return apply_watermark_to_properties(properties, db)
+    return query.offset(skip).limit(limit).all()
 
 
 @router.get("/properties/{property_id}", response_model=property_schemas.PropertyOut)
@@ -335,9 +332,7 @@ def get_mobile_property(
     property = db.query(Property).filter(Property.id == property_id).first()
     if not property:
         raise HTTPException(status_code=404, detail="Propriedade não encontrada")
-    
-    # Aplicar watermark dinamicamente às imagens (isolado por tenant)
-    return apply_watermark_to_property(property, db)
+    return property
 
 
 @router.post("/properties", response_model=property_schemas.PropertyOut, status_code=201)
