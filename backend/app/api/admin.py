@@ -70,6 +70,7 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
     columns_to_add = [
         ("watermark_enabled", "INTEGER DEFAULT 1"),
         ("watermark_image_url", "VARCHAR"),
+        ("watermark_public_id", "VARCHAR"),  # Public ID do Cloudinary para overlay
         ("watermark_opacity", "FLOAT DEFAULT 0.6"),
         ("watermark_scale", "FLOAT DEFAULT 0.15"),
         ("watermark_position", "VARCHAR DEFAULT 'bottom-right'"),
@@ -117,6 +118,7 @@ def fix_crm_settings_all_tenants(current_user: dict = Depends(require_staff)):
                         id SERIAL PRIMARY KEY,
                         watermark_enabled INTEGER DEFAULT 1,
                         watermark_image_url VARCHAR,
+                        watermark_public_id VARCHAR,
                         watermark_opacity FLOAT DEFAULT 0.6,
                         watermark_scale FLOAT DEFAULT 0.15,
                         watermark_position VARCHAR DEFAULT 'bottom-right',
