@@ -2,10 +2,10 @@
 Admin endpoints for database management and fixes.
 Requires staff authentication.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.database import get_db, engine
+from app.database import get_db, engine, get_tenant_schema, DEFAULT_SCHEMA
 from app.properties.agent_assignment import (
     fix_all_agent_assignments,
     validate_agent_assignments,
@@ -588,6 +588,7 @@ class WatermarkSettingsOut(BaseModel):
     """Schema de resposta das configurações de watermark"""
     watermark_enabled: bool
     watermark_image_url: Optional[str]
+    watermark_public_id: Optional[str]  # Public ID do Cloudinary para overlay
     watermark_opacity: float
     watermark_scale: float
     watermark_position: str
@@ -628,6 +629,7 @@ def get_watermark_settings(
     return WatermarkSettingsOut(
         watermark_enabled=bool(settings.watermark_enabled),
         watermark_image_url=settings.watermark_image_url,
+        watermark_public_id=settings.watermark_public_id,
         watermark_opacity=settings.watermark_opacity,
         watermark_scale=settings.watermark_scale,
         watermark_position=settings.watermark_position
@@ -678,6 +680,7 @@ def update_watermark_settings(
     return WatermarkSettingsOut(
         watermark_enabled=bool(settings.watermark_enabled),
         watermark_image_url=settings.watermark_image_url,
+        watermark_public_id=settings.watermark_public_id,
         watermark_opacity=settings.watermark_opacity,
         watermark_scale=settings.watermark_scale,
         watermark_position=settings.watermark_position
@@ -686,6 +689,7 @@ def update_watermark_settings(
 
 @router.post("/settings/watermark/upload")
 async def upload_watermark_image(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_staff)
@@ -698,7 +702,8 @@ async def upload_watermark_image(
     - Tamanho máximo: 2MB
     - Recomendado: Logo branco ou escuro com fundo transparente
     
-    A imagem é carregada para Cloudinary e a URL guardada nas configurações.
+    A imagem é carregada para Cloudinary COM IDENTIFICAÇÃO ÚNICA DO TENANT
+    para garantir isolamento multi-tenant rigoroso.
     """
     # Validar tipo de arquivo
     if not file.content_type or file.content_type != "image/png":
@@ -716,31 +721,62 @@ async def upload_watermark_image(
             detail=f"Ficheiro muito grande. Máximo: 2MB. Tamanho recebido: {len(content) / (1024*1024):.1f}MB"
         )
     
+    # CRÍTICO: Obter tenant_slug para isolamento
+    tenant_slug = getattr(request.state, 'tenant_slug', None)
+    if not tenant_slug:
+        # Fallback: extrair do schema atual
+        schema = get_tenant_schema()
+        if schema and schema != DEFAULT_SCHEMA:
+            tenant_slug = schema.replace("tenant_", "") if schema.startswith("tenant_") else schema
+        else:
+            tenant_slug = "default"
+    
+    print(f"[Watermark Upload] Tenant: {tenant_slug}")
+    
     try:
         from io import BytesIO
+        import cloudinary.uploader
         
-        # Upload para Cloudinary na pasta de settings
-        url = await storage.upload_file(
-            file=BytesIO(content),
-            folder="crm-settings",
-            filename="watermark.png",
-            public=True
+        # IMPORTANTE: Public ID único por tenant para garantir isolamento
+        # Formato: crm-plus/watermarks/{tenant_slug}/watermark
+        watermark_public_id = f"crm-plus/watermarks/{tenant_slug}/watermark"
+        
+        print(f"[Watermark Upload] Uploading to public_id: {watermark_public_id}")
+        
+        # Upload direto para Cloudinary com public_id específico do tenant
+        result = cloudinary.uploader.upload(
+            BytesIO(content),
+            public_id=watermark_public_id,
+            resource_type="image",
+            format="png",
+            overwrite=True,
+            invalidate=True,  # Limpa cache CDN
         )
         
-        # Guardar URL nas configurações
+        url = result["secure_url"]
+        print(f"[Watermark Upload] Success: {url}")
+        
+        # Guardar URL E public_id nas configurações
         settings = db.query(CRMSettings).first()
         if not settings:
             settings = CRMSettings()
             db.add(settings)
         
         settings.watermark_image_url = url
+        settings.watermark_public_id = watermark_public_id  # Guardar public_id para overlay
         db.commit()
         db.refresh(settings)
+        
+        # Invalidar cache do watermark para este tenant
+        from app.properties.routes import invalidate_watermark_cache
+        invalidate_watermark_cache(tenant_slug)
         
         return {
             "success": True,
             "message": "Marca de água carregada com sucesso!",
             "watermark_url": url,
+            "watermark_public_id": watermark_public_id,
+            "tenant": tenant_slug,
             "settings": {
                 "enabled": bool(settings.watermark_enabled),
                 "opacity": settings.watermark_opacity,

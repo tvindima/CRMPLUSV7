@@ -21,6 +21,7 @@ class CRMSettings(Base):
     # ==========================================
     watermark_enabled = Column(Integer, default=1)  # 1=ativo, 0=desativado
     watermark_image_url = Column(String, nullable=True)  # URL Cloudinary do PNG
+    watermark_public_id = Column(String, nullable=True)  # Public ID do Cloudinary para overlay (ex: crm-plus/watermarks/tenant_slug/watermark)
     watermark_opacity = Column(Float, default=0.6)  # 0.0 a 1.0 (60% default)
     watermark_scale = Column(Float, default=0.15)  # 15% da largura da imagem
     watermark_position = Column(String, default="bottom-right")  # bottom-right, bottom-left, top-right, top-left, center

@@ -11,6 +11,10 @@ from . import services, schemas
 from app.database import get_db, get_tenant_schema, DEFAULT_SCHEMA, DATABASE_URL
 from app.properties.models import PropertyStatus, Property
 from app.core.storage import storage  # Storage abstraction layer
+from app.core.cloudinary_watermark import (
+    apply_watermark_to_images,
+    get_watermark_settings_for_response
+)
 from app.security import require_staff, get_current_user, get_optional_user
 from app.users.models import User, UserRole
 
@@ -77,6 +81,77 @@ def invalidate_watermark_cache(tenant_slug: str = None):
     if key in _watermark_cache:
         _watermark_cache[key] = {"image": None, "url": None, "timestamp": 0}
         print(f"[Watermark] Cache invalidado para tenant: {key}")
+
+
+def apply_watermark_to_property(property_obj: Property, db: Session) -> Property:
+    """
+    Aplica watermark dinamicamente às imagens de uma propriedade.
+    
+    ISOLAMENTO TENANT: Usa as settings do tenant atual (via search_path da sessão)
+    para garantir que cada tenant usa apenas o seu próprio watermark.
+    
+    Usa transformações Cloudinary (overlay) para não modificar as imagens originais.
+    
+    Args:
+        property_obj: Objeto Property com imagens
+        db: Sessão DB (já com search_path do tenant)
+        
+    Returns:
+        Property com URLs de imagens transformadas (com watermark)
+    """
+    if not property_obj.images:
+        return property_obj
+    
+    # Obter settings de watermark do tenant atual
+    watermark_settings = get_watermark_settings_for_response(db)
+    
+    if not watermark_settings:
+        return property_obj
+    
+    # Aplicar watermark via transformação Cloudinary
+    transformed_images = apply_watermark_to_images(
+        images=property_obj.images,
+        watermark_settings=watermark_settings
+    )
+    
+    # Criar cópia do objeto com imagens transformadas
+    # (não modificar o original para não afetar a DB)
+    property_obj.images = transformed_images
+    
+    return property_obj
+
+
+def apply_watermark_to_properties(properties: List[Property], db: Session) -> List[Property]:
+    """
+    Aplica watermark a uma lista de propriedades.
+    
+    Obtém as settings uma vez só para eficiência.
+    
+    Args:
+        properties: Lista de objetos Property
+        db: Sessão DB (já com search_path do tenant)
+        
+    Returns:
+        Lista de Properties com URLs de imagens transformadas
+    """
+    if not properties:
+        return properties
+    
+    # Obter settings de watermark uma vez só
+    watermark_settings = get_watermark_settings_for_response(db)
+    
+    if not watermark_settings:
+        return properties
+    
+    # Aplicar a cada propriedade
+    for prop in properties:
+        if prop.images:
+            prop.images = apply_watermark_to_images(
+                images=prop.images,
+                watermark_settings=watermark_settings
+            )
+    
+    return properties
 
 
 def get_watermark_settings(db: Session) -> Optional[dict]:
@@ -389,7 +464,7 @@ def list_properties(
             # Sem equipa - só vê os seus imóveis
             agent_id = current_user.agent_id
     
-    return services.get_properties(
+    properties = services.get_properties(
         db,
         skip=skip,
         limit=limit,
@@ -400,6 +475,9 @@ def list_properties(
         agent_ids=team_agent_ids,
         hide_cancelled=hide_cancelled,
     )
+    
+    # Aplicar watermark dinamicamente às imagens (isolado por tenant)
+    return apply_watermark_to_properties(properties, db)
 
 
 @router.get("/{property_id}", response_model=schemas.PropertyOut)
@@ -446,7 +524,8 @@ def get_property(
             if property.agent_id != current_user.agent_id:
                 raise HTTPException(status_code=403, detail="Não tem permissão para ver este imóvel")
     
-    return property
+    # Aplicar watermark dinamicamente às imagens (isolado por tenant)
+    return apply_watermark_to_property(property, db)
 
 
 @router.post("/", response_model=schemas.PropertyOut, status_code=201)
