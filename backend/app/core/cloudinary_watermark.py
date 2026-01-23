@@ -73,15 +73,18 @@ def apply_watermark_to_url(
         print(f"[Watermark] URL não é do Cloudinary, ignorando: {image_url[:50]}...")
         return image_url
     
-    # Se já tem transformação de watermark, não aplicar novamente
-    if "l_crm-plus" in image_url and "watermarks" in image_url:
+    # Se já tem transformação de watermark/overlay, não aplicar novamente
+    if "l_crm-plus" in image_url:
         print(f"[Watermark] URL já tem watermark aplicado, ignorando")
         return image_url
     
     try:
         # Converter public_id para formato de layer (/ -> :)
         # Ex: crm-plus/watermarks/imoveismais/watermark -> crm-plus:watermarks:imoveismais:watermark
+        # Ex: crm-plus/crm-settings/watermark -> crm-plus:crm-settings:watermark
         layer_id = watermark_public_id.replace("/", ":")
+        
+        print(f"[Watermark] Transformando URL com layer_id: {layer_id}")
         
         # Converter para percentagem (Cloudinary usa 0-100 para opacity)
         opacity_percent = int(opacity * 100)
@@ -197,23 +200,57 @@ def get_watermark_settings_for_response(db_session) -> Optional[Dict]:
     """
     try:
         from app.models.crm_settings import CRMSettings
+        from app.database import get_tenant_schema, DEFAULT_SCHEMA
         
         settings = db_session.query(CRMSettings).first()
         
         if not settings:
+            print("[Watermark] Sem settings na DB")
             return None
         
         if not settings.watermark_enabled:
+            print("[Watermark] Watermark desativado")
             return None
         
-        if not settings.watermark_public_id:
-            # Sem public_id, não podemos aplicar overlay
-            print("[Watermark] Settings existe mas sem public_id configurado")
+        if not settings.watermark_image_url:
+            print("[Watermark] Sem URL de watermark configurado")
             return None
+        
+        # Obter public_id - pode estar guardado ou precisamos extrair da URL
+        public_id = settings.watermark_public_id
+        
+        if not public_id:
+            # FALLBACK: Tentar extrair public_id da URL existente
+            # URL típica: https://res.cloudinary.com/xxx/image/upload/v123/crm-plus/crm-settings/watermark.png
+            # Ou com tenant: https://res.cloudinary.com/xxx/image/upload/v123/crm-plus/watermarks/tenant/watermark.png
+            url = settings.watermark_image_url
+            print(f"[Watermark] Tentando extrair public_id de URL: {url}")
+            
+            if "cloudinary.com" in url and "crm-plus" in url:
+                # Extrair path após "upload/vXXX/" ou "upload/"
+                import re
+                match = re.search(r'/upload/(?:v\d+/)?(crm-plus/.+?)(?:\.[^.]+)?$', url)
+                if match:
+                    public_id = match.group(1)
+                    print(f"[Watermark] Extraído public_id: {public_id}")
+            
+            # Se ainda não temos, gerar baseado no tenant atual
+            if not public_id:
+                schema = get_tenant_schema()
+                if schema and schema != DEFAULT_SCHEMA:
+                    tenant_slug = schema.replace("tenant_", "") if schema.startswith("tenant_") else schema
+                else:
+                    tenant_slug = "default"
+                
+                # Tentar formato antigo (crm-settings)
+                public_id = "crm-plus/crm-settings/watermark"
+                print(f"[Watermark] Usando public_id fallback: {public_id}")
+        
+        print(f"[Watermark] Usando public_id final: {public_id}")
         
         return {
             "enabled": bool(settings.watermark_enabled),
-            "public_id": settings.watermark_public_id,
+            "public_id": public_id,
             "url": settings.watermark_image_url,
             "scale": settings.watermark_scale or 0.15,
             "opacity": settings.watermark_opacity or 0.6,
@@ -222,4 +259,6 @@ def get_watermark_settings_for_response(db_session) -> Optional[Dict]:
         
     except Exception as e:
         print(f"[Watermark] Erro ao obter settings: {e}")
+        import traceback
+        traceback.print_exc()
         return None
