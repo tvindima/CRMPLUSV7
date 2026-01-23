@@ -27,12 +27,56 @@ IMAGE_SIZES = {
 }
 IMAGE_QUALITY = 85  # Qualidade JPEG/WebP (0-100)
 
-# Cache para watermark (evita carregar de URL a cada imagem)
-_watermark_cache = {
-    "image": None,
-    "url": None,
-    "settings": None
-}
+# Cache para watermark POR TENANT (isolamento multi-tenant)
+# Estrutura: { "tenant_slug": {"image": Image, "url": str, "timestamp": float}, ... }
+# Cada tenant tem o seu próprio cache de watermark para evitar cross-tenant leaks
+_watermark_cache: dict[str, dict] = {}
+_WATERMARK_CACHE_TTL = 3600  # 1 hora - tempo máximo antes de recarregar
+
+
+def _get_cache_key() -> str:
+    """
+    Obtém a chave de cache baseada no tenant atual.
+    Usa o schema do tenant para garantir isolamento.
+    Fallback para 'default' se não houver tenant (retrocompatibilidade).
+    """
+    schema = get_tenant_schema()
+    if schema and schema != DEFAULT_SCHEMA:
+        # Remove prefixo 'tenant_' se existir para ter chave limpa
+        return schema.replace("tenant_", "") if schema.startswith("tenant_") else schema
+    return "default"
+
+
+def _get_tenant_cache() -> dict:
+    """
+    Obtém o cache do tenant atual, criando se não existir.
+    """
+    import time
+    key = _get_cache_key()
+    
+    if key not in _watermark_cache:
+        _watermark_cache[key] = {"image": None, "url": None, "timestamp": 0}
+    
+    # Verificar TTL - invalidar cache expirado
+    cache = _watermark_cache[key]
+    if cache["timestamp"] > 0 and (time.time() - cache["timestamp"]) > _WATERMARK_CACHE_TTL:
+        _watermark_cache[key] = {"image": None, "url": None, "timestamp": 0}
+    
+    return _watermark_cache[key]
+
+
+def invalidate_watermark_cache(tenant_slug: str = None):
+    """
+    Invalida o cache de watermark para um tenant específico ou o tenant atual.
+    Chamar quando o watermark é atualizado no backoffice.
+    
+    Args:
+        tenant_slug: Slug do tenant (opcional, usa atual se não fornecido)
+    """
+    key = tenant_slug if tenant_slug else _get_cache_key()
+    if key in _watermark_cache:
+        _watermark_cache[key] = {"image": None, "url": None, "timestamp": 0}
+        print(f"[Watermark] Cache invalidado para tenant: {key}")
 
 
 def get_watermark_settings(db: Session) -> Optional[dict]:
@@ -65,24 +109,29 @@ def get_watermark_settings(db: Session) -> Optional[dict]:
 def load_watermark_from_url(url: str) -> Optional[Image.Image]:
     """
     Carrega imagem de watermark a partir de URL (Cloudinary).
-    Usa cache para evitar downloads repetidos.
+    Usa cache POR TENANT para evitar downloads repetidos e garantir isolamento.
     """
-    global _watermark_cache
+    import time
     
-    # Verificar cache
-    if _watermark_cache["url"] == url and _watermark_cache["image"] is not None:
-        return _watermark_cache["image"].copy()
+    # Obter cache do tenant atual
+    cache = _get_tenant_cache()
+    
+    # Verificar cache - URL igual e imagem em cache
+    if cache["url"] == url and cache["image"] is not None:
+        return cache["image"].copy()
     
     try:
-        print(f"[Watermark] Carregando de URL: {url}")
+        tenant_key = _get_cache_key()
+        print(f"[Watermark] Carregando de URL para tenant '{tenant_key}': {url}")
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
         watermark = Image.open(io.BytesIO(response.content)).convert("RGBA")
         
-        # Atualizar cache
-        _watermark_cache["url"] = url
-        _watermark_cache["image"] = watermark
+        # Atualizar cache do tenant
+        cache["url"] = url
+        cache["image"] = watermark
+        cache["timestamp"] = time.time()
         
         return watermark.copy()
         
