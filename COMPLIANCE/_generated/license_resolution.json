@@ -92,22 +92,22 @@
     "version": "1.6.0",
     "ecosystem": "npm",
     "workspace": "backoffice",
-    "license": "UNKNOWN",
-    "source": "Unresolved",
-    "notes": "",
+    "license": "MIT",
+    "source": "License file",
+    "notes": "License confirmed from `backoffice/node_modules/busboy/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/busboy-1.6.0.tgz` path `mscdex-busboy-9aadb7a/LICENSE` (MIT text).",
     "repository": "git+ssh://git@github.com/mscdex/busboy.git",
-    "confirmed": false
+    "confirmed": true
   },
   {
     "package": "streamsearch",
     "version": "1.1.0",
     "ecosystem": "npm",
     "workspace": "backoffice",
-    "license": "UNKNOWN",
-    "source": "Unresolved",
-    "notes": "",
+    "license": "MIT",
+    "source": "License file",
+    "notes": "License confirmed from `backoffice/node_modules/streamsearch/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/streamsearch-1.1.0.tgz` path `mscdex-streamsearch-b9e9b39/LICENSE` (MIT text).",
     "repository": "git+ssh://git@github.com/mscdex/streamsearch.git",
-    "confirmed": false
+    "confirmed": true
   },
   {
     "package": "@img/sharp-darwin-x64",
@@ -851,22 +851,22 @@
     "version": "1.6.0",
     "ecosystem": "npm",
     "workspace": "web",
-    "license": "UNKNOWN",
-    "source": "Unresolved",
-    "notes": "",
+    "license": "MIT",
+    "source": "License file",
+    "notes": "License confirmed from `web/node_modules/busboy/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/busboy-1.6.0.tgz` path `mscdex-busboy-9aadb7a/LICENSE` (MIT text).",
     "repository": "git+ssh://git@github.com/mscdex/busboy.git",
-    "confirmed": false
+    "confirmed": true
   },
   {
     "package": "streamsearch",
     "version": "1.1.0",
     "ecosystem": "npm",
     "workspace": "web",
-    "license": "UNKNOWN",
-    "source": "Unresolved",
-    "notes": "",
+    "license": "MIT",
+    "source": "License file",
+    "notes": "License confirmed from `web/node_modules/streamsearch/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/streamsearch-1.1.0.tgz` path `mscdex-streamsearch-b9e9b39/LICENSE` (MIT text).",
     "repository": "git+ssh://git@github.com/mscdex/streamsearch.git",
-    "confirmed": false
+    "confirmed": true
   },
   {
     "package": "alembic",

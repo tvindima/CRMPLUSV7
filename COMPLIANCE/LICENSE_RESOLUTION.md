@@ -6,7 +6,7 @@ Method:
 - For each item from `COMPLIANCE/_generated/license_problems.json`, executed:
   - `npm view <package>@<version> license --json`
   - `npm view <package>@<version> repository.url --json`
-- If registry data was absent, checked `node_modules/<package>/LICENSE*`.
+- Where registry `license` was empty, validated `node_modules/<package>/LICENSE` and `npm pack` tarball contents.
 
 | Package | Version | License | Source (npm/License file) | Notes |
 |---|---|---|---|---|
@@ -18,8 +18,8 @@ Method:
 | `@next/swc-win32-arm64-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
 | `@next/swc-win32-ia32-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
 | `@next/swc-win32-x64-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
-| `busboy` | `1.6.0` | `UNKNOWN` | Unresolved |  |
-| `streamsearch` | `1.1.0` | `UNKNOWN` | Unresolved |  |
+| `busboy` | `1.6.0` | `MIT` | License file | License confirmed from `backoffice/node_modules/busboy/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/busboy-1.6.0.tgz` path `mscdex-busboy-9aadb7a/LICENSE` (MIT text). |
+| `streamsearch` | `1.1.0` | `MIT` | License file | License confirmed from `backoffice/node_modules/streamsearch/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/streamsearch-1.1.0.tgz` path `mscdex-streamsearch-b9e9b39/LICENSE` (MIT text). |
 | `@img/sharp-darwin-x64` | `0.34.5` | `Apache-2.0` | npm registry | License Confirmed via npm registry |
 | `@img/sharp-libvips-darwin-x64` | `1.2.4` | `LGPL-3.0-or-later` | npm registry | License Confirmed via npm registry |
 | `@img/sharp-libvips-linux-arm` | `1.2.4` | `LGPL-3.0-or-later` | npm registry | License Confirmed via npm registry |
@@ -87,15 +87,15 @@ Method:
 | `@next/swc-win32-arm64-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
 | `@next/swc-win32-ia32-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
 | `@next/swc-win32-x64-msvc` | `14.2.4` | `MIT` | npm registry | License Confirmed via npm registry |
-| `busboy` | `1.6.0` | `UNKNOWN` | Unresolved |  |
-| `streamsearch` | `1.1.0` | `UNKNOWN` | Unresolved |  |
-| `alembic` | `>=1.13.0` | `MIT` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `fastapi` | `unspecified` | `MIT` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `Pillow` | `>=10.0.0` | `MIT-CMU` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `pydantic` | `[email]` | `MIT` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `PyJWT` | `unspecified` | `MIT` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `pymongo` | `unspecified` | `Apache-2.0` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `pytest` | `unspecified` | `MIT` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `python-dotenv` | `unspecified` | `BSD-3-Clause` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `uvicorn` | `[standard]` | `BSD-3-Clause` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
-| `websockets` | `>=12.0` | `BSD-3-Clause` | npm (N/A) / PyPI metadata | License confirmed via PyPI license_expression |
+| `busboy` | `1.6.0` | `MIT` | License file | License confirmed from `web/node_modules/busboy/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/busboy-1.6.0.tgz` path `mscdex-busboy-9aadb7a/LICENSE` (MIT text). |
+| `streamsearch` | `1.1.0` | `MIT` | License file | License confirmed from `web/node_modules/streamsearch/LICENSE`; tarball evidence `COMPLIANCE/_generated/tarballs/streamsearch-1.1.0.tgz` path `mscdex-streamsearch-b9e9b39/LICENSE` (MIT text). |
+| `alembic` | `>=1.13.0` | `MIT` | PyPI metadata | License confirmed via PyPI license_expression |
+| `fastapi` | `unspecified` | `MIT` | PyPI metadata | License confirmed via PyPI license_expression |
+| `Pillow` | `>=10.0.0` | `MIT-CMU` | PyPI metadata | License confirmed via PyPI license_expression |
+| `pydantic` | `[email]` | `MIT` | PyPI metadata | License confirmed via PyPI license_expression |
+| `PyJWT` | `unspecified` | `MIT` | PyPI metadata | License confirmed via PyPI license_expression |
+| `pymongo` | `unspecified` | `Apache-2.0` | PyPI metadata | License confirmed via PyPI license_expression |
+| `pytest` | `unspecified` | `MIT` | PyPI metadata | License confirmed via PyPI license_expression |
+| `python-dotenv` | `unspecified` | `BSD-3-Clause` | PyPI metadata | License confirmed via PyPI license_expression |
+| `uvicorn` | `[standard]` | `BSD-3-Clause` | PyPI metadata | License confirmed via PyPI license_expression |
+| `websockets` | `>=12.0` | `BSD-3-Clause` | PyPI metadata | License confirmed via PyPI license_expression |

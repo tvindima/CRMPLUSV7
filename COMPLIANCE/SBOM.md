@@ -11,16 +11,12 @@
 - By workspace: backend=24, backoffice=53, site-montra=51, super-admin=56, web=32
 
 ## Resolution Outcome
-- Resolved from prior UNKNOWN/UNLICENSED: **85 / 89**
-- Remaining UNKNOWN/UNLICENSED: **4**
-- Remaining by workspace: backoffice=2, web=2
+- Resolved from prior UNKNOWN/UNLICENSED: **89 / 89**
+- Remaining UNKNOWN/UNLICENSED: **0**
 
 ## Remaining Problematic Entries
 
-- `npm/backoffice` `busboy` `1.6.0` -> `UNKNOWN`
-- `npm/backoffice` `streamsearch` `1.1.0` -> `UNKNOWN`
-- `npm/web` `busboy` `1.6.0` -> `UNKNOWN`
-- `npm/web` `streamsearch` `1.1.0` -> `UNKNOWN`
+- None.
 
 ## Artifacts
 - `COMPLIANCE/DEPENDENCIES.csv`
