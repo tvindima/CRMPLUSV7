@@ -28,64 +28,64 @@
     "workspace": "backoffice",
     "name": "@next/swc-darwin-x64",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-linux-arm64-gnu",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-linux-arm64-musl",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-linux-x64-gnu",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-linux-x64-musl",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-win32-arm64-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-win32-ia32-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "backoffice",
     "name": "@next/swc-win32-x64-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
@@ -452,8 +452,8 @@
     "workspace": "site-montra",
     "name": "@img/sharp-darwin-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
@@ -468,168 +468,168 @@
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-darwin-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-arm",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-arm64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-ppc64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-riscv64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-s390x",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linux-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linuxmusl-arm64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-libvips-linuxmusl-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-arm",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-ppc64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-riscv64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-s390x",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linux-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linuxmusl-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-linuxmusl-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-wasm32",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-win32-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-win32-ia32",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@img/sharp-win32-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
@@ -652,56 +652,56 @@
     "workspace": "site-montra",
     "name": "@next/swc-darwin-x64",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-linux-arm64-gnu",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-linux-arm64-musl",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-linux-x64-gnu",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-linux-x64-musl",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-win32-arm64-msvc",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "site-montra",
     "name": "@next/swc-win32-x64-msvc",
     "version": "16.0.10",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
@@ -836,8 +836,8 @@
     "workspace": "super-admin",
     "name": "@emnapi/runtime",
     "version": "1.8.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/toyobayashi/emnapi.git"
   },
   {
     "ecosystem": "npm",
@@ -860,8 +860,8 @@
     "workspace": "super-admin",
     "name": "@img/sharp-darwin-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
@@ -876,168 +876,168 @@
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-darwin-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-arm",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-arm64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-ppc64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-riscv64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-s390x",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linux-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linuxmusl-arm64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-libvips-linuxmusl-x64",
     "version": "1.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp-libvips.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-arm",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-ppc64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-riscv64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-s390x",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linux-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linuxmusl-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-linuxmusl-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-wasm32",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-win32-arm64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-win32-ia32",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@img/sharp-win32-x64",
     "version": "0.34.5",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "Apache-2.0 AND LGPL-3.0-or-later",
+    "homepage": "git+https://github.com/lovell/sharp.git"
   },
   {
     "ecosystem": "npm",
@@ -1060,56 +1060,56 @@
     "workspace": "super-admin",
     "name": "@next/swc-darwin-x64",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-linux-arm64-gnu",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-linux-arm64-musl",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-linux-x64-gnu",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-linux-x64-musl",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-win32-arm64-msvc",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "super-admin",
     "name": "@next/swc-win32-x64-msvc",
     "version": "16.1.1",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
@@ -1308,23 +1308,23 @@
     "workspace": "web",
     "name": "@next/swc-darwin-x64",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-linux-arm64-gnu",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-linux-arm64-musl",
     "version": "14.2.4",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": ""
   },
   {
@@ -1332,40 +1332,40 @@
     "workspace": "web",
     "name": "@next/swc-linux-x64-gnu",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-linux-x64-musl",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-win32-arm64-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-win32-ia32-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
     "workspace": "web",
     "name": "@next/swc-win32-x64-msvc",
     "version": "14.2.4",
-    "license": "UNKNOWN",
-    "homepage": ""
+    "license": "MIT",
+    "homepage": "git+https://github.com/vercel/next.js.git"
   },
   {
     "ecosystem": "npm",
@@ -1548,7 +1548,7 @@
     "workspace": "backend",
     "name": "alembic",
     "version": ">=1.13.0",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": "https://pypi.org/project/alembic/"
   },
   {
@@ -1572,7 +1572,7 @@
     "workspace": "backend",
     "name": "fastapi",
     "version": "unspecified",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": "https://pypi.org/project/fastapi/"
   },
   {
@@ -1604,7 +1604,7 @@
     "workspace": "backend",
     "name": "Pillow",
     "version": ">=10.0.0",
-    "license": "UNKNOWN",
+    "license": "MIT-CMU",
     "homepage": "https://pypi.org/project/pillow/"
   },
   {
@@ -1620,7 +1620,7 @@
     "workspace": "backend",
     "name": "pydantic",
     "version": "[email]",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": "https://pypi.org/project/pydantic/"
   },
   {
@@ -1628,7 +1628,7 @@
     "workspace": "backend",
     "name": "PyJWT",
     "version": "unspecified",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": "https://pypi.org/project/PyJWT/"
   },
   {
@@ -1636,7 +1636,7 @@
     "workspace": "backend",
     "name": "pymongo",
     "version": "unspecified",
-    "license": "UNKNOWN",
+    "license": "Apache-2.0",
     "homepage": "https://pypi.org/project/pymongo/"
   },
   {
@@ -1644,7 +1644,7 @@
     "workspace": "backend",
     "name": "pytest",
     "version": "unspecified",
-    "license": "UNKNOWN",
+    "license": "MIT",
     "homepage": "https://pypi.org/project/pytest/"
   },
   {
@@ -1652,7 +1652,7 @@
     "workspace": "backend",
     "name": "python-dotenv",
     "version": "unspecified",
-    "license": "UNKNOWN",
+    "license": "BSD-3-Clause",
     "homepage": "https://pypi.org/project/python-dotenv/"
   },
   {
@@ -1716,7 +1716,7 @@
     "workspace": "backend",
     "name": "uvicorn",
     "version": "[standard]",
-    "license": "UNKNOWN",
+    "license": "BSD-3-Clause",
     "homepage": "https://pypi.org/project/uvicorn/"
   },
   {
@@ -1724,7 +1724,7 @@
     "workspace": "backend",
     "name": "websockets",
     "version": ">=12.0",
-    "license": "UNKNOWN",
+    "license": "BSD-3-Clause",
     "homepage": "https://pypi.org/project/websockets/"
   }
 ]

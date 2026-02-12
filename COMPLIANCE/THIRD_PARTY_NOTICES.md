@@ -2,111 +2,39 @@
 
 This document records third-party dependencies detected in this repository and their declared licenses.
 
-Authoritative machine-readable inventory: `COMPLIANCE/DEPENDENCIES.csv`.
+Authoritative inventory: `COMPLIANCE/DEPENDENCIES.csv`.
 
-## Known License Exceptions / Follow-up Required
+## Sharp/libvips Notice
 
-- npm | backoffice | @next/swc-darwin-x64@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-linux-arm64-gnu@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-linux-arm64-musl@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-linux-x64-gnu@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-linux-x64-musl@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-win32-arm64-msvc@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-win32-ia32-msvc@14.2.4 | declared=UNKNOWN
-- npm | backoffice | @next/swc-win32-x64-msvc@14.2.4 | declared=UNKNOWN
-- npm | backoffice | busboy@1.6.0 | declared=UNKNOWN | evidence: LICENSE: Copyright Brian White. All rights reserved.
-- npm | backoffice | streamsearch@1.1.0 | declared=UNKNOWN | evidence: LICENSE: Copyright Brian White. All rights reserved.
-- npm | site-montra | @img/sharp-darwin-x64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-darwin-x64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-arm@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-arm64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-ppc64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-riscv64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-s390x@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linux-x64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linuxmusl-arm64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-libvips-linuxmusl-x64@1.2.4 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-arm@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-arm64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-ppc64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-riscv64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-s390x@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linux-x64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linuxmusl-arm64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-linuxmusl-x64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-wasm32@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-win32-arm64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-win32-ia32@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @img/sharp-win32-x64@0.34.5 | declared=UNKNOWN
-- npm | site-montra | @next/swc-darwin-x64@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-linux-arm64-gnu@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-linux-arm64-musl@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-linux-x64-gnu@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-linux-x64-musl@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-win32-arm64-msvc@16.0.10 | declared=UNKNOWN
-- npm | site-montra | @next/swc-win32-x64-msvc@16.0.10 | declared=UNKNOWN
-- npm | super-admin | @emnapi/runtime@1.8.1 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-darwin-x64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-darwin-x64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-arm@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-arm64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-ppc64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-riscv64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-s390x@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linux-x64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linuxmusl-arm64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-libvips-linuxmusl-x64@1.2.4 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-arm@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-arm64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-ppc64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-riscv64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-s390x@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linux-x64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linuxmusl-arm64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-linuxmusl-x64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-wasm32@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-win32-arm64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-win32-ia32@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @img/sharp-win32-x64@0.34.5 | declared=UNKNOWN
-- npm | super-admin | @next/swc-darwin-x64@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-linux-arm64-gnu@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-linux-arm64-musl@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-linux-x64-gnu@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-linux-x64-musl@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-win32-arm64-msvc@16.1.1 | declared=UNKNOWN
-- npm | super-admin | @next/swc-win32-x64-msvc@16.1.1 | declared=UNKNOWN
-- npm | web | @next/swc-darwin-x64@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-linux-arm64-gnu@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-linux-arm64-musl@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-linux-x64-gnu@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-linux-x64-musl@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-win32-arm64-msvc@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-win32-ia32-msvc@14.2.4 | declared=UNKNOWN
-- npm | web | @next/swc-win32-x64-msvc@14.2.4 | declared=UNKNOWN
-- npm | web | busboy@1.6.0 | declared=UNKNOWN | evidence: LICENSE: Copyright Brian White. All rights reserved.
-- npm | web | streamsearch@1.1.0 | declared=UNKNOWN | evidence: LICENSE: Copyright Brian White. All rights reserved.
-- pypi | backend | alembic@>=1.13.0 | declared=UNKNOWN
-- pypi | backend | fastapi@unspecified | declared=UNKNOWN
-- pypi | backend | Pillow@>=10.0.0 | declared=UNKNOWN
-- pypi | backend | pydantic@[email] | declared=UNKNOWN
-- pypi | backend | PyJWT@unspecified | declared=UNKNOWN
-- pypi | backend | pymongo@unspecified | declared=UNKNOWN
-- pypi | backend | pytest@unspecified | declared=UNKNOWN
-- pypi | backend | python-dotenv@unspecified | declared=UNKNOWN
-- pypi | backend | uvicorn@[standard] | declared=UNKNOWN
-- pypi | backend | websockets@>=12.0 | declared=UNKNOWN
+Inclui libvips (LGPL-3.0-or-later) utilizada como biblioteca não modificada.
+Nenhuma alteração foi efetuada ao código da biblioteca.
+Código-fonte disponível no repositório upstream conforme exigido.
+
+## License Confirmation Summary
+
+- Resolved from previous UNKNOWN/UNLICENSED set: 85
+- Remaining unresolved: 4
+
+## Remaining Unresolved Entries
+
+- npm | backoffice | busboy@1.6.0 | declared=UNKNOWN
+- npm | backoffice | streamsearch@1.1.0 | declared=UNKNOWN
+- npm | web | busboy@1.6.0 | declared=UNKNOWN
+- npm | web | streamsearch@1.1.0 | declared=UNKNOWN
 
 ## License Distribution (Top)
 
-- UNKNOWN: 89
-- MIT: 74
-- Apache-2.0: 16
+- MIT: 110
+- Apache-2.0: 35
+- LGPL-3.0-or-later: 20
 - ISC: 11
-- BSD-3-Clause: 6
+- BSD-3-Clause: 9
+- Apache-2.0 AND LGPL-3.0-or-later: 6
+- UNKNOWN: 4
 - CC-BY-4.0: 4
 - 0BSD: 4
 - License :: OSI Approved :: MIT License: 3
-- LGPL-3.0-or-later: 2
+- Apache-2.0 AND LGPL-3.0-or-later AND MIT: 2
 - Released under the MIT license.  Contains MIT licensed code from https://bitbucket.org/chrisatlee/poster   : 1
 - Apache 2.0: 1
 - BSD 3-Clause License
@@ -1169,6 +1097,7 @@ Authoritative machine-readable inventory: `COMPLIANCE/DEPENDENCIES.csv`.
            authors grant the U.S. Government and others acting in its behalf
            permission to use and distribute the software in accordance with the
            terms specified in this license.: 1
+- MIT-CMU: 1
 - LGPL with exceptions: 1
 - BSD-2-Clause License: 1
 - License :: OSI Approved :: Apache Software License: 1

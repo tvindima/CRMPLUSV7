@@ -2,14 +2,14 @@ ecosystem,workspace,name,version,license,homepage
 npm,backoffice,@heroicons/react,2.2.0,MIT,https://github.com/tailwindlabs/heroicons#readme
 npm,backoffice,@next/env,14.2.4,MIT,https://github.com/vercel/next.js
 npm,backoffice,@next/swc-darwin-arm64,14.2.4,MIT,https://github.com/vercel/next.js
-npm,backoffice,@next/swc-darwin-x64,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-linux-arm64-gnu,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-linux-arm64-musl,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-linux-x64-gnu,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-linux-x64-musl,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-win32-arm64-msvc,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-win32-ia32-msvc,14.2.4,UNKNOWN,
-npm,backoffice,@next/swc-win32-x64-msvc,14.2.4,UNKNOWN,
+npm,backoffice,@next/swc-darwin-x64,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-linux-arm64-gnu,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-linux-arm64-musl,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-linux-x64-gnu,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-linux-x64-musl,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-win32-arm64-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-win32-ia32-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,backoffice,@next/swc-win32-x64-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
 npm,backoffice,@swc/counter,0.1.3,Apache-2.0,https://swc.rs
 npm,backoffice,@swc/helpers,0.5.5,Apache-2.0,https://swc.rs
 npm,backoffice,buffer-equal-constant-time,1.0.1,BSD-3-Clause,
@@ -55,38 +55,38 @@ npm,backoffice,zustand,4.5.2,MIT,https://github.com/pmndrs/zustand
 npm,site-montra,@emnapi/runtime,1.7.1,MIT,https://github.com/toyobayashi/emnapi#readme
 npm,site-montra,@img/colour,1.0.0,MIT,git+https://github.com/lovell/colour.git
 npm,site-montra,@img/sharp-darwin-arm64,0.34.5,Apache-2.0,https://sharp.pixelplumbing.com
-npm,site-montra,@img/sharp-darwin-x64,0.34.5,UNKNOWN,
+npm,site-montra,@img/sharp-darwin-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
 npm,site-montra,@img/sharp-libvips-darwin-arm64,1.2.4,LGPL-3.0-or-later,https://sharp.pixelplumbing.com
-npm,site-montra,@img/sharp-libvips-darwin-x64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-arm,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-arm64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-ppc64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-riscv64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-s390x,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linux-x64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linuxmusl-arm64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-libvips-linuxmusl-x64,1.2.4,UNKNOWN,
-npm,site-montra,@img/sharp-linux-arm,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linux-arm64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linux-ppc64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linux-riscv64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linux-s390x,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linux-x64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linuxmusl-arm64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-linuxmusl-x64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-wasm32,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-win32-arm64,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-win32-ia32,0.34.5,UNKNOWN,
-npm,site-montra,@img/sharp-win32-x64,0.34.5,UNKNOWN,
+npm,site-montra,@img/sharp-libvips-darwin-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-arm,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-arm64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-ppc64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-riscv64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-s390x,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linux-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linuxmusl-arm64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-libvips-linuxmusl-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,site-montra,@img/sharp-linux-arm,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linux-arm64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linux-ppc64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linux-riscv64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linux-s390x,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linux-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linuxmusl-arm64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-linuxmusl-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-wasm32,0.34.5,Apache-2.0 AND LGPL-3.0-or-later AND MIT,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-win32-arm64,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-win32-ia32,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
+npm,site-montra,@img/sharp-win32-x64,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
 npm,site-montra,@next/env,16.0.10,MIT,https://github.com/vercel/next.js
 npm,site-montra,@next/swc-darwin-arm64,16.0.10,MIT,https://github.com/vercel/next.js
-npm,site-montra,@next/swc-darwin-x64,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-linux-arm64-gnu,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-linux-arm64-musl,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-linux-x64-gnu,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-linux-x64-musl,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-win32-arm64-msvc,16.0.10,UNKNOWN,
-npm,site-montra,@next/swc-win32-x64-msvc,16.0.10,UNKNOWN,
+npm,site-montra,@next/swc-darwin-x64,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-linux-arm64-gnu,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-linux-arm64-musl,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-linux-x64-gnu,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-linux-x64-musl,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-win32-arm64-msvc,16.0.10,MIT,git+https://github.com/vercel/next.js.git
+npm,site-montra,@next/swc-win32-x64-msvc,16.0.10,MIT,git+https://github.com/vercel/next.js.git
 npm,site-montra,@swc/helpers,0.5.15,Apache-2.0,https://swc.rs
 npm,site-montra,caniuse-lite,1.0.30001760,CC-BY-4.0,
 npm,site-montra,client-only,0.0.1,MIT,https://reactjs.org/
@@ -103,41 +103,41 @@ npm,site-montra,sharp/node_modules/semver,7.7.3,ISC,git+https://github.com/npm/n
 npm,site-montra,source-map-js,1.2.1,BSD-3-Clause,https://github.com/7rulnik/source-map-js
 npm,site-montra,styled-jsx,5.1.6,MIT,
 npm,site-montra,tslib,2.8.1,0BSD,https://www.typescriptlang.org/
-npm,super-admin,@emnapi/runtime,1.8.1,UNKNOWN,
+npm,super-admin,@emnapi/runtime,1.8.1,MIT,git+https://github.com/toyobayashi/emnapi.git
 npm,super-admin,@img/colour,1.0.0,MIT,git+https://github.com/lovell/colour.git
 npm,super-admin,@img/sharp-darwin-arm64,0.34.5,Apache-2.0,https://sharp.pixelplumbing.com
-npm,super-admin,@img/sharp-darwin-x64,0.34.5,UNKNOWN,
+npm,super-admin,@img/sharp-darwin-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
 npm,super-admin,@img/sharp-libvips-darwin-arm64,1.2.4,LGPL-3.0-or-later,https://sharp.pixelplumbing.com
-npm,super-admin,@img/sharp-libvips-darwin-x64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-arm,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-arm64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-ppc64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-riscv64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-s390x,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linux-x64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linuxmusl-arm64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-libvips-linuxmusl-x64,1.2.4,UNKNOWN,
-npm,super-admin,@img/sharp-linux-arm,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linux-arm64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linux-ppc64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linux-riscv64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linux-s390x,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linux-x64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linuxmusl-arm64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-linuxmusl-x64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-wasm32,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-win32-arm64,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-win32-ia32,0.34.5,UNKNOWN,
-npm,super-admin,@img/sharp-win32-x64,0.34.5,UNKNOWN,
+npm,super-admin,@img/sharp-libvips-darwin-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-arm,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-arm64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-ppc64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-riscv64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-s390x,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linux-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linuxmusl-arm64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-libvips-linuxmusl-x64,1.2.4,LGPL-3.0-or-later,git+https://github.com/lovell/sharp-libvips.git
+npm,super-admin,@img/sharp-linux-arm,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linux-arm64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linux-ppc64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linux-riscv64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linux-s390x,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linux-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linuxmusl-arm64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-linuxmusl-x64,0.34.5,Apache-2.0,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-wasm32,0.34.5,Apache-2.0 AND LGPL-3.0-or-later AND MIT,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-win32-arm64,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-win32-ia32,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
+npm,super-admin,@img/sharp-win32-x64,0.34.5,Apache-2.0 AND LGPL-3.0-or-later,git+https://github.com/lovell/sharp.git
 npm,super-admin,@next/env,16.1.1,MIT,https://github.com/vercel/next.js
 npm,super-admin,@next/swc-darwin-arm64,16.1.1,MIT,https://github.com/vercel/next.js
-npm,super-admin,@next/swc-darwin-x64,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-linux-arm64-gnu,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-linux-arm64-musl,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-linux-x64-gnu,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-linux-x64-musl,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-win32-arm64-msvc,16.1.1,UNKNOWN,
-npm,super-admin,@next/swc-win32-x64-msvc,16.1.1,UNKNOWN,
+npm,super-admin,@next/swc-darwin-x64,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-linux-arm64-gnu,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-linux-arm64-musl,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-linux-x64-gnu,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-linux-x64-musl,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-win32-arm64-msvc,16.1.1,MIT,git+https://github.com/vercel/next.js.git
+npm,super-admin,@next/swc-win32-x64-msvc,16.1.1,MIT,git+https://github.com/vercel/next.js.git
 npm,super-admin,@swc/helpers,0.5.15,Apache-2.0,https://swc.rs
 npm,super-admin,baseline-browser-mapping,2.9.11,Apache-2.0,git+https://github.com/web-platform-dx/baseline-browser-mapping.git
 npm,super-admin,caniuse-lite,1.0.30001762,CC-BY-4.0,
@@ -162,14 +162,14 @@ npm,super-admin,tslib,2.8.1,0BSD,https://www.typescriptlang.org/
 npm,web,@heroicons/react,2.2.0,MIT,https://github.com/tailwindlabs/heroicons#readme
 npm,web,@next/env,14.2.4,MIT,https://github.com/vercel/next.js
 npm,web,@next/swc-darwin-arm64,14.2.4,MIT,https://github.com/vercel/next.js
-npm,web,@next/swc-darwin-x64,14.2.4,UNKNOWN,
-npm,web,@next/swc-linux-arm64-gnu,14.2.4,UNKNOWN,
-npm,web,@next/swc-linux-arm64-musl,14.2.4,UNKNOWN,
-npm,web,@next/swc-linux-x64-gnu,14.2.4,UNKNOWN,
-npm,web,@next/swc-linux-x64-musl,14.2.4,UNKNOWN,
-npm,web,@next/swc-win32-arm64-msvc,14.2.4,UNKNOWN,
-npm,web,@next/swc-win32-ia32-msvc,14.2.4,UNKNOWN,
-npm,web,@next/swc-win32-x64-msvc,14.2.4,UNKNOWN,
+npm,web,@next/swc-darwin-x64,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-linux-arm64-gnu,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-linux-arm64-musl,14.2.4,MIT,
+npm,web,@next/swc-linux-x64-gnu,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-linux-x64-musl,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-win32-arm64-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-win32-ia32-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
+npm,web,@next/swc-win32-x64-msvc,14.2.4,MIT,git+https://github.com/vercel/next.js.git
 npm,web,@swc/counter,0.1.3,Apache-2.0,https://swc.rs
 npm,web,@swc/helpers,0.5.5,Apache-2.0,https://swc.rs
 npm,web,busboy,1.6.0,UNKNOWN,http://github.com/mscdex/busboy.git
@@ -192,10 +192,10 @@ npm,web,tslib,2.8.1,0BSD,https://www.typescriptlang.org/
 npm,web,use-sync-external-store,1.2.0,MIT,https://github.com/facebook/react.git
 npm,web,zustand,4.5.2,MIT,https://github.com/pmndrs/zustand
 pypi,backend,aiosqlite,unspecified,License :: OSI Approved :: MIT License,https://pypi.org/project/aiosqlite/
-pypi,backend,alembic,>=1.13.0,UNKNOWN,https://pypi.org/project/alembic/
+pypi,backend,alembic,>=1.13.0,MIT,https://pypi.org/project/alembic/
 pypi,backend,bcrypt,>=4.0.1,Apache-2.0,https://pypi.org/project/bcrypt/
 pypi,backend,cloudinary,>=1.36.0,Released under the MIT license.  Contains MIT licensed code from https://bitbucket.org/chrisatlee/poster   ,https://pypi.org/project/cloudinary/
-pypi,backend,fastapi,unspecified,UNKNOWN,https://pypi.org/project/fastapi/
+pypi,backend,fastapi,unspecified,MIT,https://pypi.org/project/fastapi/
 pypi,backend,google-cloud-vision,>=3.7.0,Apache 2.0,https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-vision
 pypi,backend,httpx,unspecified,BSD-3-Clause,https://pypi.org/project/httpx/
 pypi,backend,pandas,unspecified,"BSD 3-Clause License
@@ -1258,13 +1258,13 @@ pypi,backend,pandas,unspecified,"BSD 3-Clause License
            authors grant the U.S. Government and others acting in its behalf
            permission to use and distribute the software in accordance with the
            terms specified in this license.",https://pypi.org/project/pandas/
-pypi,backend,Pillow,>=10.0.0,UNKNOWN,https://pypi.org/project/pillow/
+pypi,backend,Pillow,>=10.0.0,MIT-CMU,https://pypi.org/project/pillow/
 pypi,backend,psycopg2-binary,unspecified,LGPL with exceptions,https://psycopg.org/
-pypi,backend,pydantic,[email],UNKNOWN,https://pypi.org/project/pydantic/
-pypi,backend,PyJWT,unspecified,UNKNOWN,https://pypi.org/project/PyJWT/
-pypi,backend,pymongo,unspecified,UNKNOWN,https://pypi.org/project/pymongo/
-pypi,backend,pytest,unspecified,UNKNOWN,https://pypi.org/project/pytest/
-pypi,backend,python-dotenv,unspecified,UNKNOWN,https://pypi.org/project/python-dotenv/
+pypi,backend,pydantic,[email],MIT,https://pypi.org/project/pydantic/
+pypi,backend,PyJWT,unspecified,MIT,https://pypi.org/project/PyJWT/
+pypi,backend,pymongo,unspecified,Apache-2.0,https://pypi.org/project/pymongo/
+pypi,backend,pytest,unspecified,MIT,https://pypi.org/project/pytest/
+pypi,backend,python-dotenv,unspecified,BSD-3-Clause,https://pypi.org/project/python-dotenv/
 pypi,backend,python-json-logger,>=2.0.7,BSD-2-Clause License,https://pypi.org/project/python-json-logger/
 pypi,backend,python-multipart,unspecified,License :: OSI Approved :: Apache Software License,https://pypi.org/project/python-multipart/
 pypi,backend,redis,>=5.0.0,License :: OSI Approved :: MIT License,https://pypi.org/project/redis/
@@ -1272,5 +1272,5 @@ pypi,backend,reportlab,>=4.1.0,"BSD license (see license.txt for details), Copyr
 pypi,backend,requests,>=2.31.0,Apache-2.0,https://requests.readthedocs.io
 pypi,backend,resend,>=0.7.0,License :: OSI Approved :: MIT License,https://github.com/resendlabs/resend-python
 pypi,backend,sqlalchemy,unspecified,MIT,https://www.sqlalchemy.org
-pypi,backend,uvicorn,[standard],UNKNOWN,https://pypi.org/project/uvicorn/
-pypi,backend,websockets,>=12.0,UNKNOWN,https://pypi.org/project/websockets/
+pypi,backend,uvicorn,[standard],BSD-3-Clause,https://pypi.org/project/uvicorn/
+pypi,backend,websockets,>=12.0,BSD-3-Clause,https://pypi.org/project/websockets/
