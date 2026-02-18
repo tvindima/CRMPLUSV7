@@ -1,0 +1,15 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthToken, serverApiPut } from '@/lib/server-api';
+
+export const dynamic = 'force-dynamic';
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
+  const token = await getAuthToken();
+  if (!token) return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 });
+
+  const { provider } = await params;
+  const payload = await request.json();
+  const res = await serverApiPut(`/portals/accounts/${provider}`, payload, token);
+  const body = res.ok ? await res.json() : { error: await res.text() };
+  return NextResponse.json(body, { status: res.status });
+}
