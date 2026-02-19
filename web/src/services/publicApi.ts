@@ -2,6 +2,7 @@
  * Public API service for fetching tenant-specific data
  * Works in both Server Components (SSR) and Client Components
  */
+import { stripCloudinaryOverlayLayers } from "../lib/cloudinary";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crmplusv7-production.up.railway.app';
 const PUBLIC_MEDIA_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://crmplusv7-production.up.railway.app";
@@ -133,9 +134,9 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 const resolveImageUrl = (url?: string | null): string | null => {
   if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) return stripCloudinaryOverlayLayers(url);
   if (url.startsWith("/media")) {
-    return `${PUBLIC_MEDIA_BASE}${url}`;
+    return stripCloudinaryOverlayLayers(`${PUBLIC_MEDIA_BASE}${url}`);
   }
   return url;
 };

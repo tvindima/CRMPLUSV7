@@ -62,9 +62,17 @@ function applyThemeColors(branding: Branding) {
   root.style.setProperty('--color-accent', branding.accent_color);
 }
 
-export function BrandingProvider({ children }: { children: ReactNode }) {
-  const [branding, setBranding] = useState<Branding>(defaultBranding);
-  const [loading, setLoading] = useState(true);
+export type { Branding };
+
+export function BrandingProvider({
+  children,
+  initialBranding,
+}: {
+  children: ReactNode;
+  initialBranding?: Branding;
+}) {
+  const [branding, setBranding] = useState<Branding>(initialBranding || defaultBranding);
+  const [loading, setLoading] = useState(!initialBranding);
 
   useEffect(() => {
     const fetchBranding = async () => {

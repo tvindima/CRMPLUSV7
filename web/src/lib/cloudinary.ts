@@ -104,3 +104,55 @@ export function optimizeStaffAvatarUrl(url: string | null | undefined): string |
   
   return url.replace('/upload/', `/upload/${transformations}/`);
 }
+
+/**
+ * Remove camadas de overlay (watermark/logo) de uma URL Cloudinary.
+ * Útil quando o backend já entrega a imagem com marca de água aplicada
+ * e uma transformação adicional gera duplicação visual.
+ */
+export function stripCloudinaryOverlayLayers(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+
+  try {
+    const parsed = new URL(url);
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    const uploadIndex = segments.indexOf('upload');
+    if (uploadIndex === -1 || uploadIndex + 1 >= segments.length) return url;
+
+    let versionIndex = -1;
+    for (let i = uploadIndex + 1; i < segments.length; i += 1) {
+      if (/^v\d+$/.test(segments[i])) {
+        versionIndex = i;
+        break;
+      }
+    }
+
+    if (versionIndex === -1) return url;
+
+    const before = segments.slice(0, uploadIndex + 1);
+    const transforms = segments.slice(uploadIndex + 1, versionIndex);
+    const after = segments.slice(versionIndex);
+
+    let skipPositioning = false;
+    const cleanedTransforms = transforms.filter((segment) => {
+      const isOverlay = segment.includes('l_') || segment.includes('fl_layer_apply');
+      if (isOverlay) {
+        skipPositioning = true;
+        return false;
+      }
+
+      if (skipPositioning && /^(g_|x_|y_|o_)/.test(segment)) {
+        return false;
+      }
+
+      skipPositioning = false;
+      return true;
+    });
+
+    parsed.pathname = `/${[...before, ...cleanedTransforms, ...after].join('/')}`;
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
