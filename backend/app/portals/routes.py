@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import DEFAULT_SCHEMA, get_db, get_tenant_schema
 from app.portals import schemas, services
 from app.security import require_staff
 from app.users.models import User
@@ -176,6 +176,10 @@ def run_single_job(job_id: int, db: Session = Depends(get_db), current_user: Use
 
 @router.get("/feeds/{provider}.xml")
 def get_provider_feed(provider: str, token: str = Query(...), db: Session = Depends(get_db)):
+    schema = get_tenant_schema()
+    if not schema or schema == DEFAULT_SCHEMA:
+        raise HTTPException(status_code=400, detail="Tenant context is required for portal feed")
+
     if provider not in schemas.SUPPORTED_PROVIDERS:
         raise HTTPException(status_code=404, detail="Provider not found")
 
