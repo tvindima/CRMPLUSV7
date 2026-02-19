@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { normalizeTenantFeatures } from '@/lib/tenantFeatures';
 
 interface TenantConfig {
   id: number;
@@ -14,6 +15,22 @@ interface TenantConfig {
   features: string[];
   max_agents: number;
   max_properties: number;
+}
+
+function normalizeTenantConfig(raw: any): TenantConfig {
+  return {
+    id: Number(raw?.id || 0),
+    slug: String(raw?.slug || 'default'),
+    name: String(raw?.name || 'CRM Plus'),
+    sector: String(raw?.sector || 'real_estate'),
+    plan: String(raw?.plan || 'basic'),
+    primary_color: String(raw?.primary_color || '#E10600'),
+    secondary_color: String(raw?.secondary_color || '#C5C5C5'),
+    logo_url: raw?.logo_url ?? null,
+    features: normalizeTenantFeatures(raw?.features),
+    max_agents: Number(raw?.max_agents || 10),
+    max_properties: Number(raw?.max_properties || 100),
+  };
 }
 
 interface TenantContextType {
@@ -55,7 +72,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/tenant/config');
       if (response.ok) {
         const data = await response.json();
-        setTenant(data);
+        setTenant(normalizeTenantConfig(data));
       } else {
         // Fallback para tenant default (imobiliário)
         setTenant(DEFAULT_TENANT);

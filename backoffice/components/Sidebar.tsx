@@ -7,6 +7,7 @@ import { useTenant } from "../context/TenantContext";
 import { useTerminology } from "../context/TerminologyContext";
 import { BrandImage } from "@/components/BrandImage";
 import { useState, useMemo } from "react";
+import { normalizeTenantFeatures } from "@/lib/tenantFeatures";
 
 // Função para obter links com terminologia dinâmica
 function getLinks(
@@ -76,42 +77,7 @@ export function Sidebar() {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const tenantFeatures = useMemo(() => {
-    const raw = (tenant as any)?.features;
-
-    if (Array.isArray(raw)) {
-      return raw.filter((item): item is string => typeof item === "string");
-    }
-
-    if (typeof raw === "string") {
-      const trimmed = raw.trim();
-      if (!trimmed) return [];
-      if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (Array.isArray(parsed)) {
-            return parsed.filter((item): item is string => typeof item === "string");
-          }
-          if (parsed && typeof parsed === "object") {
-            return Object.entries(parsed)
-              .filter(([, enabled]) => Boolean(enabled))
-              .map(([key]) => key);
-          }
-        } catch {
-          // fallback to CSV split below
-        }
-      }
-      return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
-    }
-
-    if (raw && typeof raw === "object") {
-      return Object.entries(raw)
-        .filter(([, enabled]) => Boolean(enabled))
-        .map(([key]) => key);
-    }
-
-    return [];
-  }, [tenant]);
+  const tenantFeatures = useMemo(() => normalizeTenantFeatures((tenant as any)?.features), [tenant]);
 
   // Memoizar links para evitar recalcular em cada render
   const links = useMemo(() => getLinks(term, sector, tenantFeatures), [term, sector, tenantFeatures]);

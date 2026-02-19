@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies, headers } from 'next/headers';
+import { normalizeTenantFeatures } from '@/lib/tenantFeatures';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         primary_color: tenant.primary_color || '#E10600',
         secondary_color: tenant.secondary_color || '#C5C5C5',
         logo_url: tenant.logo_url,
-        features: tenant.features || [],
+        features: normalizeTenantFeatures(tenant.features),
         max_agents: tenant.max_agents || 10,
         max_properties: tenant.max_properties || 100,
         is_trial: tenant.is_trial,
