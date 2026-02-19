@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from typing import List
 from datetime import datetime, timedelta
+import re
 import jwt
 import bcrypt
 import os
@@ -210,6 +211,56 @@ def create_platform_token(super_admin: SuperAdmin) -> str:
         "exp": datetime.utcnow() + timedelta(hours=PLATFORM_TOKEN_EXPIRE_HOURS)
     }
     return jwt.encode(payload, PLATFORM_SECRET, algorithm="HS256")
+
+
+def _is_safe_schema_name(schema_name: str) -> bool:
+    return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", schema_name))
+
+
+def _table_exists_in_schema(db: Session, schema_name: str, table_name: str) -> bool:
+    return bool(
+        db.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = :schema_name
+                      AND table_name = :table_name
+                )
+                """
+            ),
+            {"schema_name": schema_name, "table_name": table_name},
+        ).scalar()
+    )
+
+
+def _count_table_rows(db: Session, schema_name: str, table_name: str) -> int:
+    return int(db.execute(text(f'SELECT COUNT(*) FROM "{schema_name}"."{table_name}"')).scalar() or 0)
+
+
+def _aggregate_active_tenant_metrics(db: Session, tenants: List[Tenant]) -> dict:
+    totals = {"agents": 0, "properties": 0, "leads": 0}
+
+    for tenant in tenants:
+        schema_name = tenant.schema_name or f"tenant_{tenant.slug}"
+        if not _is_safe_schema_name(schema_name):
+            continue
+
+        try:
+            if _table_exists_in_schema(db, schema_name, "agents"):
+                totals["agents"] += _count_table_rows(db, schema_name, "agents")
+
+            if _table_exists_in_schema(db, schema_name, "properties"):
+                totals["properties"] += _count_table_rows(db, schema_name, "properties")
+
+            if _table_exists_in_schema(db, schema_name, "leads"):
+                totals["leads"] += _count_table_rows(db, schema_name, "leads")
+        except Exception as e:
+            print(f"[DASHBOARD] Erro ao agregar métricas do tenant {tenant.slug} ({schema_name}): {e}")
+            continue
+
+    return totals
 
 
 from fastapi import Request
@@ -884,15 +935,12 @@ def get_platform_dashboard(db: Session = Depends(get_db)):
     ).group_by(Tenant.plan).all()
     tenants_by_plan = {plan: count for plan, count in plans}
     
-    # Métricas globais (da BD actual)
-    try:
-        total_agents = db.execute(text("SELECT COUNT(*) FROM agents")).scalar() or 0
-        total_properties = db.execute(text("SELECT COUNT(*) FROM properties")).scalar() or 0
-        total_leads = db.execute(text("SELECT COUNT(*) FROM leads")).scalar() or 0
-    except:
-        total_agents = 0
-        total_properties = 0
-        total_leads = 0
+    # Métricas globais agregadas por tenant (schema-isolado)
+    active_tenant_rows = db.query(Tenant).filter(Tenant.is_active == True).all()
+    totals = _aggregate_active_tenant_metrics(db, active_tenant_rows)
+    total_agents = totals["agents"]
+    total_properties = totals["properties"]
+    total_leads = totals["leads"]
     
     return schemas.PlatformDashboard(
         total_tenants=total_tenants,
@@ -902,6 +950,60 @@ def get_platform_dashboard(db: Session = Depends(get_db)):
         total_properties=total_properties,
         total_leads=total_leads,
         tenants_by_plan=tenants_by_plan
+    )
+
+
+@router.get("/public-stats", response_model=schemas.PlatformPublicStats)
+def get_public_platform_stats(db: Session = Depends(get_db)):
+    """
+    Estatísticas públicas para o site promocional da plataforma.
+
+    NOTA:
+    - Agrega imóveis reais de todos os tenants activos (schema por tenant).
+    - Não inclui métricas de marketing/estimativas.
+    """
+    ensure_platform_tables(db)
+
+    active_tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    total_properties = 0
+
+    for tenant in active_tenants:
+        schema_name = tenant.schema_name or f"tenant_{tenant.slug}"
+
+        # Segurança mínima para evitar SQL injection ao interpolar identificador.
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", schema_name):
+            continue
+
+        try:
+            # Só conta se existir tabela properties nesse schema.
+            has_properties_table = db.execute(
+                text("""
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = :schema_name
+                          AND table_name = 'properties'
+                    )
+                """),
+                {"schema_name": schema_name}
+            ).scalar()
+
+            if not has_properties_table:
+                continue
+
+            properties_count = db.execute(
+                text(f'SELECT COUNT(*) FROM "{schema_name}".properties')
+            ).scalar() or 0
+
+            total_properties += int(properties_count)
+        except Exception:
+            # Endpoint público: se um tenant falhar, seguimos para os restantes.
+            continue
+
+    return schemas.PlatformPublicStats(
+        active_tenants=len(active_tenants),
+        total_properties=total_properties,
+        updated_at=datetime.utcnow(),
     )
 
 
@@ -916,31 +1018,32 @@ def get_tenant_stats(tenant_id: int, db: Session = Depends(get_db)):
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
-        schema_name = tenant.schema_name or f"tenant_{tenant.slug}"
-        agents_count = properties_count = leads_count = users_count = 0
 
-        try:
-            # Isolar search_path no schema do tenant para contar dados certos
-            db.execute(text(f'SET search_path TO "{schema_name}", public'))
-            agents_count = db.execute(text("SELECT COUNT(*) FROM agents")).scalar() or 0
-            properties_count = db.execute(text("SELECT COUNT(*) FROM properties")).scalar() or 0
-            leads_count = db.execute(text("SELECT COUNT(*) FROM leads")).scalar() or 0
-            users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
-        except Exception as e:
-            print(f"[STATS] Erro ao contar dados em {schema_name}: {e}")
-        finally:
-            # Restaurar search_path
-            db.execute(text('SET search_path TO public'))
+    schema_name = tenant.schema_name or f"tenant_{tenant.slug}"
+    agents_count = properties_count = leads_count = users_count = 0
 
-        return schemas.TenantStats(
-            tenant_id=tenant.id,
-            tenant_slug=tenant.slug,
-            tenant_name=tenant.name,
-            agents_count=agents_count,
-            properties_count=properties_count,
-            leads_count=leads_count,
-            users_count=users_count
-        )
+    try:
+        # Isolar search_path no schema do tenant para contar dados certos
+        db.execute(text(f'SET search_path TO "{schema_name}", public'))
+        agents_count = db.execute(text("SELECT COUNT(*) FROM agents")).scalar() or 0
+        properties_count = db.execute(text("SELECT COUNT(*) FROM properties")).scalar() or 0
+        leads_count = db.execute(text("SELECT COUNT(*) FROM leads")).scalar() or 0
+        users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
+    except Exception as e:
+        print(f"[STATS] Erro ao contar dados em {schema_name}: {e}")
+    finally:
+        # Restaurar search_path
+        db.execute(text('SET search_path TO public'))
+
+    return schemas.TenantStats(
+        tenant_id=tenant.id,
+        tenant_slug=tenant.slug,
+        tenant_name=tenant.name,
+        agents_count=agents_count,
+        properties_count=properties_count,
+        leads_count=leads_count,
+        users_count=users_count
+    )
 
 
 @router.get("/tenants/{tenant_id}/users")
