@@ -93,14 +93,14 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
 
   if (status === "success") {
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 p-6 ring-1 ring-green-500/30">
+      <div className="rounded-2xl p-6 ring-1" style={{ backgroundColor: "color-mix(in srgb, #22c55e 10%, var(--color-background-secondary))", borderColor: "color-mix(in srgb, #22c55e 30%, transparent)" }}>
         <div className="flex items-start gap-3">
           <svg className="h-6 w-6 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <p className="text-sm font-semibold text-white">Mensagem enviada com sucesso!</p>
-            <p className="mt-1 text-sm text-[#C5C5C5]">
+            <p className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>Mensagem enviada com sucesso!</p>
+            <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
               Entraremos em contacto em breve. Obrigado pelo seu interesse!
             </p>
           </div>
@@ -110,23 +110,35 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
   }
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#E10600]/20 to-[#E10600]/5 p-6 ring-1 ring-[#E10600]/30">
-      <h3 className="text-lg font-semibold text-white">Interessado neste imóvel?</h3>
-      <p className="mt-1 text-sm text-[#C5C5C5]">
+    <div
+      className="rounded-2xl p-6 ring-1"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, var(--color-background-secondary))",
+        borderColor: "color-mix(in srgb, var(--color-primary) 25%, transparent)",
+      }}
+    >
+      <h3 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>Interessado neste imóvel?</h3>
+      <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
         Preencha o formulário e entraremos em contacto consigo.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         {/* Action Type */}
         <div>
-          <label htmlFor="actionType" className="block text-sm font-medium text-[#C5C5C5]">
+          <label htmlFor="actionType" className="block text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>
             Tipo de Pedido
           </label>
           <select
             id="actionType"
             value={formData.actionType}
             onChange={(e) => setFormData({ ...formData, actionType: e.target.value as ActionType })}
-            className="mt-1 w-full rounded-lg bg-[#0B0B0D] px-4 py-2.5 text-sm text-white ring-1 ring-[#1F1F22] transition focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+            className="mt-1 w-full rounded-lg px-4 py-2.5 text-sm ring-1 transition focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-background)",
+              color: "var(--color-text)",
+              borderColor: "var(--color-border)",
+              outlineColor: "var(--color-primary)",
+            }}
             required
           >
             <option value="info_request">Pedido de Informações</option>
@@ -137,15 +149,20 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
 
         {/* Name */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-[#C5C5C5]">
-            Nome Completo <span className="text-[#E10600]">*</span>
+          <label htmlFor="name" className="block text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>
+            Nome Completo <span style={{ color: "var(--color-primary)" }}>*</span>
           </label>
           <input
             type="text"
             id="name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="mt-1 w-full rounded-lg bg-[#0B0B0D] px-4 py-2.5 text-sm text-white ring-1 ring-[#1F1F22] transition placeholder:text-[#5A5A5D] focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+            className="mt-1 w-full rounded-lg px-4 py-2.5 text-sm ring-1 transition focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-background)",
+              color: "var(--color-text)",
+              borderColor: "var(--color-border)",
+            }}
             placeholder="Digite o seu nome"
             required
             minLength={3}
@@ -154,15 +171,20 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-[#C5C5C5]">
-            Email <span className="text-[#E10600]">*</span>
+          <label htmlFor="email" className="block text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>
+            Email <span style={{ color: "var(--color-primary)" }}>*</span>
           </label>
           <input
             type="email"
             id="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="mt-1 w-full rounded-lg bg-[#0B0B0D] px-4 py-2.5 text-sm text-white ring-1 ring-[#1F1F22] transition placeholder:text-[#5A5A5D] focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+            className="mt-1 w-full rounded-lg px-4 py-2.5 text-sm ring-1 transition focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-background)",
+              color: "var(--color-text)",
+              borderColor: "var(--color-border)",
+            }}
             placeholder="seu@email.com"
             required
           />
@@ -170,7 +192,7 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
 
         {/* Phone */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-[#C5C5C5]">
+          <label htmlFor="phone" className="block text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>
             Telefone
           </label>
           <input
@@ -178,7 +200,12 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
             id="phone"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="mt-1 w-full rounded-lg bg-[#0B0B0D] px-4 py-2.5 text-sm text-white ring-1 ring-[#1F1F22] transition placeholder:text-[#5A5A5D] focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+            className="mt-1 w-full rounded-lg px-4 py-2.5 text-sm ring-1 transition focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-background)",
+              color: "var(--color-text)",
+              borderColor: "var(--color-border)",
+            }}
             placeholder="912 345 678"
             pattern="[0-9\s\+\-\(\)]+"
           />
@@ -186,14 +213,19 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
 
         {/* Message */}
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-[#C5C5C5]">
+          <label htmlFor="message" className="block text-sm font-medium" style={{ color: "var(--color-text-muted)" }}>
             Mensagem
           </label>
           <textarea
             id="message"
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-            className="mt-1 w-full rounded-lg bg-[#0B0B0D] px-4 py-2.5 text-sm text-white ring-1 ring-[#1F1F22] transition placeholder:text-[#5A5A5D] focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+            className="mt-1 w-full rounded-lg px-4 py-2.5 text-sm ring-1 transition focus:outline-none focus:ring-2"
+            style={{
+              backgroundColor: "var(--color-background)",
+              color: "var(--color-text)",
+              borderColor: "var(--color-border)",
+            }}
             placeholder={
               formData.actionType === "visit_request"
                 ? "Gostaria de agendar uma visita ao imóvel..."
@@ -222,8 +254,8 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
         )}
 
         {/* Info Text */}
-        <p className="text-xs text-[#5A5A5D]">
-          Ref: <span className="font-medium text-[#C5C5C5]">{propertyReference}</span>
+        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+          Ref: <span className="font-medium" style={{ color: "var(--color-text)" }}>{propertyReference}</span>
           {propertyTitle && ` - ${propertyTitle}`}
         </p>
 
@@ -231,7 +263,8 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#E10600] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#C10500] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ backgroundColor: "var(--color-primary)" }}
         >
           {status === "submitting" ? (
             <>
@@ -251,9 +284,9 @@ export function LeadContactForm({ propertyId, propertyReference, propertyTitle }
           )}
         </button>
 
-        <p className="text-center text-xs text-[#5A5A5D]">
+        <p className="text-center text-xs" style={{ color: "var(--color-text-muted)" }}>
           Ao enviar, aceita a nossa{" "}
-          <a href="/privacidade" className="text-[#E10600] hover:underline">
+          <a href="/privacidade" className="hover:underline" style={{ color: "var(--color-primary)" }}>
             Política de Privacidade
           </a>
         </p>
