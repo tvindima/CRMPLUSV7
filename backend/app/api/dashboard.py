@@ -8,9 +8,12 @@ from app.properties.models import Property
 from app.leads.models import Lead
 from app.agents.models import Agent
 from app.models.escritura import Escritura
+from app.models.proposal import Proposal
+from app.models.visit import Visit
 from app.api.v1.auth import get_current_user_email
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+OPEN_PROPOSAL_STATUSES = ["draft", "pending_review", "sent", "under_analysis", "counter_offer"]
 
 # ==================== KPIs ====================
 
@@ -82,9 +85,29 @@ def get_dashboard_kpis(
         else:
             leads_trend = novas_leads_7d * 100 if novas_leads_7d > 0 else 0
         
-        # Propostas em aberto (mock - adicionar tabela de propostas futuramente)
-        propostas_abertas = 12  # TODO: implementar quando tabela Proposta existir
-        propostas_trend = 5.0  # Mock
+        # Propostas em aberto (dados reais)
+        try:
+            propostas_abertas = db.query(Proposal).filter(
+                Proposal.status.in_(OPEN_PROPOSAL_STATUSES)
+            ).count()
+        except Exception:
+            db.rollback()
+            propostas_abertas = 0
+
+        try:
+            propostas_abertas_7d_ago = db.query(Proposal).filter(
+                Proposal.status.in_(OPEN_PROPOSAL_STATUSES),
+                Proposal.created_at.isnot(None),
+                Proposal.created_at <= seven_days_ago
+            ).count()
+        except Exception:
+            db.rollback()
+            propostas_abertas_7d_ago = 0
+
+        if propostas_abertas_7d_ago > 0:
+            propostas_trend = ((propostas_abertas - propostas_abertas_7d_ago) / propostas_abertas_7d_ago) * 100
+        else:
+            propostas_trend = propostas_abertas * 100 if propostas_abertas > 0 else 0
         
         # Agentes ativos (todos os agentes cadastrados)
         try:
@@ -132,8 +155,8 @@ def get_dashboard_kpis(
                 "propriedades_up": prop_trend > 0,
                 "leads": f"+{leads_trend:.0f}%" if leads_trend > 0 else f"{leads_trend:.0f}%",
                 "leads_up": leads_trend > 0,
-                "propostas": f"+{propostas_trend:.0f}%",
-                "propostas_up": True
+                "propostas": f"+{propostas_trend:.0f}%" if propostas_trend > 0 else f"{propostas_trend:.0f}%",
+                "propostas_up": propostas_trend > 0
             }
         }
     except Exception as e:
@@ -273,9 +296,26 @@ def get_agents_ranking(
                 Lead.created_at >= seven_days_ago
             ).count()
             
-            # Propostas e visitas (mock - implementar quando tabelas existirem)
-            propostas_count = int(leads_count * 0.5)  # Mock: ~50% das leads geram proposta
-            visitas_count = int(leads_count * 0.3)  # Mock: ~30% das leads geram visita
+            # Propostas e visitas (dados reais últimos 7 dias)
+            try:
+                propostas_count = db.query(Proposal).filter(
+                    Proposal.agent_id == agent.id,
+                    Proposal.created_at.isnot(None),
+                    Proposal.created_at >= seven_days_ago
+                ).count()
+            except Exception:
+                db.rollback()
+                propostas_count = 0
+
+            try:
+                visitas_count = db.query(Visit).filter(
+                    Visit.agent_id == agent.id,
+                    Visit.scheduled_date.isnot(None),
+                    Visit.scheduled_date >= seven_days_ago
+                ).count()
+            except Exception:
+                db.rollback()
+                visitas_count = 0
             
             # Calcular performance score (0-100)
             # Fórmula: (leads * 3 + propostas * 5 + visitas * 2) / fator_normalizacao
@@ -668,9 +708,18 @@ def get_agent_kpis(
         else:
             leads_trend = 0
         
-        # Propostas em aberto (mock: 50% das leads)
-        propostas_abertas = int(novas_leads_7d * 0.5)
-        propostas_abertas_7d_ago = int(novas_leads_7d_ago * 0.5)
+        # Propostas em aberto (dados reais)
+        propostas_abertas = db.query(Proposal).filter(
+            Proposal.agent_id == agent_id,
+            Proposal.status.in_(OPEN_PROPOSAL_STATUSES)
+        ).count()
+
+        propostas_abertas_7d_ago = db.query(Proposal).filter(
+            Proposal.agent_id == agent_id,
+            Proposal.status.in_(OPEN_PROPOSAL_STATUSES),
+            Proposal.created_at.isnot(None),
+            Proposal.created_at <= seven_days_ago
+        ).count()
         
         # Trend de propostas
         if propostas_abertas_7d_ago > 0:
@@ -678,8 +727,13 @@ def get_agent_kpis(
         else:
             propostas_trend = 0
         
-        # Visitas agendadas (mock: 30% das leads)
-        visitas_agendadas = int(novas_leads_7d * 0.3)
+        # Visitas agendadas (dados reais)
+        visitas_agendadas = db.query(Visit).filter(
+            Visit.agent_id == agent_id,
+            Visit.scheduled_date.isnot(None),
+            Visit.scheduled_date >= seven_days_ago,
+            Visit.status.in_(["scheduled", "confirmed", "in_progress"])
+        ).count()
         
         return {
             "propriedades_ativas": propriedades_ativas,
