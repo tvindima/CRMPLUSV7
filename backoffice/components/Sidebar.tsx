@@ -13,7 +13,7 @@ import { normalizeTenantFeatures } from "@/lib/tenantFeatures";
 function getLinks(
   term: (key: string, fallback?: string) => string,
   sector: string,
-  features: string[]
+  features: unknown
 ) {
   // Label para "Visitas" varia por sector
   const visitLabel = sector === 'automotive' ? 'Test Drives' : 
@@ -33,7 +33,8 @@ function getLinks(
   
   // Escrituras só para imobiliário
   const isRealEstate = sector === 'real_estate';
-  const extranetEnabled = (features || []).includes('extranet_projects');
+  const normalizedFeatures = normalizeTenantFeatures(features);
+  const extranetEnabled = normalizedFeatures.includes('extranet_projects');
   
   const links = [
     { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
