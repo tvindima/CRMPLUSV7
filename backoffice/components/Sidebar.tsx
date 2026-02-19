@@ -9,7 +9,11 @@ import { BrandImage } from "@/components/BrandImage";
 import { useState, useMemo } from "react";
 
 // Função para obter links com terminologia dinâmica
-function getLinks(term: (key: string, fallback?: string) => string, sector: string) {
+function getLinks(
+  term: (key: string, fallback?: string) => string,
+  sector: string,
+  features: string[]
+) {
   // Label para "Visitas" varia por sector
   const visitLabel = sector === 'automotive' ? 'Test Drives' : 
                      sector === 'services' ? 'Reuniões' : 
@@ -28,9 +32,13 @@ function getLinks(term: (key: string, fallback?: string) => string, sector: stri
   
   // Escrituras só para imobiliário
   const isRealEstate = sector === 'real_estate';
+  const extranetEnabled = (features || []).includes('extranet_projects');
   
   const links = [
     { href: "/backoffice/dashboard", label: "Painel inicial", roles: ["agent", "leader", "admin", "staff"] },
+    ...(extranetEnabled
+      ? [{ href: "/backoffice/extranet", label: "Extranet / Empreendimentos", roles: ["agent", "leader", "admin", "staff"] }]
+      : []),
     { href: "/backoffice/properties", label: term('items', 'Propriedades'), roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/leads", label: "Leads", roles: ["agent", "leader", "admin", "staff"] },
     { href: "/backoffice/clients", label: "Clientes", roles: ["agent", "leader", "admin", "staff"] },
@@ -49,6 +57,7 @@ function getLinks(term: (key: string, fallback?: string) => string, sector: stri
     { href: "/backoffice/users", label: "Utilizadores", roles: ["admin", "staff"], isManagement: true },
     { href: "/backoffice/config/branding", label: "🎨 Branding Site", roles: ["admin", "staff"], isManagement: true },
     { href: "/backoffice/config/watermark", label: "💧 Marca de Água", roles: ["admin", "staff"], isManagement: true },
+    { href: "/backoffice/portals", label: "📤 Portais Imobiliarios", roles: ["leader", "admin", "staff"], isManagement: true },
     { href: "/backoffice/config", label: "⚙️ Configurações", roles: ["admin", "staff"], isManagement: true },
   ];
 
@@ -61,14 +70,16 @@ const iconCircle = (
 
 export function Sidebar() {
   const { role, isAuthenticated } = useRole();
-  const { sector } = useTenant();
+  const { sector, tenant } = useTenant();
   const { term } = useTerminology();
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const tenantFeatures = tenant?.features || [];
+
   // Memoizar links para evitar recalcular em cada render
-  const links = useMemo(() => getLinks(term, sector), [term, sector]);
+  const links = useMemo(() => getLinks(term, sector, tenantFeatures), [term, sector, tenantFeatures]);
 
   const handleLogout = async () => {
     setLoggingOut(true);

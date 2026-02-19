@@ -27,15 +27,19 @@ class PortalAccountOut(BaseModel):
     provider: str
     mode: str
     is_active: bool
-    feed_token: str | None = None
-    credentials_json: dict[str, Any] | None = None
     settings_json: dict[str, Any] | None = None
+    has_feed_token: bool = False
+    feed_endpoint: str | None = None
     last_validated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime | None = None
-    feed_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PortalRotateTokenOut(BaseModel):
+    provider: str
+    feed_url_once: str
 
 
 class PortalListingOut(BaseModel):
@@ -85,4 +89,3 @@ class RunJobsResponse(BaseModel):
     succeeded: int
     failed: int
     jobs: list[PortalSyncJobOut]
-

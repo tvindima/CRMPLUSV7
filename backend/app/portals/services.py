@@ -110,6 +110,21 @@ def queue_jobs(
     now = _now()
     jobs: list[PortalSyncJob] = []
     for provider in providers:
+        existing = (
+            db.query(PortalSyncJob)
+            .filter(
+                PortalSyncJob.property_id == property_id,
+                PortalSyncJob.provider == provider,
+                PortalSyncJob.action == action,
+                PortalSyncJob.status.in_(["pending", "running"]),
+            )
+            .order_by(PortalSyncJob.id.desc())
+            .first()
+        )
+        if existing:
+            jobs.append(existing)
+            continue
+
         job = PortalSyncJob(
             property_id=property_id,
             provider=provider,

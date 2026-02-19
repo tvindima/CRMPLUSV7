@@ -8,24 +8,38 @@ from app.security import require_staff
 from app.users.models import User
 
 router = APIRouter(prefix="/portals", tags=["portals"])
+MANAGEMENT_ROLES = {"admin", "staff", "leader", "coordinator"}
+
+
+def _ensure_portal_management_access(user: User) -> None:
+    if user.role not in MANAGEMENT_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient role for portal management")
 
 
 @router.get("/providers", response_model=list[schemas.ProviderInfo])
 def list_providers(current_user: User = Depends(require_staff)):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     return services.list_providers()
 
 
 @router.get("/accounts", response_model=list[schemas.PortalAccountOut])
-def list_accounts(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_staff)):
-    _ = current_user
+def list_accounts(db: Session = Depends(get_db), current_user: User = Depends(require_staff)):
+    _ensure_portal_management_access(current_user)
     accounts = services.list_accounts(db)
-    base_url = str(request.base_url).rstrip("/")
     output: list[schemas.PortalAccountOut] = []
     for account in accounts:
-        item = schemas.PortalAccountOut.model_validate(account)
-        if account.feed_token:
-            item.feed_url = f"{base_url}/portals/feeds/{account.provider}.xml?token={account.feed_token}"
+        item = schemas.PortalAccountOut(
+            id=account.id,
+            provider=account.provider,
+            mode=account.mode,
+            is_active=account.is_active,
+            settings_json=account.settings_json,
+            has_feed_token=bool(account.feed_token),
+            feed_endpoint=f"/portals/feeds/{account.provider}.xml",
+            last_validated_at=account.last_validated_at,
+            created_at=account.created_at,
+            updated_at=account.updated_at,
+        )
         output.append(item)
     return output
 
@@ -34,11 +48,10 @@ def list_accounts(request: Request, db: Session = Depends(get_db), current_user:
 def upsert_account(
     provider: str,
     payload: schemas.PortalAccountUpsert,
-    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     if provider not in schemas.SUPPORTED_PROVIDERS:
         raise HTTPException(status_code=400, detail="Unsupported provider")
     if provider != payload.provider:
@@ -51,29 +64,36 @@ def upsert_account(
         credentials_json=payload.credentials_json,
         settings_json=payload.settings_json,
     )
-    item = schemas.PortalAccountOut.model_validate(account)
-    base_url = str(request.base_url).rstrip("/")
-    if account.feed_token:
-        item.feed_url = f"{base_url}/portals/feeds/{account.provider}.xml?token={account.feed_token}"
-    return item
+    return schemas.PortalAccountOut(
+        id=account.id,
+        provider=account.provider,
+        mode=account.mode,
+        is_active=account.is_active,
+        settings_json=account.settings_json,
+        has_feed_token=bool(account.feed_token),
+        feed_endpoint=f"/portals/feeds/{account.provider}.xml",
+        last_validated_at=account.last_validated_at,
+        created_at=account.created_at,
+        updated_at=account.updated_at,
+    )
 
 
-@router.post("/accounts/{provider}/rotate-token", response_model=schemas.PortalAccountOut)
+@router.post("/accounts/{provider}/rotate-token", response_model=schemas.PortalRotateTokenOut)
 def rotate_feed_token(
     provider: str,
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     account = services.rotate_feed_token(db, provider)
     if not account:
         raise HTTPException(status_code=404, detail="Portal account not found")
-    item = schemas.PortalAccountOut.model_validate(account)
     base_url = str(request.base_url).rstrip("/")
-    if account.feed_token:
-        item.feed_url = f"{base_url}/portals/feeds/{account.provider}.xml?token={account.feed_token}"
-    return item
+    return schemas.PortalRotateTokenOut(
+        provider=account.provider,
+        feed_url_once=f"{base_url}/portals/feeds/{account.provider}.xml?token={account.feed_token}",
+    )
 
 
 @router.get("/listings", response_model=list[schemas.PortalListingOut])
@@ -82,7 +102,7 @@ def list_portal_listings(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     return services.list_portal_listings(db, property_id=property_id)
 
 
@@ -93,6 +113,7 @@ def queue_property_sync(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
+    _ensure_portal_management_access(current_user)
     property_obj = services.get_property_or_none(db, property_id)
     if not property_obj:
         raise HTTPException(status_code=404, detail="Property not found")
@@ -122,7 +143,7 @@ def list_sync_jobs(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     return services.list_jobs(db, status=status, limit=limit)
 
 
@@ -132,7 +153,7 @@ def run_pending_jobs(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     jobs = services.run_pending_jobs(db, limit=limit)
     succeeded = sum(1 for job in jobs if job.status == "success")
     failed = sum(1 for job in jobs if job.status == "failed")
@@ -146,7 +167,7 @@ def run_pending_jobs(
 
 @router.post("/jobs/{job_id}/run", response_model=schemas.PortalSyncJobOut)
 def run_single_job(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_staff)):
-    _ = current_user
+    _ensure_portal_management_access(current_user)
     job = services.run_single_job(db, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -166,4 +187,3 @@ def get_provider_feed(provider: str, token: str = Query(...), db: Session = Depe
 
     xml_data = services.build_feed_xml(db, provider)
     return Response(content=xml_data, media_type="application/xml")
-

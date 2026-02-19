@@ -35,7 +35,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_portal_accounts_id"), "portal_accounts", ["id"], unique=False)
     op.create_index(op.f("ix_portal_accounts_provider"), "portal_accounts", ["provider"], unique=False)
-    op.create_index(op.f("ix_portal_accounts_feed_token"), "portal_accounts", ["feed_token"], unique=True)
 
     op.create_table(
         "portal_listings",
@@ -92,8 +91,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_portal_listings_id"), table_name="portal_listings")
     op.drop_table("portal_listings")
 
-    op.drop_index(op.f("ix_portal_accounts_feed_token"), table_name="portal_accounts")
     op.drop_index(op.f("ix_portal_accounts_provider"), table_name="portal_accounts")
     op.drop_index(op.f("ix_portal_accounts_id"), table_name="portal_accounts")
     op.drop_table("portal_accounts")
-

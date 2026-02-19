@@ -15,8 +15,8 @@ type Account = {
   provider: string;
   mode: 'feed' | 'api';
   is_active: boolean;
-  feed_token?: string | null;
-  feed_url?: string | null;
+  has_feed_token?: boolean;
+  feed_endpoint?: string | null;
   credentials_json?: Record<string, unknown> | null;
   settings_json?: Record<string, unknown> | null;
   updated_at?: string | null;
@@ -120,7 +120,7 @@ export default function PortalsPage() {
       });
       const body = await safeJson(res);
       if (!res.ok) throw new Error(body?.error || 'Falha ao rodar token');
-      setMessage(`Token rodado para ${provider}`);
+      setMessage(`Token rodado para ${provider}. URL de feed (uma vez): ${body?.feed_url_once || '-'}`);
       await loadAll();
     } catch (err: any) {
       setMessage(err?.message || 'Erro ao rodar token');
@@ -222,9 +222,9 @@ export default function PortalsPage() {
                       Rodar token
                     </button>
                   </div>
-                  {acc?.feed_url && (
-                    <p className="mt-2 break-all text-xs text-[#C5C5C5]">{acc.feed_url}</p>
-                  )}
+                  <p className="mt-2 text-xs text-[#C5C5C5]">
+                    Endpoint: {acc?.feed_endpoint || `/portals/feeds/${provider}.xml`} | Token: {acc?.has_feed_token ? 'configurado' : 'nao configurado'}
+                  </p>
                 </div>
               );
             })}
