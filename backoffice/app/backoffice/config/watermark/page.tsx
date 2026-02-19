@@ -330,6 +330,9 @@ export default function WatermarkSettingsPage() {
               <p className="text-xs text-[#888]">
                 Percentagem da largura da imagem (15% recomendado)
               </p>
+              <p className="text-xs text-amber-300/90">
+                Esta percentagem aplica-se ao processamento de novas fotos. Fotos antigas mantêm a marca já gravada.
+              </p>
             </div>
 
             {/* Posição */}
@@ -388,18 +391,18 @@ export default function WatermarkSettingsPage() {
                     <img 
                       src={settings.watermark_image_url} 
                       alt="Preview"
-                      className="max-h-16 object-contain"
+                      className="h-auto object-contain"
                       style={{ 
                         opacity: opacity,
-                        width: `${scale * 300}px`,
-                        maxWidth: '150px'
+                        width: `${Math.round(scale * 100)}%`,
+                        maxWidth: '100%'
                       }}
                     />
                   </div>
                 )}
               </div>
               <p className="text-xs text-[#888] text-center">
-                Pré-visualização aproximada (a marca será proporcional ao tamanho real da imagem)
+                Pré-visualização com a mesma percentagem de largura usada no processamento (watermark_scale)
               </p>
             </div>
           )}
