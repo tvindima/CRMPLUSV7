@@ -12,6 +12,29 @@ import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 type Props = { params: { id: string } };
 
+function normalizePropertyImageUrl(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  if (!value) return null;
+
+  // Some legacy records may store Next optimizer URLs.
+  // We unwrap them to the original source URL to avoid recursive 400s.
+  if (value.includes("/_next/image?url=")) {
+    try {
+      const parsed = new URL(value, "http://localhost");
+      const nested = parsed.searchParams.get("url");
+      if (nested) {
+        const decoded = decodeURIComponent(nested).trim();
+        if (decoded) return decoded;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return value;
+}
+
 export default function ItemDetalhePage({ params }: Props) {
   return (
     <ToastProvider>
@@ -36,6 +59,7 @@ function ItemDetalheInner({ id }: { id: number }) {
   const { term } = useTerminology();
   const [property, setProperty] = useState<BackofficeProperty | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +67,7 @@ function ItemDetalheInner({ id }: { id: number }) {
       try {
         const data = await getBackofficeProperty(id);
         setProperty(data);
+        setFailedImages({});
       } catch (err: any) {
         toast.push(err?.message || `Erro ao carregar ${term('item_singular', 'item')}`, "error");
       } finally {
@@ -51,6 +76,12 @@ function ItemDetalheInner({ id }: { id: number }) {
     };
     load();
   }, [id, toast]);
+
+  const galleryImages = Array.isArray(property?.images)
+    ? property.images
+        .map(normalizePropertyImageUrl)
+        .filter((src): src is string => Boolean(src))
+    : [];
 
   return (
     <BackofficeLayout title={term('item', 'Item')}>
@@ -103,12 +134,28 @@ function ItemDetalheInner({ id }: { id: number }) {
           <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 text-white">
             <h3 className="text-lg font-semibold">Galeria</h3>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              {(property.images || []).map((src, idx) => (
+              {galleryImages.map((src, idx) => (
                 <div key={idx} className="overflow-hidden rounded-xl border border-[#1F1F22] bg-[#0B0B0D]">
-                  <Image src={src} alt={`Imagem ${idx + 1}`} width={600} height={400} className="h-40 w-full object-cover" />
+                  {failedImages[idx] ? (
+                    <div className="flex h-40 items-center justify-center text-sm text-[#C5C5C5]">
+                      Imagem indisponível
+                    </div>
+                  ) : (
+                    <Image
+                      src={src}
+                      alt={`Imagem ${idx + 1}`}
+                      width={600}
+                      height={400}
+                      unoptimized
+                      className="h-40 w-full object-cover"
+                      onError={() => {
+                        setFailedImages((prev) => ({ ...prev, [idx]: true }));
+                      }}
+                    />
+                  )}
                 </div>
               ))}
-              {(!property.images || property.images.length === 0) && (
+              {galleryImages.length === 0 && (
                 <div className="rounded-xl border border-dashed border-[#2A2A2E] bg-[#0B0B0D] p-6 text-center text-sm text-[#C5C5C5]">
                   TODO: carregar imagens reais (API /properties/{id}/upload)
                 </div>

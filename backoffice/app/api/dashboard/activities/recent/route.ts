@@ -19,14 +19,15 @@ export async function GET(request: NextRequest) {
 
     if (!res.ok) {
       const error = await res.text();
-      console.error("Railway API error:", error);
-      return NextResponse.json({ error: "Erro ao buscar atividades" }, { status: res.status });
+      console.error("Railway API error (activities/recent):", res.status, error);
+      // Fallback defensivo para manter dashboard funcional.
+      return NextResponse.json([]);
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error("Recent activities error:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
