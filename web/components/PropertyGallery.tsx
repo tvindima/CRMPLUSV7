@@ -21,7 +21,7 @@ export function PropertyGallery({ images, title }: Props) {
     <>
       {/* Main Image */}
       <div
-        className="relative h-[42vh] min-h-[240px] max-h-[560px] w-full max-w-full cursor-pointer overflow-hidden rounded-2xl bg-black/80 sm:h-[50vh] sm:min-h-[300px] sm:max-h-[620px] lg:h-[58vh] lg:max-h-[680px]"
+        className="relative h-[36vh] min-h-[220px] max-h-[500px] w-full max-w-full cursor-pointer overflow-hidden rounded-2xl bg-black/80 sm:h-[44vh] sm:min-h-[280px] sm:max-h-[560px] lg:h-[50vh] lg:max-h-[620px]"
         onClick={() => setShowModal(true)}
       >
         <SafeImage
