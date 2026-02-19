@@ -43,9 +43,15 @@ from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
 from app.platform.routes import router as platform_router  # Platform / Super Admin
-from app.extranet.router_admin import router as extranet_admin_router
-from app.extranet.router_partners import router as extranet_partners_router
-from app.extranet.router_share import router as extranet_share_router
+try:
+    from app.extranet.router_admin import router as extranet_admin_router
+    from app.extranet.router_partners import router as extranet_partners_router
+    from app.extranet.router_share import router as extranet_share_router
+except Exception as extranet_import_error:
+    print(f"[EXTRANET] Disabled at startup: {extranet_import_error}")
+    extranet_admin_router = None
+    extranet_partners_router = None
+    extranet_share_router = None
 from app.portals.routes import router as portals_router
 
 # Multi-tenant middleware
@@ -280,9 +286,12 @@ app.add_middleware(
 app.add_middleware(TenantMiddleware)
 
 # Extranet/Partners/Share routers (feature-guarded inside)
-app.include_router(extranet_admin_router)
-app.include_router(extranet_partners_router)
-app.include_router(extranet_share_router)
+if extranet_admin_router is not None:
+    app.include_router(extranet_admin_router)
+if extranet_partners_router is not None:
+    app.include_router(extranet_partners_router)
+if extranet_share_router is not None:
+    app.include_router(extranet_share_router)
 app.include_router(portals_router)
 
 
