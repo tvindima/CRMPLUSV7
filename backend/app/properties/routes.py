@@ -1,5 +1,6 @@
 import os
 from typing import List, Optional
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -18,6 +19,21 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB por imagem
 ALLOWED_MIME_PREFIX = "image/"
+MAX_DOCUMENT_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB por documento
+MAX_DOCUMENTS_PER_PROPERTY = 100
+ALLOWED_DOCUMENT_MIME_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
 
 # Configurações de otimização de imagens
 IMAGE_SIZES = {
@@ -33,6 +49,37 @@ _watermark_cache = {
     "url": None,
     "settings": None
 }
+
+
+def _ensure_property_documents_table(db: Session) -> None:
+    """
+    Garante existência da tabela de documentos no schema do tenant atual.
+    Evita quebra em tenants ainda não migrados.
+    """
+    db.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS property_documents (
+                id SERIAL PRIMARY KEY,
+                property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+                file_name VARCHAR(255) NOT NULL,
+                file_url VARCHAR(1000) NOT NULL,
+                mime_type VARCHAR(120),
+                file_size_bytes INTEGER,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+    )
+    db.execute(
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_property_documents_property_id
+            ON property_documents(property_id)
+            """
+        )
+    )
+    db.commit()
 
 
 def get_watermark_settings(db: Session) -> Optional[dict]:
@@ -635,6 +682,117 @@ async def upload_property_video(
         if os.path.exists(optimized_path):
             os.remove(optimized_path)
         raise HTTPException(status_code=500, detail=f"Erro ao processar vídeo: {str(e)}")
+
+
+@router.get("/{property_id}/documents", response_model=list[schemas.PropertyDocumentOut])
+def list_property_documents(
+    property_id: int,
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    property_obj = services.get_property(db, property_id)
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    _ensure_property_documents_table(db)
+
+    rows = db.execute(
+        text(
+            """
+            SELECT id, property_id, file_name, file_url, mime_type, file_size_bytes, created_at
+            FROM property_documents
+            WHERE property_id = :property_id
+            ORDER BY created_at DESC, id DESC
+            """
+        ),
+        {"property_id": property_id},
+    ).mappings().all()
+
+    return [schemas.PropertyDocumentOut(**row) for row in rows]
+
+
+@router.post("/{property_id}/documents/upload", response_model=list[schemas.PropertyDocumentOut])
+async def upload_property_documents(
+    property_id: int,
+    files: List[UploadFile] = File(...),
+    user=Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    property_obj = services.get_property(db, property_id)
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    _ensure_property_documents_table(db)
+
+    total_count = db.execute(
+        text("SELECT COUNT(*) FROM property_documents WHERE property_id = :property_id"),
+        {"property_id": property_id},
+    ).scalar_one()
+
+    if total_count + len(files) > MAX_DOCUMENTS_PER_PROPERTY:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Limite de {MAX_DOCUMENTS_PER_PROPERTY} documentos excedido. "
+                f"Atual: {total_count}, a adicionar: {len(files)}"
+            ),
+        )
+
+    created: list[schemas.PropertyDocumentOut] = []
+
+    for upload in files:
+        mime_type = (upload.content_type or "").strip().lower()
+        if mime_type not in ALLOWED_DOCUMENT_MIME_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail=f"Tipo de ficheiro não suportado: {upload.content_type or 'desconhecido'}",
+            )
+
+        content = await upload.read()
+        if not content:
+            raise HTTPException(status_code=400, detail=f"Ficheiro vazio: {upload.filename}")
+
+        if len(content) > MAX_DOCUMENT_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Ficheiro excede {MAX_DOCUMENT_UPLOAD_BYTES // (1024 * 1024)}MB: {upload.filename}",
+            )
+
+        original_name = upload.filename or f"documento-{int(datetime.now(timezone.utc).timestamp())}"
+        safe_name = os.path.basename(original_name).replace("/", "_").replace("\\", "_")
+        timestamp = int(datetime.now(timezone.utc).timestamp())
+        stored_name = f"{timestamp}_{safe_name}"
+
+        file_url = await storage.upload_file(
+            file=io.BytesIO(content),
+            folder=f"properties/{property_id}/documents",
+            filename=stored_name,
+            public=True,
+        )
+
+        row = db.execute(
+            text(
+                """
+                INSERT INTO property_documents (property_id, file_name, file_url, mime_type, file_size_bytes, created_at)
+                VALUES (:property_id, :file_name, :file_url, :mime_type, :file_size_bytes, :created_at)
+                RETURNING id, property_id, file_name, file_url, mime_type, file_size_bytes, created_at
+                """
+            ),
+            {
+                "property_id": property_id,
+                "file_name": safe_name,
+                "file_url": file_url,
+                "mime_type": mime_type,
+                "file_size_bytes": len(content),
+                "created_at": datetime.now(timezone.utc),
+            },
+        ).mappings().first()
+
+        if row:
+            created.append(schemas.PropertyDocumentOut(**row))
+
+    db.commit()
+    return created
 
 
 @router.get("/utils/next-reference/{agent_id}")

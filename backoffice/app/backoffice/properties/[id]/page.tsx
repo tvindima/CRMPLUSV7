@@ -11,6 +11,15 @@ import { useRouter } from "next/navigation";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 type Props = { params: { id: string } };
+type PropertyDocument = {
+  id: number;
+  property_id: number;
+  file_name: string;
+  file_url: string;
+  mime_type?: string | null;
+  file_size_bytes?: number | null;
+  created_at: string;
+};
 
 function normalizePropertyImageUrl(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -60,6 +69,9 @@ function ItemDetalheInner({ id }: { id: number }) {
   const [property, setProperty] = useState<BackofficeProperty | null>(null);
   const [loading, setLoading] = useState(true);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  const [documents, setDocuments] = useState<PropertyDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -77,11 +89,147 @@ function ItemDetalheInner({ id }: { id: number }) {
     load();
   }, [id, toast]);
 
+  useEffect(() => {
+    const loadDocuments = async () => {
+      setDocumentsLoading(true);
+      try {
+        const res = await fetch(`/api/properties/${id}/documents`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Falha ao carregar documentos");
+        }
+
+        const data = await res.json();
+        setDocuments(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        toast.push(err?.message || "Erro ao carregar documentos", "error");
+      } finally {
+        setDocumentsLoading(false);
+      }
+    };
+
+    loadDocuments();
+  }, [id, toast]);
+
   const galleryImages = Array.isArray(property?.images)
     ? property.images
         .map(normalizePropertyImageUrl)
         .filter((src): src is string => Boolean(src))
     : [];
+
+  const formatFileSize = (bytes?: number | null) => {
+    if (!bytes || bytes <= 0) return "—";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const uploadDocuments = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    Array.from(files).forEach((file) => formData.append("files", file));
+
+    setUploadingDocuments(true);
+    try {
+      const res = await fetch(`/api/properties/${id}/documents`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Falha no upload de documentos");
+      }
+
+      const created = await res.json();
+      if (Array.isArray(created) && created.length > 0) {
+        setDocuments((prev) => [...created, ...prev]);
+      }
+      toast.push("Documentos carregados com sucesso", "success");
+    } catch (err: any) {
+      toast.push(err?.message || "Erro ao carregar documentos", "error");
+    } finally {
+      setUploadingDocuments(false);
+    }
+  };
+
+  const exportDocumentsCsv = () => {
+    if (!documents.length) {
+      toast.push("Sem documentos para exportar", "info");
+      return;
+    }
+
+    const headers = ["id", "nome", "tipo", "tamanho_bytes", "url", "created_at"];
+    const rows = documents.map((doc) => [
+      doc.id,
+      `"${(doc.file_name || "").replace(/"/g, '""')}"`,
+      `"${(doc.mime_type || "").replace(/"/g, '""')}"`,
+      doc.file_size_bytes || "",
+      `"${(doc.file_url || "").replace(/"/g, '""')}"`,
+      `"${doc.created_at}"`,
+    ]);
+
+    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `property-${id}-documents.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printDocuments = () => {
+    const popup = window.open("", "_blank", "width=900,height=700");
+    if (!popup) {
+      toast.push("Permita popups para imprimir documentos", "warning");
+      return;
+    }
+    const rows = documents
+      .map(
+        (doc) => `
+          <tr>
+            <td>${doc.id}</td>
+            <td>${doc.file_name}</td>
+            <td>${doc.mime_type || "-"}</td>
+            <td>${formatFileSize(doc.file_size_bytes)}</td>
+            <td>${new Date(doc.created_at).toLocaleString("pt-PT")}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    popup.document.write(`
+      <html>
+        <head>
+          <title>Documentos do imóvel ${property?.reference || id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 12px; }
+            th { background: #f0f0f0; }
+          </style>
+        </head>
+        <body>
+          <h2>Documentos do imóvel ${property?.reference || id}</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Tamanho</th><th>Data</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  };
 
   return (
     <BackofficeLayout title={term('item', 'Item')}>
@@ -158,6 +306,79 @@ function ItemDetalheInner({ id }: { id: number }) {
               {galleryImages.length === 0 && (
                 <div className="rounded-xl border border-dashed border-[#2A2A2E] bg-[#0B0B0D] p-6 text-center text-sm text-[#C5C5C5]">
                   TODO: carregar imagens reais (API /properties/{id}/upload)
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#1F1F22] bg-[#0F0F10] p-4 text-white">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Documentos</h3>
+              <div className="flex flex-wrap gap-2">
+                <label className="cursor-pointer rounded-lg bg-[#E10600] px-3 py-2 text-sm font-medium text-white hover:bg-[#c00500]">
+                  {uploadingDocuments ? "A enviar..." : "Adicionar documento"}
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => uploadDocuments(e.target.files)}
+                    disabled={uploadingDocuments}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp"
+                  />
+                </label>
+                <button
+                  onClick={exportDocumentsCsv}
+                  className="rounded-lg bg-[#101013] px-3 py-2 text-sm ring-1 ring-[#2A2A2E] hover:bg-[#16161A]"
+                >
+                  Exportar
+                </button>
+                <button
+                  onClick={printDocuments}
+                  className="rounded-lg bg-[#101013] px-3 py-2 text-sm ring-1 ring-[#2A2A2E] hover:bg-[#16161A]"
+                >
+                  Imprimir
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              {documentsLoading && <p className="text-sm text-[#C5C5C5]">A carregar documentos...</p>}
+              {!documentsLoading && documents.length === 0 && (
+                <p className="text-sm text-[#C5C5C5]">Sem documentos associados a este imóvel.</p>
+              )}
+              {!documentsLoading && documents.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[700px] text-sm">
+                    <thead>
+                      <tr className="text-left text-[#C5C5C5]">
+                        <th className="pb-2 pr-3">Nome</th>
+                        <th className="pb-2 pr-3">Tipo</th>
+                        <th className="pb-2 pr-3">Tamanho</th>
+                        <th className="pb-2 pr-3">Data</th>
+                        <th className="pb-2 pr-3">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {documents.map((doc) => (
+                        <tr key={doc.id} className="border-t border-[#1F1F22]">
+                          <td className="py-2 pr-3">{doc.file_name}</td>
+                          <td className="py-2 pr-3">{doc.mime_type || "—"}</td>
+                          <td className="py-2 pr-3">{formatFileSize(doc.file_size_bytes)}</td>
+                          <td className="py-2 pr-3">{new Date(doc.created_at).toLocaleString("pt-PT")}</td>
+                          <td className="py-2 pr-3">
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#7AA2FF] hover:underline"
+                            >
+                              Abrir
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

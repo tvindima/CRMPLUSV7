@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthToken, serverApiGet } from "@/lib/server-api";
+import { API_BASE_URL, getAuthToken, getTenantSlug, serverApiGet } from "@/lib/server-api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +36,56 @@ export async function GET(
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("[API] Erro ao buscar documentos da propriedade:", error);
+    return NextResponse.json(
+      { error: error.message || "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const token = await getAuthToken();
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id } = await params;
+    const formData = await request.formData();
+    const tenantSlug = await getTenantSlug();
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+    if (tenantSlug) {
+      headers["X-Tenant-Slug"] = tenantSlug;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/properties/${id}/documents/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+      cache: "no-store",
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: `Erro ao fazer upload de documentos: ${text}` },
+        { status: res.status }
+      );
+    }
+
+    try {
+      return NextResponse.json(JSON.parse(text));
+    } catch {
+      return NextResponse.json([]);
+    }
+  } catch (error: any) {
+    console.error("[API] Erro ao fazer upload de documentos da propriedade:", error);
     return NextResponse.json(
       { error: error.message || "Erro interno do servidor" },
       { status: 500 }

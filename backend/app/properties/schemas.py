@@ -77,3 +77,15 @@ class PropertyOut(PropertyBase):
     updated_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PropertyDocumentOut(BaseModel):
+    id: int
+    property_id: int
+    file_name: str
+    file_url: str
+    mime_type: Optional[str] = None
+    file_size_bytes: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
