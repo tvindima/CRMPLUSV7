@@ -194,7 +194,7 @@ export default async function ImovelDetail({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <div className="space-y-8 max-w-screen-xl mx-auto px-3 sm:px-5 lg:px-8">
+      <div className="mx-auto max-w-screen-xl space-y-8 overflow-x-hidden px-3 sm:px-5 lg:px-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }} itemScope itemType="https://schema.org/BreadcrumbList">
           <Link href="/" className="hover:text-white" itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
@@ -214,9 +214,9 @@ export default async function ImovelDetail({ params }: Props) {
         </nav>
 
       {/* Main Grid - Stack em mobile, side-by-side em desktop */}
-      <div className="grid items-start justify-items-center gap-6 lg:gap-8 lg:grid-cols-[1fr_380px] lg:justify-items-start">
+      <div className="grid w-full items-start justify-items-center gap-6 lg:gap-8 lg:grid-cols-[1fr_380px] lg:justify-items-start">
         {/* Left Column - Property Details */}
-        <div className="space-y-8">
+        <div className="min-w-0 w-full space-y-8">
           {/* Gallery */}
           <PropertyGallery images={images} title={property.title} />
 
