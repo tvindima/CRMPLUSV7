@@ -80,7 +80,8 @@ async function resolveTenantSlug(): Promise<string> {
   if (tenantFromHeader) return tenantFromHeader;
 
   const host = requestHeaders.get("host") || "";
-  if (host.includes("luiscarlosgaspar")) return "luiscarlosgaspar";
+  if (host.includes("luiscarlosgaspar")) return "luisgaspar";
+  if (host.includes("luisgaspar.pt")) return "luisgaspar";
   if (host.includes("imoveismais")) return "imoveismais";
   if (host.includes(".crmplus.trioto.tech")) {
     const subdomain = host.split(".crmplus.trioto.tech")[0]?.split(":")[0];

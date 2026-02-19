@@ -92,7 +92,7 @@ async function getTenantSlug(): Promise<string> {
             if (slug) return slug;
           }
           if (host.includes('imoveismais')) return 'imoveismais';
-          if (host.includes('luiscarlosgaspar')) return 'luiscarlosgaspar';
+          if (host.includes('luiscarlosgaspar') || host.includes('luisgaspar.pt')) return 'luisgaspar';
         }
       } catch (e) {}
     } catch (e) {
