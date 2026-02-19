@@ -7,6 +7,7 @@ import { useTenant } from "../context/TenantContext";
 import { useTerminology } from "../context/TerminologyContext";
 import { BrandImage } from "@/components/BrandImage";
 import { useState, useMemo } from "react";
+import { normalizeTenantFeatures } from "@/lib/tenantFeatures";
 
 // Função para obter links com terminologia dinâmica
 function getLinks(
@@ -76,7 +77,7 @@ export function Sidebar() {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const tenantFeatures = tenant?.features || [];
+  const tenantFeatures = useMemo(() => normalizeTenantFeatures((tenant as any)?.features), [tenant]);
 
   // Memoizar links para evitar recalcular em cada render
   const links = useMemo(() => getLinks(term, sector, tenantFeatures), [term, sector, tenantFeatures]);
