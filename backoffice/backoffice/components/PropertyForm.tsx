@@ -33,6 +33,15 @@ const toNumber = (value: string): number | null => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+function moveArrayItem<T>(items: T[], from: number, to: number): T[] {
+  if (from === to) return items;
+  if (from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export function PropertyForm({ initial, onSubmit, loading }: Props) {
   const { term } = useTerminology();
   const { sector, isAutomotive } = useTenant();
@@ -733,6 +742,8 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
           onAddFiles={handleAddFiles}
           onRemoveFile={(idx) => setNewFiles((prev) => prev.filter((_, i) => i !== idx))}
           onRemoveExisting={(idx) => setExistingImages((prev) => prev.filter((_, i) => i !== idx))}
+          onMoveFile={(from, to) => setNewFiles((prev) => moveArrayItem(prev, from, to))}
+          onMoveExisting={(from, to) => setExistingImages((prev) => moveArrayItem(prev, from, to))}
         />
       </div>
 
