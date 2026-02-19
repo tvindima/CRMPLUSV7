@@ -47,7 +47,8 @@ try:
     from app.extranet.router_admin import router as extranet_admin_router
     from app.extranet.router_partners import router as extranet_partners_router
     from app.extranet.router_share import router as extranet_share_router
-except ModuleNotFoundError:
+except Exception as extranet_import_error:
+    print(f"[EXTRANET] Disabled at startup: {extranet_import_error}")
     extranet_admin_router = None
     extranet_partners_router = None
     extranet_share_router = None
