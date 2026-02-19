@@ -15,14 +15,14 @@ export async function GET() {
 
     if (!res.ok) {
       const error = await res.text();
-      console.error("Railway API error:", error);
-      return NextResponse.json({ error: "Erro ao buscar distribuição" }, { status: res.status });
+      console.error("Railway API error (distribution/concelho):", res.status, error);
+      return NextResponse.json([]);
     }
 
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error("Distribuição concelho error:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
