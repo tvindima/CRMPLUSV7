@@ -145,9 +145,9 @@ export default function DashboardPage() {
   const visitsLabel = term('visits', 'Visitas');
   
   const [kpis, setKpis] = useState<KPI[]>([
-    { title: itemsActiveLabel, value: "0", icon: itemIcon, iconColor: "text-purple-400", bgGradient: "from-purple-500/20 to-pink-500/20", trend: "+12%", trendUp: true },
-    { title: "Novas Leads (7d)", value: "0", icon: SparklesIcon, iconColor: "text-blue-400", bgGradient: "from-blue-500/20 to-cyan-500/20", trend: "+8%", trendUp: true },
-    { title: "Propostas em Aberto", value: "0", icon: DocumentTextIcon, iconColor: "text-orange-400", bgGradient: "from-orange-500/20 to-red-500/20", trend: "+5%", trendUp: true },
+    { title: itemsActiveLabel, value: "0", icon: itemIcon, iconColor: "text-purple-400", bgGradient: "from-purple-500/20 to-pink-500/20", trend: "0%", trendUp: false },
+    { title: "Novas Leads (7d)", value: "0", icon: SparklesIcon, iconColor: "text-blue-400", bgGradient: "from-blue-500/20 to-cyan-500/20", trend: "0%", trendUp: false },
+    { title: "Propostas em Aberto", value: "0", icon: DocumentTextIcon, iconColor: "text-orange-400", bgGradient: "from-orange-500/20 to-red-500/20", trend: "0%", trendUp: false },
     { title: `${agentsLabel} Ativos`, value: "0", icon: UserGroupIcon, iconColor: "text-green-400", bgGradient: "from-green-500/20 to-emerald-500/20" },
   ]);
   

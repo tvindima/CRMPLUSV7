@@ -49,6 +49,27 @@ export async function GET() {
 
     const data = await res.json();
     console.log("[KPIs] Dados recebidos:", JSON.stringify(data));
+
+    // Corrigir propostas_abertas para valor real (sem mock backend).
+    // Usa endpoint oficial de estatísticas de propostas.
+    try {
+      const proposalsStatsRes = await serverApiGet('/proposals/stats', token);
+      if (proposalsStatsRes.ok) {
+        const stats = await proposalsStatsRes.json();
+        const pending = Number(stats?.pending);
+        if (Number.isFinite(pending) && pending >= 0) {
+          data.propostas_abertas = pending;
+        }
+      } else if (proposalsStatsRes.status >= 500 && data?.propostas_abertas === 12) {
+        data.propostas_abertas = 0;
+      }
+    } catch (statsError) {
+      console.error("[KPIs] Erro ao obter propostas reais via /proposals/stats:", statsError);
+      if (data?.propostas_abertas === 12) {
+        data.propostas_abertas = 0;
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error("[KPIs] Exception:", error);
