@@ -44,10 +44,11 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
         {/* Simular Prestação */}
         <button
           onClick={() => handleToolClick("simulator")}
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition"
+          className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition hover:brightness-95"
           style={{
-            backgroundColor: 'var(--color-border)',
-            color: 'var(--color-text)',
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, white)',
+            borderColor: 'color-mix(in srgb, var(--color-primary) 35%, transparent)',
+            color: 'var(--color-primary)',
           }}
           title="Simular Prestação"
         >
@@ -65,10 +66,11 @@ export function PropertyTools({ property, price }: PropertyToolsProps) {
         {/* Calcular IMT */}
         <button
           onClick={() => handleToolClick("tax")}
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition"
+          className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition hover:brightness-95"
           style={{
-            backgroundColor: 'var(--color-border)',
-            color: 'var(--color-text)',
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, white)',
+            borderColor: 'color-mix(in srgb, var(--color-primary) 35%, transparent)',
+            color: 'var(--color-primary)',
           }}
           title="Calcular IMT"
         >
