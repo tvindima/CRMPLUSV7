@@ -200,7 +200,9 @@ export default async function Home() {
   }
   
   const usedIds = new Set(heroProperties.map(p => p.id));
-  const availableForRails = properties.filter(p => !usedIds.has(p.id));
+  const availableForRailsRaw = properties.filter(p => !usedIds.has(p.id));
+  // Se houver poucos imóveis, não esvaziar os carrosséis por causa do hero.
+  const availableForRails = availableForRailsRaw.length >= 6 ? availableForRailsRaw : properties;
   
   const rails = getRailData(availableForRails);
   console.log('Rails generated:', rails.length);
