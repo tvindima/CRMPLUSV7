@@ -187,7 +187,7 @@ function ItemDetalheInner({ id }: { id: number }) {
   const printDocuments = () => {
     const popup = window.open("", "_blank", "width=900,height=700");
     if (!popup) {
-      toast.push("Permita popups para imprimir documentos", "warning");
+      toast.push("Permita popups para imprimir documentos", "info");
       return;
     }
     const rows = documents
