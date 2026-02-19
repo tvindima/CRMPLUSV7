@@ -43,6 +43,10 @@ from app.api.admin_setup import setup_router as admin_setup_router
 from app.api.migrate_agents import migrate_router as migrate_agents_router
 from app.api.fix_properties import router as fix_properties_router
 from app.platform.routes import router as platform_router  # Platform / Super Admin
+from app.extranet.router_admin import router as extranet_admin_router
+from app.extranet.router_partners import router as extranet_partners_router
+from app.extranet.router_share import router as extranet_share_router
+from app.portals.routes import router as portals_router
 
 # Multi-tenant middleware
 from app.middleware.tenant import TenantMiddleware
@@ -274,6 +278,12 @@ app.add_middleware(
 # Resolve o tenant a partir do header X-Tenant-Slug ou domínio
 # e configura o schema do PostgreSQL para a requisição
 app.add_middleware(TenantMiddleware)
+
+# Extranet/Partners/Share routers (feature-guarded inside)
+app.include_router(extranet_admin_router)
+app.include_router(extranet_partners_router)
+app.include_router(extranet_share_router)
+app.include_router(portals_router)
 
 
 # =====================================================
