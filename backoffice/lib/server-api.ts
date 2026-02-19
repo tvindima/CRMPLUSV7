@@ -10,6 +10,31 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://crm
 export const SESSION_COOKIE = 'crmplus_staff_session';
 export const TENANT_COOKIE = 'tenant_slug';
 
+const WILDCARD_PATTERN = ".bo.crmplus.trioto.tech";
+const DEDICATED_DOMAIN_MAPPING: Record<string, string> = {
+  "backoffice.luisgaspar.pt": "luisgaspar",
+  "backoffice.luiscarlosgaspar.com": "luisgaspar",
+  "backoffice.imoveismais.com": "imoveismais",
+  "app.imoveismais.com": "imoveismais",
+};
+
+function extractTenantFromHost(hostValue: string | null): string | null {
+  if (!hostValue) return null;
+  const hostname = hostValue.split(",")[0].trim().split(":")[0];
+  if (!hostname) return null;
+
+  if (DEDICATED_DOMAIN_MAPPING[hostname]) {
+    return DEDICATED_DOMAIN_MAPPING[hostname];
+  }
+
+  if (hostname.endsWith(WILDCARD_PATTERN)) {
+    const slug = hostname.replace(WILDCARD_PATTERN, "");
+    if (slug) return slug;
+  }
+
+  return null;
+}
+
 /**
  * Obtém o token de autenticação do cookie
  */
@@ -32,7 +57,17 @@ export async function getAuthToken(): Promise<string | null> {
  */
 export async function getTenantSlug(): Promise<string> {
   const cookieStore = await cookies();
-  return cookieStore.get(TENANT_COOKIE)?.value || process.env.NEXT_PUBLIC_TENANT_SLUG || '';
+  const cookieTenant = cookieStore.get(TENANT_COOKIE)?.value;
+  if (cookieTenant) return cookieTenant;
+
+  const reqHeaders = await headers();
+  const hostTenant =
+    extractTenantFromHost(reqHeaders.get("x-forwarded-host")) ||
+    extractTenantFromHost(reqHeaders.get("host"));
+
+  if (hostTenant) return hostTenant;
+
+  return process.env.NEXT_PUBLIC_TENANT_SLUG || '';
 }
 
 /**
