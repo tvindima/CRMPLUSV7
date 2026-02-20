@@ -9,6 +9,7 @@ Suporta:
 Para migrar: trocar STORAGE_PROVIDER em .env e implementar novo adapter.
 """
 import os
+import re
 from abc import ABC, abstractmethod
 from typing import Optional, BinaryIO
 import tempfile
@@ -86,9 +87,13 @@ class CloudinaryStorage(StorageProvider):
         """Upload para Cloudinary"""
         import cloudinary.uploader
         
-        # Cloudinary aceita file-like objects diretamente
-        # public_id = namespace completo sem extensão
-        public_id = f"crm-plus/{folder}/{Path(filename).stem}"
+        # Isolamento por tenant para impedir overwrite/cross-tenant de assets
+        tenant_namespace = _get_tenant_storage_namespace()
+        folder_clean = str(folder or "").strip("/")
+        if folder_clean:
+            public_id = f"crm-plus/{tenant_namespace}/{folder_clean}/{Path(filename).stem}"
+        else:
+            public_id = f"crm-plus/{tenant_namespace}/{Path(filename).stem}"
         
         print(f"[Cloudinary] Uploading to public_id: {public_id}")
         
@@ -175,7 +180,8 @@ class LocalStorage(StorageProvider):
         public: bool = True
     ) -> str:
         """Salva no filesystem local"""
-        folder_path = self.base_path / folder
+        tenant_namespace = _get_tenant_storage_namespace()
+        folder_path = self.base_path / tenant_namespace / folder
         folder_path.mkdir(parents=True, exist_ok=True)
         
         file_path = folder_path / filename
@@ -236,6 +242,33 @@ def get_storage_provider() -> StorageProvider:
             f"Storage provider inválido: {provider}. "
             f"Opções: cloudinary, s3, local"
         )
+
+
+def _sanitize_path_fragment(value: str) -> str:
+    """Normaliza fragmento de path para uso seguro em namespace de storage."""
+    cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "-", (value or "").strip().lower())
+    return cleaned.strip("-") or "tenant"
+
+
+def _get_tenant_storage_namespace() -> str:
+    """
+    Retorna namespace de storage por tenant.
+    - tenant_<slug> -> <slug>
+    - public/None -> platform
+    """
+    try:
+        from app.database import get_tenant_schema
+
+        schema = get_tenant_schema()
+        if not schema or schema == "public":
+            return "platform"
+
+        if schema.startswith("tenant_"):
+            return _sanitize_path_fragment(schema[7:])
+
+        return _sanitize_path_fragment(schema)
+    except Exception:
+        return "platform"
 
 
 # Singleton global (importar este objeto)

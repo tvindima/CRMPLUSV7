@@ -101,10 +101,34 @@ class TenantMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
-        tenant_slug = request.headers.get("X-Tenant-Slug")
+        tenant_slug_header = request.headers.get("X-Tenant-Slug")
+        host = request.headers.get("Host", "")
+        tenant_slug_from_domain = None
 
-        # If tenant header is explicitly provided, always honor it,
-        # even for public routes like /admin/setup/.
+        # Resolver tenant por domínio primeiro (quando aplicável),
+        # para validar conflito com header e evitar cross-tenant por spoof.
+        if host:
+            db = next(get_db())
+            try:
+                tenant_slug_from_domain = resolve_tenant_from_domain(host, db)
+            finally:
+                db.close()
+
+        # Se header existe mas conflita com domínio conhecido, bloquear request
+        if tenant_slug_header and tenant_slug_from_domain:
+            if tenant_slug_header.lower() != tenant_slug_from_domain.lower():
+                return JSONResponse(
+                    {
+                        "detail": (
+                            "Conflito de tenant: X-Tenant-Slug não corresponde ao domínio da requisição."
+                        )
+                    },
+                    status_code=400,
+                )
+
+        # Prioridade: header explícito > domínio
+        tenant_slug = tenant_slug_header or tenant_slug_from_domain
+
         if tenant_slug:
             schema_name = f"tenant_{tenant_slug.lower()}"
             set_tenant_schema(schema_name)
@@ -126,16 +150,9 @@ class TenantMiddleware(BaseHTTPMiddleware):
             print(f"[TENANT DEBUG] X-Tenant-Slug header: {tenant_slug}")
             print(f"[TENANT DEBUG] Host header: {request.headers.get('Host', 'N/A')}")
         
-        # 2. Domínio do request
+        # 2. Domínio do request (já resolvido acima quando possível)
         if not tenant_slug:
-            host = request.headers.get("Host", "")
-            if host:
-                # Criar sessão temporária para query
-                db = next(get_db())
-                try:
-                    tenant_slug = resolve_tenant_from_domain(host, db)
-                finally:
-                    db.close()
+            tenant_slug = tenant_slug_from_domain
         
         # 3. Default para 'public' se não encontrado (backwards compatible)
         if not tenant_slug:
