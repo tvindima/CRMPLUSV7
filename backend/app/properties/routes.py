@@ -97,6 +97,18 @@ def get_watermark_settings(db: Session) -> Optional[dict]:
         
         if not settings or not settings.watermark_enabled or not settings.watermark_image_url:
             return None
+
+        # Hotfix de isolamento: bloquear watermark legacy global no tenant imoveismais
+        # (evita reaproveitar asset partilhado entre tenants antes da correção de storage).
+        schema = get_tenant_schema() or DEFAULT_SCHEMA
+        legacy_shared_watermark = (
+            "/crm-plus/crm-settings/" in settings.watermark_image_url
+            and "/crm-plus/imoveismais/" not in settings.watermark_image_url
+            and "/crm-plus/luisgaspar/" not in settings.watermark_image_url
+        )
+        if schema == "tenant_imoveismais" and legacy_shared_watermark:
+            print("[Watermark] Legacy shared watermark blocked for tenant_imoveismais")
+            return None
         
         return {
             "url": settings.watermark_image_url,

@@ -264,6 +264,25 @@ app.include_router(portals_router)
 # Este endpoint é público para que os frontends possam 
 # obter o branding da agência sem necessidade de login
 
+def _sanitize_branding_logo_for_tenant(tenant_slug: str, logo_url: str | None) -> str | None:
+    """
+    Hotfix de isolamento:
+    - Bloqueia URL legacy global (sem namespace de tenant) para tenants afetados
+      pelo cruzamento de branding.
+    """
+    if not logo_url:
+        return None
+
+    # Caminho legacy partilhado usado antes do isolamento por tenant no storage.
+    is_legacy_global_logo = "/crm-plus/crm-branding/" in logo_url and "/crm-plus/imoveismais/" not in logo_url and "/crm-plus/luisgaspar/" not in logo_url
+
+    # Incidente conhecido: imoveismais estava a receber logo de outro tenant via URL global.
+    if tenant_slug == "imoveismais" and is_legacy_global_logo:
+        print("[BRANDING] Legacy shared logo blocked for tenant imoveismais")
+        return None
+
+    return logo_url
+
 @app.get("/public/branding")
 def get_public_branding(request: Request, db: Session = Depends(get_db)):
     """
@@ -345,7 +364,7 @@ def get_public_branding(request: Request, db: Session = Depends(get_db)):
             result_data = {
                 "agency_name": row[0] or defaults["agency_name"],
                 "agency_slogan": row[1] or defaults["agency_slogan"],
-                "agency_logo_url": row[2],
+                "agency_logo_url": _sanitize_branding_logo_for_tenant(tenant_slug, row[2]),
                 "primary_color": row[3] or defaults["primary_color"],
                 "secondary_color": row[4] or defaults["secondary_color"],
                 "background_color": row[5] or defaults["background_color"],
