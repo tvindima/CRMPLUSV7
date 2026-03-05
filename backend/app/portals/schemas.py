@@ -27,6 +27,7 @@ class PortalAccountOut(BaseModel):
     provider: str
     mode: str
     is_active: bool
+    has_credentials: bool = False
     settings_json: dict[str, Any] | None = None
     has_feed_token: bool = False
     feed_endpoint: str | None = None

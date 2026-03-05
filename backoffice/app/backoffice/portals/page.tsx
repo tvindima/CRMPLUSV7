@@ -15,6 +15,7 @@ type Account = {
   provider: string;
   mode: 'feed' | 'api';
   is_active: boolean;
+  has_credentials?: boolean;
   has_feed_token?: boolean;
   feed_endpoint?: string | null;
   credentials_json?: Record<string, unknown> | null;
@@ -52,6 +53,7 @@ export default function PortalsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>('');
+  const [providerSecrets, setProviderSecrets] = useState<Record<string, string>>({});
 
   const [propertyId, setPropertyId] = useState('');
   const [action, setAction] = useState<'publish' | 'unpublish' | 'refresh'>('publish');
@@ -97,7 +99,7 @@ export default function PortalsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ provider, mode, is_active: isActive, credentials_json: null, settings_json: null }),
+        body: JSON.stringify({ provider, mode, is_active: isActive }),
       });
       const body = await safeJson(res);
       if (!res.ok) throw new Error(body?.error || 'Falha ao guardar conta do portal');
@@ -124,6 +126,48 @@ export default function PortalsPage() {
       await loadAll();
     } catch (err: any) {
       setMessage(err?.message || 'Erro ao rodar token');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCredentials(provider: string) {
+    const secret = (providerSecrets[provider] || '').trim();
+    if (!secret) {
+      setMessage(`Indica a credencial para ${provider}`);
+      return;
+    }
+
+    const acc = accountByProvider(provider);
+    const mode = (acc?.mode || 'feed') as 'feed' | 'api';
+    const isActive = Boolean(acc?.is_active);
+    const credentials =
+      provider === 'idealista'
+        ? { import_key: secret }
+        : { api_key: secret };
+
+    setBusy(true);
+    setMessage('');
+    try {
+      const res = await fetch(`/api/portals/accounts/${provider}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          provider,
+          mode,
+          is_active: isActive,
+          credentials_json: credentials,
+        }),
+      });
+      const body = await safeJson(res);
+      if (!res.ok) throw new Error(body?.error || `Falha ao guardar credenciais de ${provider}`);
+
+      setProviderSecrets((prev) => ({ ...prev, [provider]: '' }));
+      setMessage(`Credenciais de ${provider} atualizadas`);
+      await loadAll();
+    } catch (err: any) {
+      setMessage(err?.message || 'Erro ao guardar credenciais');
     } finally {
       setBusy(false);
     }
@@ -223,8 +267,25 @@ export default function PortalsPage() {
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-[#C5C5C5]">
-                    Endpoint: {acc?.feed_endpoint || `/portals/feeds/${provider}.xml`} | Token: {acc?.has_feed_token ? 'configurado' : 'nao configurado'}
+                    Endpoint: {acc?.feed_endpoint || `/portals/feeds/${provider}.xml`} | Token: {acc?.has_feed_token ? 'configurado' : 'nao configurado'} | Credenciais: {acc?.has_credentials ? 'configuradas' : 'nao configuradas'}
                   </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={providerSecrets[provider] || ''}
+                      onChange={(e) => setProviderSecrets((prev) => ({ ...prev, [provider]: e.target.value }))}
+                      placeholder={provider === 'idealista' ? 'Chave de importacao Idealista' : 'API key'}
+                      className="w-full rounded border border-[#333] bg-[#17171A] px-2 py-1 text-xs text-white"
+                    />
+                    <button
+                      disabled={busy}
+                      onClick={() => saveCredentials(provider)}
+                      className="rounded border border-[#333] px-2 py-1 text-xs text-white hover:bg-[#1C1C20] disabled:opacity-50"
+                    >
+                      Guardar credencial
+                    </button>
+                  </div>
                 </div>
               );
             })}

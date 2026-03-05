@@ -68,8 +68,11 @@ def upsert_account(
     else:
         account.mode = mode
         account.is_active = is_active
-        account.credentials_json = credentials_json
-        account.settings_json = settings_json
+        # Keep current secrets/settings when payload does not include updates.
+        if credentials_json is not None:
+            account.credentials_json = credentials_json
+        if settings_json is not None:
+            account.settings_json = settings_json
         if not account.feed_token:
             account.feed_token = token_urlsafe(32)
         account.updated_at = now
