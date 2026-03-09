@@ -171,6 +171,9 @@ class ClientUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
 
+    # Relações
+    property_id: Optional[int] = None
+
 
 class TransacaoCreate(BaseModel):
     """Schema para criar transação"""

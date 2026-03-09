@@ -51,19 +51,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    
-    // Extrair agent_id do token JWT
+
+    // Tentar obter agent_id do payload (preferencial para ações administrativas)
+    const rawAgentIdFromBody = body?.agent_id;
+    const parsedAgentIdFromBody =
+      rawAgentIdFromBody !== undefined && rawAgentIdFromBody !== null
+        ? Number(rawAgentIdFromBody)
+        : NaN;
+    const agentIdFromBody = Number.isFinite(parsedAgentIdFromBody) ? parsedAgentIdFromBody : null;
+
+    // Fallback: extrair agent_id do token JWT
     const jwt = await import("jsonwebtoken");
     const decoded = jwt.decode(token) as { agent_id?: number } | null;
-    const agentId = decoded?.agent_id;
-    
+    const agentIdFromToken = decoded?.agent_id ?? null;
+
+    const agentId = agentIdFromBody ?? agentIdFromToken;
+
     if (!agentId) {
-      return NextResponse.json({ error: "Agent ID não encontrado no token" }, { status: 400 });
+      return NextResponse.json({ error: "Agent ID em falta" }, { status: 400 });
     }
-    
+
     // Backend requer agent_id como query parameter
     const url = `${API_BASE_URL}/clients/?agent_id=${agentId}`;
     const headers = await getServerApiHeaders(token);
+
+    // Remover agent_id do corpo para não enviar campo extra ao backend
+    if (body && typeof body === "object" && "agent_id" in body) {
+      delete body.agent_id;
+    }
 
     const res = await fetch(url, {
       method: 'POST',

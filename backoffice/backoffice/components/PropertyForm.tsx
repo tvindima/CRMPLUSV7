@@ -12,6 +12,8 @@ export type PropertyFormSubmit = {
   files: File[];
   imagesToKeep: string[];
   videoFile?: File | null;
+  ownerSelection?: OwnerSelectionPayload;
+  selectedAgentId?: number | null;
 };
 
 type Props = {
@@ -24,6 +26,28 @@ type Agent = {
   id: number;
   name: string;
   email: string;
+};
+
+type OwnerSelectionMode = "none" | "existing" | "new";
+
+type OwnerSelectionPayload = {
+  mode: OwnerSelectionMode;
+  existingClientId?: number | null;
+  newClient?: {
+    nome: string;
+    email?: string | null;
+    telefone?: string | null;
+    nif?: string | null;
+  } | null;
+};
+
+type ClientListItem = {
+  id: number;
+  nome: string;
+  email?: string | null;
+  telefone?: string | null;
+  nif?: string | null;
+  client_type?: string | null;
 };
 
 const toNumber = (value: string): number | null => {
@@ -44,7 +68,7 @@ function moveArrayItem<T>(items: T[], from: number, to: number): T[] {
 
 export function PropertyForm({ initial, onSubmit, loading }: Props) {
   const { term } = useTerminology();
-  const { sector, isAutomotive } = useTenant();
+  const { sector } = useTenant();
   
   // Labels dinâmicos
   const itemLabel = term('item', 'Imóvel');
@@ -93,6 +117,18 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
   const [existingImages, setExistingImages] = useState<string[]>(initial?.images || []);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Proprietário (apenas criação)
+  const [ownerMode, setOwnerMode] = useState<OwnerSelectionMode>("none");
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [ownerClients, setOwnerClients] = useState<ClientListItem[]>([]);
+  const [ownerClientsLoading, setOwnerClientsLoading] = useState(false);
+  const [ownerClientsError, setOwnerClientsError] = useState("");
+  const [existingOwnerClientId, setExistingOwnerClientId] = useState("");
+  const [newOwnerName, setNewOwnerName] = useState("");
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [newOwnerPhone, setNewOwnerPhone] = useState("");
+  const [newOwnerNif, setNewOwnerNif] = useState("");
   
   // Novos campos
   const [isPublished, setIsPublished] = useState((initial as any)?.is_published !== 0);
@@ -107,7 +143,7 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
   const [videoUrl, setVideoUrl] = useState<string>((initial as any)?.video_url || "");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const isCreateMode = !initial?.id;
 
   // Carregar agentes
   useEffect(() => {
@@ -155,6 +191,40 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     }
   }, [selectedAgentId, autoReference, initial]);
 
+  // Carregar clientes do tenant atual para seleção de proprietário existente
+  useEffect(() => {
+    if (!isCreateMode || ownerMode !== "existing") return;
+
+    const controller = new AbortController();
+    const loadClients = async () => {
+      try {
+        setOwnerClientsLoading(true);
+        setOwnerClientsError("");
+
+        const params = new URLSearchParams();
+        params.set("limit", "200");
+        params.set("skip", "0");
+        if (ownerSearch.trim()) params.set("search", ownerSearch.trim());
+        if (selectedAgentId) params.set("agent_id", selectedAgentId);
+
+        const res = await fetch(`/api/clients?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) throw new Error("Não foi possível carregar clientes");
+
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        setOwnerClients(items);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        setOwnerClientsError(err?.message || "Erro ao carregar clientes");
+      } finally {
+        setOwnerClientsLoading(false);
+      }
+    };
+
+    loadClients();
+    return () => controller.abort();
+  }, [isCreateMode, ownerMode, ownerSearch, selectedAgentId]);
+
   // Deriva localização completa dos campos selecionados
   const derivedLocation = useMemo(() => {
     const parts = [street, selectedParish, selectedMunicipality, selectedDistrict]
@@ -190,6 +260,16 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
     const bedroomsNumber = bedrooms ? Number(bedrooms) : null;
     const bathroomsNumber = bathrooms ? Number(bathrooms) : null;
     const parkingNumber = parkingSpaces ? Number(parkingSpaces) : null;
+
+    if (isCreateMode && ownerMode === "existing" && !existingOwnerClientId) {
+      errs.push("Selecione um cliente para associar como proprietário");
+    }
+    if (isCreateMode && ownerMode === "new") {
+      if (!newOwnerName.trim()) errs.push("Nome do novo proprietário é obrigatório");
+      if (!newOwnerEmail.trim() && !newOwnerPhone.trim()) {
+        errs.push("Indique email ou telefone do novo proprietário");
+      }
+    }
     
     setErrors(errs);
     if (errs.length) return;
@@ -225,11 +305,32 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
       video_url: videoUrl || null,
     };
 
+    const ownerSelection: OwnerSelectionPayload | undefined = isCreateMode
+      ? ownerMode === "existing"
+        ? {
+            mode: "existing",
+            existingClientId: existingOwnerClientId ? Number(existingOwnerClientId) : null,
+          }
+        : ownerMode === "new"
+          ? {
+              mode: "new",
+              newClient: {
+                nome: newOwnerName.trim(),
+                email: newOwnerEmail.trim() || null,
+                telefone: newOwnerPhone.trim() || null,
+                nif: newOwnerNif.trim() || null,
+              },
+            }
+          : { mode: "none" }
+      : undefined;
+
     onSubmit({
       payload,
       files: newFiles,
       imagesToKeep: existingImages,
       videoFile: videoFile,
+      ownerSelection,
+      selectedAgentId: agentIdNumber,
     });
   };
 
@@ -294,6 +395,119 @@ export function PropertyForm({ initial, onSubmit, loading }: Props) {
           </div>
         </div>
       </div>
+
+      {isCreateMode && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-[#888]">Proprietário do Imóvel</h3>
+          <p className="text-xs text-[#666]">
+            Opcional: associe já o proprietário para manter o processo de angariação completo no CRM.
+          </p>
+
+          <div>
+            <label className="mb-1 block text-xs text-[#999]">Como pretende associar o proprietário?</label>
+            <select
+              value={ownerMode}
+              onChange={(e) => {
+                const mode = e.target.value as OwnerSelectionMode;
+                setOwnerMode(mode);
+                setOwnerClientsError("");
+                if (mode !== "existing") {
+                  setExistingOwnerClientId("");
+                }
+                if (mode !== "new") {
+                  setNewOwnerName("");
+                  setNewOwnerEmail("");
+                  setNewOwnerPhone("");
+                  setNewOwnerNif("");
+                }
+              }}
+              className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+            >
+              <option value="none">Sem proprietário (definir depois)</option>
+              <option value="existing">Selecionar cliente existente</option>
+              <option value="new">Criar novo cliente proprietário</option>
+            </select>
+          </div>
+
+          {ownerMode === "existing" && (
+            <div className="space-y-3 rounded border border-[#2A2A2E] bg-[#121214] p-3">
+              <div>
+                <label className="mb-1 block text-xs text-[#999]">Pesquisar cliente</label>
+                <input
+                  value={ownerSearch}
+                  onChange={(e) => setOwnerSearch(e.target.value)}
+                  placeholder="Nome, email, telefone ou NIF"
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-[#999]">Cliente proprietário *</label>
+                <select
+                  value={existingOwnerClientId}
+                  onChange={(e) => setExistingOwnerClientId(e.target.value)}
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                >
+                  <option value="">
+                    {ownerClientsLoading ? "A carregar clientes..." : "Selecione um cliente..."}
+                  </option>
+                  {ownerClients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.nome}
+                      {client.telefone ? ` · ${client.telefone}` : ""}
+                      {client.email ? ` · ${client.email}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {ownerClientsError && (
+                <p className="text-xs text-red-400">{ownerClientsError}</p>
+              )}
+            </div>
+          )}
+
+          {ownerMode === "new" && (
+            <div className="grid gap-3 rounded border border-[#2A2A2E] bg-[#121214] p-3 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs text-[#999]">Nome do proprietário *</label>
+                <input
+                  value={newOwnerName}
+                  onChange={(e) => setNewOwnerName(e.target.value)}
+                  placeholder="Ex: Maria Silva"
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-[#999]">Email</label>
+                <input
+                  value={newOwnerEmail}
+                  onChange={(e) => setNewOwnerEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-[#999]">Telefone</label>
+                <input
+                  value={newOwnerPhone}
+                  onChange={(e) => setNewOwnerPhone(e.target.value)}
+                  placeholder="912345678"
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs text-[#999]">NIF</label>
+                <input
+                  value={newOwnerNif}
+                  onChange={(e) => setNewOwnerNif(e.target.value)}
+                  placeholder="123456789"
+                  className="w-full rounded border border-[#2A2A2E] bg-[#151518] px-3 py-2 text-sm text-white outline-none focus:border-[#E10600]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Secção: Identificação */}
       <div className="space-y-3">
